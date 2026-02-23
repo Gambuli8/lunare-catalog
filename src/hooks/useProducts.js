@@ -9,11 +9,15 @@ import { useState, useEffect } from 'react'
 // ─────────────────────────────────────────────────────────────
 export const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6xogLCXqLvMy3wyrqgL_XqvcXG_PN3JuiqZCy6jYCWnTYwkDxkHYd3r40Df8G3dPk-lIg4kIXaBCX/pub?gid=0&single=true&output=csv'
 
+// Columnas esperadas en el CSV:
+// Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock | Imagen
+//
+// ── IMÁGENES DESDE DROPBOX ───────────────────────────────────
+// Agregá una columna "Imagen" en tu Google Sheets con la URL pública de Dropbox.
+// Cambiá el final de cada link de ?dl=0 → ?raw=1 para que sea una URL directa.
+// Ejemplo: https://www.dropbox.com/s/abc123/foto.jpg?raw=1
+// Si una fila no tiene imagen, se mostrará el emoji como fallback.
 
-// Columnas esperadas en el CSV (en este orden):
-// Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock
-
-// ── Emojis por categoría ──────────────────────────────────────
 const CATEGORY_EMOJI = {
   Argolla: '💍',
   Pasante: '✨',
@@ -24,8 +28,6 @@ const CATEGORY_EMOJI = {
   Anillo:  '💍',
 }
 
-// ── Nombres corregidos con ortografía exacta ──────────────────
-// Clave: nombre en minúsculas sin tildes · Valor: nombre correcto
 const NAME_CORRECTIONS = {
   'basic gold':         'Basic Gold',
   'basic silver':       'Basic Silver',
@@ -83,7 +85,7 @@ const NAME_CORRECTIONS = {
 
 function correctName(raw = '') {
   const key = raw.trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes para buscar
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ')
   return NAME_CORRECTIONS[key] || toTitleCase(raw.trim())
 }
@@ -92,39 +94,35 @@ function toTitleCase(str) {
   return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
 }
 
-// ── Normalización de categoría ────────────────────────────────
-// Mapea cualquier variante del CSV a la clave canónica del filtro
 const CATEGORY_MAP = [
-  { keys: ['argolla'], canonical: 'Argolla' },
-  { keys: ['pasante'], canonical: 'Pasante' },
-  { keys: ['cuff', 'cuffs'], canonical: 'Cuff' },
+  { keys: ['argolla'],                              canonical: 'Argolla' },
+  { keys: ['pasante'],                              canonical: 'Pasante' },
+  { keys: ['cuff', 'cuffs'],                        canonical: 'Cuff'    },
   { keys: ['cadena', 'collar', 'conjunto', 'corbatero'], canonical: 'Collar' },
-  { keys: ['choker', 'chokers'], canonical: 'Choker' },
-  { keys: ['dije'], canonical: 'Dije' },
-  { keys: ['ajustable', 'pulsera', 'tennis'], canonical: 'Pulsera' },
-  { keys: ['anillo'], canonical: 'Anillo' },
-  { keys: ['broche'], canonical: 'Broche' }
+  { keys: ['choker', 'chokers'],                    canonical: 'Choker'  },
+  { keys: ['dije'],                                 canonical: 'Dije'    },
+  { keys: ['ajustable', 'pulsera', 'tennis'],       canonical: 'Pulsera' },
+  { keys: ['anillo'],                               canonical: 'Anillo'  },
+  { keys: ['broche'],                               canonical: 'Broche'  },
 ]
 
 function normalizeCategory(raw = '') {
   const s = raw.trim().toLowerCase()
-  if (!s) return 'Otros' // Maneja las categorías vacías del Excel
+  if (!s) return 'Otros'
   for (const { keys, canonical } of CATEGORY_MAP) {
     if (keys.some(k => s.includes(k))) return canonical
   }
   return toTitleCase(raw.trim())
 }
 
-// ── Normalización de Material ────────────────────────────────
 function normalizeMaterial(raw = '') {
   const s = raw.trim().toLowerCase()
-  if (s === 'plata') return 'Plata'
-  if (s === 'plata dorada') return 'Plata Dorada'
-  if (s === 'acero' || s === 'acero blanco') return 'Acero Blanco' // se puede usar emtodo includes para Agrupa cualquier "Acero" acá
-  return 'Biyu' // Todo lo demás (vacío, colores, etc) cae en Biyu
+  if (s === 'plata')                        return 'Plata'
+  if (s === 'plata dorada')                 return 'Plata Dorada'
+  if (s === 'acero' || s === 'acero blanco') return 'Acero Blanco'
+  return 'Biyú'
 }
 
-// ── Labels de categoría para los filtros ─────────────────────
 const CATEGORY_LABELS = {
   Argolla: 'Argollas',
   Pasante: 'Pasantes',
@@ -135,7 +133,20 @@ const CATEGORY_LABELS = {
   Anillo:  'Anillos',
 }
 
-// ── Parser CSV robusto (maneja comillas y comas internas) ─────
+// ── Convierte un link de Dropbox al formato raw (directo) ─────
+// Acepta tanto ?dl=0 como links ya en ?raw=1, y también
+// links de carpeta compartida (www.dropbox.com/scl/...)
+function toDropboxRaw(url = '') {
+  if (!url) return ''
+  return url
+    .trim()
+    .replace(/[?&]dl=0/, '?raw=1')          // ?dl=0  → ?raw=1
+    .replace(/[?&]dl=1/, '?raw=1')          // ?dl=1  → ?raw=1
+    .replace(/\?raw=1.*$/, '?raw=1')        // limpia params extra
+    .replace(/^(https?:\/\/)www\./, '$1dl.') // www. → dl. (CDN directo)
+}
+
+// ── Parser CSV robusto ────────────────────────────────────────
 function parseCSV(text) {
   const lines = text.trim().split('\n')
   if (lines.length < 2) return []
@@ -159,36 +170,40 @@ function parseCSV(text) {
 }
 
 // ── rowToProduct ──────────────────────────────────────────────
-// ⚠️  Lee "Precio costo" pero NUNCA lo incluye en el objeto retornado
+// ⚠️  "Precio costo" se lee pero NUNCA se incluye en el objeto retornado
 function rowToProduct(row) {
-  // Filtrar sin stock
   const stock = parseFloat(row['Stock']) || 0
   if (stock <= 0) return null
 
   const rawCategory = row['Categoría'] || row['Categoria'] || ''
-  const category = normalizeCategory(rawCategory)
+  const category    = normalizeCategory(rawCategory)
 
-  // Precio de venta: "Precio Par" tiene prioridad, luego "Precio individual"
-  // "Precio costo" (columna E) se descarta deliberadamente
-  const pricePar = parseFloat((row['Precio Par'] || '').replace(/[^0-9.]/g, ''))
+  const pricePar = parseFloat((row['Precio Par']        || '').replace(/[^0-9.]/g, ''))
   const priceInd = parseFloat((row['Precio individual'] || '').replace(/[^0-9.]/g, ''))
-  const price = !isNaN(pricePar) && pricePar > 0 ? pricePar : !isNaN(priceInd) && priceInd > 0 ? priceInd : null
+  const price    = (!isNaN(pricePar) && pricePar > 0) ? pricePar
+                 : (!isNaN(priceInd) && priceInd > 0) ? priceInd
+                 : null
 
   if (!price) return null
 
-  // Buscá la línea const material = ... y reemplazala por:
-  const material = normalizeMaterial(row['Material'])
-  const priceNote = !isNaN(pricePar) && pricePar > 0 ? 'par' : 'und'
+  const material  = normalizeMaterial(row['Material'])
+  const priceNote = (!isNaN(pricePar) && pricePar > 0) ? 'par' : 'und'
+
+  // ── Imagen desde Dropbox ──────────────────────────────────
+  // Lee la columna "Imagen" y convierte el link al formato raw.
+  // Si no hay imagen, image queda como '' y los componentes muestran el emoji.
+  const image = toDropboxRaw(row['Imagen'] || row['imagen'] || row['Image'] || '')
 
   return {
-    id: (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
-    name: correctName(row['Nombre'] || ''),
-    category, // ← clave canónica para filtrar
-    subcategory: rawCategory.trim(), // ← valor original para mostrar
+    id:          (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
+    name:        correctName(row['Nombre'] || ''),
+    category,
+    subcategory: rawCategory.trim(),
     material,
     price,
     priceNote,
-    emoji: CATEGORY_EMOJI[category] || '✦'
+    image,                               // ← URL directa lista para usar en <img src>
+    emoji:       CATEGORY_EMOJI[category] || '✦',
     // ⚠️  "Precio costo" NO está en este objeto
   }
 }
@@ -197,7 +212,7 @@ function rowToProduct(row) {
 export function useProducts() {
   const [products,   setProducts]   = useState([])
   const [categories, setCategories] = useState([{ key: 'all', label: 'Todos' }])
-  const [materials,  setMaterials]  = useState([{ key: 'all', label: 'Todos' }]) // NUEVO ESTADO
+  const [materials,  setMaterials]  = useState([{ key: 'all', label: 'Todos' }])
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState(null)
 
@@ -213,12 +228,11 @@ export function useProducts() {
       const items = rows.map(rowToProduct).filter(Boolean)
 
       const seenCats = new Set()
-      const seenMats = new Set() // NUEVO SET PARA MATERIALES
+      const seenMats = new Set()
       const cats = [{ key: 'all', label: 'Todos' }]
       const mats = [{ key: 'all', label: 'Todos' }]
 
       items.forEach(p => {
-        // Generador dinámico de Categorías
         if (!seenCats.has(p.category)) {
           seenCats.add(p.category)
           cats.push({
@@ -226,7 +240,6 @@ export function useProducts() {
             label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's'),
           })
         }
-        // Generador dinámico de Materiales
         if (!seenMats.has(p.material)) {
           seenMats.add(p.material)
           mats.push({ key: p.material, label: p.material })
@@ -235,7 +248,7 @@ export function useProducts() {
 
       setProducts(items)
       setCategories(cats)
-      setMaterials(mats) // GUARDAMOS LOS MATERIALES DINÁMICOS
+      setMaterials(mats)
     } catch (err) {
       setError(err.message || 'Error al cargar el catálogo')
     } finally {

@@ -1,7 +1,7 @@
+import { useState } from 'react'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { useModal } from '../context/ModalContext'
 import { useCart } from '../context/CartContext'
-import { useState } from 'react'
 
 function getMaterialBadgeStyle(material = '') {
   const m = material.toLowerCase().trim()
@@ -9,6 +9,27 @@ function getMaterialBadgeStyle(material = '') {
   if (m === 'plata')                                 return { bg: '#ddebff', text: '#1a3a4a' }
   if (m.includes('acero'))                           return { bg: '#bfe1f6', text: '#1a3a4a' }
   return { bg: '#e8c547', text: '#3d2e00' }
+}
+
+function FeaturedImage({ image, emoji, name }) {
+  const [failed, setFailed] = useState(false)
+  if (image && !failed) {
+    return (
+      <img
+        src={image}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+      />
+    )
+  }
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center">
+      <span className="text-6xl select-none opacity-50 group-hover:scale-110 transition-transform duration-500">
+        {emoji}
+      </span>
+    </div>
+  )
 }
 
 function FeaturedCard({ product, index }) {
@@ -28,24 +49,27 @@ function FeaturedCard({ product, index }) {
     <div
       onClick={() => openModal(product)}
       className="group relative bg-white border border-[#e8e2da] rounded-sm overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col"
-      style={{ animation: `fadeUp 0.5s ease both`, animationDelay: `${index * 0.1}s` }}
+      style={{ animation: 'fadeUp 0.5s ease both', animationDelay: `${index * 0.1}s` }}
     >
-      {/* Etiqueta "Destacado" */}
+      {/* Etiqueta Destacado */}
       <div className="absolute top-3 left-3 z-10 bg-[#b89a6a] text-white text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-sm font-sans">
         ✦ Destacado
       </div>
 
       {/* Imagen */}
-      <div className="relative aspect-square bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center overflow-hidden">
-        <span className="text-6xl select-none opacity-50 group-hover:scale-110 transition-transform duration-500">
-          {product.emoji}
-        </span>
+      <div className="relative aspect-square overflow-hidden">
+        <FeaturedImage image={product.image} emoji={product.emoji} name={product.name} />
         <span
-          className="absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium"
+          className="absolute top-3 right-3 z-10 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium"
           style={{ backgroundColor: badge.bg, color: badge.text }}
         >
           {product.material}
         </span>
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 z-10">
+          <span className="text-[10px] tracking-[0.2em] uppercase font-sans bg-white/90 text-[#0e0d0c] px-3 py-1.5 rounded-full shadow-sm">
+            Ver detalle
+          </span>
+        </div>
       </div>
 
       {/* Info */}
@@ -74,20 +98,16 @@ function FeaturedCard({ product, index }) {
         </div>
       </div>
 
-      {/* Hint "Ver detalle" */}
-      <div className="absolute inset-x-0 bottom-0 h-0.5 bg-[#b89a6a] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+      <div className="h-0.5 bg-[#b89a6a] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
     </div>
   )
 }
 
 export default function FeaturedProducts() {
   const { products, loading } = useProducts()
-
-  // Tomar los primeros 4 productos con stock (los más recientes en la hoja)
   const featured = products.slice(0, 4)
 
-  if (loading) return null
-  if (featured.length === 0) return null
+  if (loading || featured.length === 0) return null
 
   return (
     <section className="px-6 md:px-12 py-20 bg-[#F9F5F2]">

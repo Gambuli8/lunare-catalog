@@ -8,17 +8,42 @@ function getMaterialBadgeStyle(material = '') {
   if (m === 'plata dorada' || m.includes('dorada')) return { bg: '#b89a6a', text: '#fff' }
   if (m === 'plata')                                 return { bg: '#ddebff', text: '#1a3a4a' }
   if (m.includes('acero'))                           return { bg: '#bfe1f6', text: '#1a3a4a' }
-  return { bg: '#e8c547', text: '#3d2e00' }
+  return { bg: '#e8c547', text: '#3d2e00' }          // biyú
+}
+
+// ── Imagen con fallback al emoji ──────────────────────────────
+function ProductImage({ image, emoji, name }) {
+  const [failed, setFailed] = useState(false)
+
+  if (image && !failed) {
+    return (
+      <img
+        src={image}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+      />
+    )
+  }
+
+  // Fallback: fondo degradado + emoji
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center">
+      <span className="text-5xl select-none opacity-50 group-hover:scale-110 transition-transform duration-500">
+        {emoji}
+      </span>
+    </div>
+  )
 }
 
 export default function ProductCard({ product, index }) {
-  const { addItem }  = useCart()
+  const { addItem }   = useCart()
   const { openModal } = useModal()
   const [added, setAdded] = useState(false)
   const badge = getMaterialBadgeStyle(product.material)
 
   const handleAdd = (e) => {
-    e.stopPropagation() // no abre el modal al clickear el botón
+    e.stopPropagation()
     addItem(product)
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
@@ -31,19 +56,20 @@ export default function ProductCard({ product, index }) {
       style={{ animationDelay: `${index * 0.04}s` }}
     >
       {/* Imagen */}
-      <div className="relative aspect-square bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center overflow-hidden">
-        <span className="text-5xl select-none opacity-50 group-hover:scale-110 transition-transform duration-500">
-          {product.emoji}
-        </span>
+      <div className="relative aspect-square overflow-hidden">
+        <ProductImage image={product.image} emoji={product.emoji} name={product.name} />
+
+        {/* Badge material */}
         <span
-          className="absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium"
+          className="absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium z-10"
           style={{ backgroundColor: badge.bg, color: badge.text }}
         >
           {product.material}
         </span>
+
         {/* Hint "Ver detalle" al hover */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
-          <span className="text-[10px] tracking-[0.2em] uppercase font-sans bg-white/90 text-[#0e0d0c] px-3 py-1.5 rounded-full">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 z-10">
+          <span className="text-[10px] tracking-[0.2em] uppercase font-sans bg-white/90 text-[#0e0d0c] px-3 py-1.5 rounded-full shadow-sm">
             Ver detalle
           </span>
         </div>
