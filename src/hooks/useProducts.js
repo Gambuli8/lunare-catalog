@@ -120,7 +120,8 @@ function normalizeMaterial(raw = '') {
   if (s === 'plata')                        return 'Plata'
   if (s === 'plata dorada')                 return 'Plata Dorada'
   if (s === 'acero' || s === 'acero blanco') return 'Acero Blanco'
-  return 'Biyú'
+  if (s === 'bijou' || s === 'otros' || s === 'other') return 'bijou'
+  return toTitleCase(raw.trim()) || 'Desconocido'
 }
 
 const CATEGORY_LABELS = {
@@ -212,7 +213,6 @@ function rowToProduct(row) {
 export function useProducts() {
   const [products,   setProducts]   = useState([])
   const [categories, setCategories] = useState([{ key: 'all', label: 'Todos' }])
-  const [materials,  setMaterials]  = useState([{ key: 'all', label: 'Todos' }])
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState(null)
 
@@ -228,27 +228,20 @@ export function useProducts() {
       const items = rows.map(rowToProduct).filter(Boolean)
 
       const seenCats = new Set()
-      const seenMats = new Set()
       const cats = [{ key: 'all', label: 'Todos' }]
-      const mats = [{ key: 'all', label: 'Todos' }]
 
       items.forEach(p => {
         if (!seenCats.has(p.category)) {
           seenCats.add(p.category)
           cats.push({
-            key:   p.category,
-            label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's'),
+            key: p.category,
+            label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's')
           })
-        }
-        if (!seenMats.has(p.material)) {
-          seenMats.add(p.material)
-          mats.push({ key: p.material, label: p.material })
         }
       })
 
       setProducts(items)
       setCategories(cats)
-      setMaterials(mats)
     } catch (err) {
       setError(err.message || 'Error al cargar el catálogo')
     } finally {
@@ -258,7 +251,7 @@ export function useProducts() {
 
   useEffect(() => { fetchProducts() }, [])
 
-  return { products, categories, materials, loading, error, refetch: fetchProducts }
+  return { products, categories, loading, error, refetch: fetchProducts }
 }
 
 export const formatPrice = (n) =>
