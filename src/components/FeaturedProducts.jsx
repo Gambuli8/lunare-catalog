@@ -51,20 +51,24 @@ function FeaturedCard({ product, index }) {
       className="group relative bg-white border border-[#e8e2da] rounded-sm overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col"
       style={{ animation: 'fadeUp 0.5s ease both', animationDelay: `${index * 0.1}s` }}
     >
-      {/* Etiqueta Destacado */}
-      <div className="absolute top-3 left-3 z-10 bg-[#b89a6a] text-white text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-sm font-sans">
-        ✦ Destacado
-      </div>
-
       {/* Imagen */}
       <div className="relative aspect-square overflow-hidden">
         <FeaturedImage image={product.image} emoji={product.emoji} name={product.name} />
-        <span
-          className="absolute top-3 right-3 z-10 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium"
-          style={{ backgroundColor: badge.bg, color: badge.text }}
-        >
-          {product.material}
-        </span>
+
+        {/* Badges — en mobile se apilan verticalmente a la izquierda */}
+        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+          <span className="bg-[#b89a6a] text-white text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-sm font-sans self-start">
+            ✦ Destacado
+          </span>
+          <span
+            className="text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium self-start"
+            style={{ backgroundColor: badge.bg, color: badge.text }}
+          >
+            {product.material}
+          </span>
+        </div>
+
+        {/* Hint hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 z-10">
           <span className="text-[10px] tracking-[0.2em] uppercase font-sans bg-white/90 text-[#0e0d0c] px-3 py-1.5 rounded-full shadow-sm">
             Ver detalle

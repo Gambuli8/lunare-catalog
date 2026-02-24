@@ -1,22 +1,9 @@
 import { useState, useEffect } from 'react'
 
-// ─────────────────────────────────────────────────────────────
-// CONFIGURA AQUÍ tu URL pública de Google Sheets como CSV:
-//   1. Abrí tu hoja en Google Sheets
-//   2. Archivo → Compartir → Publicar en la web
-//   3. Elegí la hoja y el formato "Valores separados por comas (.csv)"
-//   4. Copiá la URL generada y pegala abajo
-// ─────────────────────────────────────────────────────────────
 export const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6xogLCXqLvMy3wyrqgL_XqvcXG_PN3JuiqZCy6jYCWnTYwkDxkHYd3r40Df8G3dPk-lIg4kIXaBCX/pub?gid=0&single=true&output=csv'
 
 // Columnas esperadas en el CSV:
 // Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock | Imagen
-//
-// ── IMÁGENES DESDE DROPBOX ───────────────────────────────────
-// Agregá una columna "Imagen" en tu Google Sheets con la URL pública de Dropbox.
-// Cambiá el final de cada link de ?dl=0 → ?raw=1 para que sea una URL directa.
-// Ejemplo: https://www.dropbox.com/s/abc123/foto.jpg?raw=1
-// Si una fila no tiene imagen, se mostrará el emoji como fallback.
 
 const CATEGORY_EMOJI = {
   Argolla: '💍',
@@ -95,15 +82,15 @@ function toTitleCase(str) {
 }
 
 const CATEGORY_MAP = [
-  { keys: ['argolla'],                              canonical: 'Argolla' },
-  { keys: ['pasante'],                              canonical: 'Pasante' },
-  { keys: ['cuff', 'cuffs'],                        canonical: 'Cuff'    },
-  { keys: ['cadena', 'collar', 'conjunto', 'corbatero'], canonical: 'Collar' },
-  { keys: ['choker', 'chokers'],                    canonical: 'Choker'  },
-  { keys: ['dije'],                                 canonical: 'Dije'    },
-  { keys: ['ajustable', 'pulsera', 'tennis'],       canonical: 'Pulsera' },
-  { keys: ['anillo'],                               canonical: 'Anillo'  },
-  { keys: ['broche'],                               canonical: 'Broche'  },
+  { keys: ['argolla'],                                   canonical: 'Argolla' },
+  { keys: ['pasante'],                                   canonical: 'Pasante' },
+  { keys: ['cuff', 'cuffs'],                             canonical: 'Cuff'    },
+  { keys: ['cadena', 'collar', 'conjunto', 'corbatero'], canonical: 'Collar'  },
+  { keys: ['choker', 'chokers'],                         canonical: 'Choker'  },
+  { keys: ['dije'],                                      canonical: 'Dije'    },
+  { keys: ['ajustable', 'pulsera', 'tennis'],            canonical: 'Pulsera' },
+  { keys: ['anillo'],                                    canonical: 'Anillo'  },
+  { keys: ['broche'],                                    canonical: 'Broche'  },
 ]
 
 function normalizeCategory(raw = '') {
@@ -115,18 +102,16 @@ function normalizeCategory(raw = '') {
   return toTitleCase(raw.trim())
 }
 
-// useProducts.js
+// ── Material: solo 4 valores posibles ────────────────────────
+// Plata | Plata Dorada | Acero Blanco | Bijou (todo lo demás)
+const KNOWN_MATERIALS = ['Plata', 'Plata Dorada', 'Acero Blanco']
 
 function normalizeMaterial(raw = '') {
   const s = raw.trim().toLowerCase()
-  if (s === 'plata') return 'Plata'
-  if (s === 'plata dorada' || s === 'oro') return 'Plata Dorada' // Unificas si quieres
+  if (s === 'plata')                         return 'Plata'
+  if (s === 'plata dorada' || s === 'oro')   return 'Plata Dorada'
   if (s === 'acero' || s === 'acero blanco') return 'Acero Blanco'
-
-  // Si es bijou u otro, lo dejamos como 'Bijou' (con mayúscula para que coincida con el resto)
-  if (s === 'bijou') return 'Bijou'
-
-  return toTitleCase(raw.trim()) || 'Otros'
+  return 'Bijou' // todo lo demás: bijou, cuentas, resina, vacío, etc.
 }
 
 const CATEGORY_LABELS = {
@@ -139,20 +124,16 @@ const CATEGORY_LABELS = {
   Anillo:  'Anillos',
 }
 
-// ── Convierte un link de Dropbox al formato raw (directo) ─────
-// Acepta tanto ?dl=0 como links ya en ?raw=1, y también
-// links de carpeta compartida (www.dropbox.com/scl/...)
 function toDropboxRaw(url = '') {
   if (!url) return ''
   return url
     .trim()
-    .replace(/[?&]dl=0/, '?raw=1')          // ?dl=0  → ?raw=1
-    .replace(/[?&]dl=1/, '?raw=1')          // ?dl=1  → ?raw=1
-    .replace(/\?raw=1.*$/, '?raw=1')        // limpia params extra
-    .replace(/^(https?:\/\/)www\./, '$1dl.') // www. → dl. (CDN directo)
+    .replace(/[?&]dl=0/, '?raw=1')
+    .replace(/[?&]dl=1/, '?raw=1')
+    .replace(/\?raw=1.*$/, '?raw=1')
+    .replace(/^(https?:\/\/)www\./, '$1dl.')
 }
 
-// ── Parser CSV robusto ────────────────────────────────────────
 function parseCSV(text) {
   const lines = text.trim().split('\n')
   if (lines.length < 2) return []
@@ -175,8 +156,7 @@ function parseCSV(text) {
   })
 }
 
-// ── rowToProduct ──────────────────────────────────────────────
-// ⚠️  "Precio costo" se lee pero NUNCA se incluye en el objeto retornado
+// ⚠️ "Precio costo" se lee pero NUNCA se incluye en el objeto retornado
 function rowToProduct(row) {
   const stock = parseFloat(row['Stock']) || 0
   if (stock <= 0) return null
@@ -194,27 +174,24 @@ function rowToProduct(row) {
 
   const material  = normalizeMaterial(row['Material'])
   const priceNote = (!isNaN(pricePar) && pricePar > 0) ? 'par' : 'und'
-
-  // ── Imagen desde Dropbox ──────────────────────────────────
-  // Lee la columna "Imagen" y convierte el link al formato raw.
-  // Si no hay imagen, image queda como '' y los componentes muestran el emoji.
-  const image = toDropboxRaw(row['Imagen'] || row['imagen'] || row['Image'] || '')
+  const image     = toDropboxRaw(row['Imagen'] || row['imagen'] || row['Image'] || '')
 
   return {
     id:          (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
     name:        correctName(row['Nombre'] || ''),
     category,
     subcategory: rawCategory.trim(),
-    material,
+    material,    // siempre uno de: 'Plata' | 'Plata Dorada' | 'Acero Blanco' | 'Bijou'
     price,
     priceNote,
-    image,                               // ← URL directa lista para usar en <img src>
+    image,
     emoji:       CATEGORY_EMOJI[category] || '✦',
-    // ⚠️  "Precio costo" NO está en este objeto
+    // ⚠️ "Precio costo" NO está en este objeto
   }
 }
 
-// ── Hook principal ────────────────────────────────────────────
+export { KNOWN_MATERIALS }
+
 export function useProducts() {
   const [products,   setProducts]   = useState([])
   const [categories, setCategories] = useState([{ key: 'all', label: 'Todos' }])
@@ -239,8 +216,8 @@ export function useProducts() {
         if (!seenCats.has(p.category)) {
           seenCats.add(p.category)
           cats.push({
-            key: p.category,
-            label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's')
+            key:   p.category,
+            label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's'),
           })
         }
       })
