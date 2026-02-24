@@ -115,13 +115,18 @@ function normalizeCategory(raw = '') {
   return toTitleCase(raw.trim())
 }
 
+// useProducts.js
+
 function normalizeMaterial(raw = '') {
   const s = raw.trim().toLowerCase()
-  if (s === 'plata')                        return 'Plata'
-  if (s === 'plata dorada')                 return 'Plata Dorada'
+  if (s === 'plata') return 'Plata'
+  if (s === 'plata dorada' || s === 'oro') return 'Plata Dorada' // Unificas si quieres
   if (s === 'acero' || s === 'acero blanco') return 'Acero Blanco'
-  if (s === 'bijou' || s === 'otros' || s === 'other') return 'bijou'
-  return toTitleCase(raw.trim()) || 'Desconocido'
+
+  // Si es bijou u otro, lo dejamos como 'Bijou' (con mayúscula para que coincida con el resto)
+  if (s === 'bijou') return 'Bijou'
+
+  return toTitleCase(raw.trim()) || 'Otros'
 }
 
 const CATEGORY_LABELS = {

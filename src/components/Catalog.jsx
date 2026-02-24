@@ -2,10 +2,20 @@ import { useState, useMemo } from 'react'
 import { useProducts } from '../hooks/useProducts'
 import ProductCard from './ProductCard'
 
-const KNOWN_MATERIALS = ['Plata', 'Plata Dorada', 'Acero Blanco', 'bijou']
+// Catalog.jsx
+
+const KNOWN_MATERIALS = ['Plata', 'Plata Dorada', 'Acero Blanco'];
 
 function matchesMaterial(product, key) {
   if (key === 'all') return true
+
+  // Si el filtro es "bijou", mostramos productos que NO estén en la lista de materiales conocidos
+  if (key === 'bijou') {
+    return !KNOWN_MATERIALS.includes(product.material)
+  }
+
+  // Para los demás (Plata, Acero, etc.), comparación directa
+  return product.material === key
 }
 
 function SkeletonCard() {
