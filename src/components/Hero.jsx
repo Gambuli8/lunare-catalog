@@ -66,13 +66,13 @@ export default function Hero() {
               />
             ))}
           </div>
-          <p className='font-serif text-[13px] text-[#7a7269] tracking-[0.15em]'>✦ Joyas artesanales ✦</p>
+          <p className='font-serif text-[13px] text-[#7a7269] tracking-[0.15em]'>✦ Jewelry ✦</p>
         </div>
 
         {/* Floating labels */}
-        <div className='absolute top-4 right-4 md:right-8 bg-white border border-[#e8e2da] px-3 py-2 shadow-sm text-xs font-sans tracking-wider text-[#7a7269]'>✦ 925 Sterling Silver</div>
+        <div className='absolute top-4 right-4 md:right-8 bg-white border border-[#e8e2da] px-3 py-2 shadow-sm text-xs font-sans tracking-wider text-[#0e0d0c]'>Retiros por Nueva Córdoba</div>
         <div className='absolute bottom-6 left-4 md:left-0 bg-[#0e0d0c] text-white px-3 py-2 text-xs font-sans tracking-wider'>Envíos en Santa Rosa LP</div>
-        <div className='absolute bottom-6 right-4 md:right-0 bg-[#0e0d0c] text-white px-3 py-2 text-xs font-sans tracking-wider'>Retiros por Nueva Cordoba</div>
+        {/* <div className='absolute bottom-6 right-4 md:right-0 bg-[#0e0d0c] text-white px-3 py-2 text-xs font-sans tracking-wider'>Retiros por Nueva Cordoba</div> */}
       </div>
     </section>
   )
