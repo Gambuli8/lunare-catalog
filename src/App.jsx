@@ -11,12 +11,13 @@ import CartSidebar       from './components/CartSidebar'
 import ProductModal      from './components/ProductModal'
 import Footer            from './components/Footer'
 import Toast             from './components/Toast'
+import { Analytics } from '@vercel/analytics/react'
 
 export default function App() {
   return (
     <CartProvider>
       <ModalProvider>
-        <div className="min-h-screen bg-[#F9F5F2] font-sans">
+        <div className='min-h-screen bg-[#F9F5F2] font-sans'>
           <Navbar />
           <main>
             <Hero />
@@ -30,6 +31,7 @@ export default function App() {
           <CartSidebar />
           <ProductModal />
           <Toast />
+          <Analytics />
         </div>
       </ModalProvider>
     </CartProvider>
