@@ -6,22 +6,17 @@ import { formatPrice } from '../hooks/useProducts'
 function getMaterialBadgeStyle(material = '') {
   const m = material.toLowerCase().trim()
   if (m === 'plata dorada' || m.includes('dorada')) return { bg: '#b89a6a', text: '#fff' }
-  if (m === 'plata')                                 return { bg: '#ddebff', text: '#1a3a4a' }
-  if (m.includes('acero'))                           return { bg: '#bfe1f6', text: '#1a3a4a' }
+  if (m === 'plata')  return { bg: '#ddebff', text: '#1a3a4a' }
+  if (m.includes('acero')) return { bg: '#bfe1f6', text: '#1a3a4a' }
   return { bg: '#e8c547', text: '#3d2e00' }
 }
 
 function ModalImage({ image, emoji, name }) {
   const [failed, setFailed] = useState(false)
-
   if (image && !failed) {
     return (
-      <img
-        src={image}
-        alt={name}
-        onError={() => setFailed(true)}
-        className="w-full h-full object-cover"
-      />
+      <img src={image} alt={name} onError={() => setFailed(true)}
+        className="w-full h-full object-cover" />
     )
   }
   return (
@@ -54,76 +49,78 @@ export default function ProductModal() {
     }
   }, [p, closeModal])
 
-  // Reset "added" cuando cambia el producto
   useEffect(() => { setAdded(false) }, [p])
 
   if (!p) return null
 
   const badge = getMaterialBadgeStyle(p.material)
+  const effectivePrice = p.pricePromo ?? p.price
 
   const handleAdd = () => {
-    addItem(p)
+    addItem({ ...p, price: effectivePrice })
     setAdded(true)
     setTimeout(() => setAdded(false), 1600)
   }
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        onClick={closeModal}
+      <div onClick={closeModal}
         className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm"
-        style={{ animation: 'fadeIn 0.2s ease both' }}
-      />
+        style={{ animation: 'fadeIn 0.2s ease both' }} />
 
-      {/* Panel */}
       <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 pointer-events-none">
         <div
           className="relative w-full max-w-2xl bg-[#F9F5F2] shadow-2xl pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[90vh]"
           style={{ animation: 'modalIn 0.3s cubic-bezier(0.4,0,0.2,1) both' }}
         >
-          {/* Botón cerrar */}
-          <button
-            onClick={closeModal}
-            className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#7a7269] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm"
-          >
+          <button onClick={closeModal}
+            className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#7a7269] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm">
             ✕
           </button>
 
-          {/* Imagen — 2/5 del ancho en desktop, altura fija en mobile */}
           <div className="w-full md:w-2/5 flex-shrink-0 h-56 md:h-auto relative overflow-hidden bg-[#f0ece6]">
             <ModalImage image={p.image} emoji={p.emoji} name={p.name} />
           </div>
 
-          {/* Contenido scrolleable */}
           <div className="flex-1 overflow-y-auto p-7 flex flex-col gap-5">
 
-            {/* Badge material */}
-            <span
-              className="self-start text-[9px] tracking-[0.2em] uppercase px-3 py-1 rounded-sm font-sans font-medium"
-              style={{ backgroundColor: badge.bg, color: badge.text }}
-            >
+            <span className="self-start text-[9px] tracking-[0.2em] uppercase px-3 py-1 rounded-sm font-sans font-medium"
+              style={{ backgroundColor: badge.bg, color: badge.text }}>
               {p.material}
             </span>
 
-            {/* Nombre */}
             <div>
               <p className="text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1">{p.category}</p>
               <h2 className="font-serif text-3xl font-light text-[#0e0d0c] leading-tight">{p.name}</h2>
               <p className="text-[12px] text-[#7a7269] mt-1 tracking-wide">{p.subcategory}</p>
             </div>
 
-            {/* Precio */}
+            {/* ── Precio con promo ── */}
             <div className="border-t border-b border-[#e8e2da] py-4">
-              <div className="font-serif text-[32px] font-medium text-[#0e0d0c] leading-none">
-                {formatPrice(p.price)}
-              </div>
+              {p.pricePromo ? (
+                <>
+                  <span className="inline-block bg-red-500 text-white text-[9px] tracking-[0.15em] uppercase px-2.5 py-0.5 rounded-sm font-sans mb-2">
+                    Oferta
+                  </span>
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="font-serif text-[32px] font-medium text-red-600 leading-none">
+                      {formatPrice(p.pricePromo)}
+                    </span>
+                    <span className="font-serif text-[20px] text-[#b8b0a8] line-through leading-none">
+                      {formatPrice(p.price)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="font-serif text-[32px] font-medium text-[#0e0d0c] leading-none">
+                  {formatPrice(p.price)}
+                </div>
+              )}
               <div className="text-[11px] text-[#7a7269] tracking-widest mt-1">
                 {p.priceNote === 'par' ? 'precio por par' : 'precio por unidad'}
               </div>
             </div>
 
-            {/* Info material */}
             <div>
               <p className="text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2">Material</p>
               <p className="text-sm text-[#0e0d0c] leading-relaxed">
@@ -137,7 +134,6 @@ export default function ProductModal() {
               </p>
             </div>
 
-            {/* Cuidados */}
             <div>
               <p className="text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2">Cuidados</p>
               <ul className="flex flex-col gap-1.5">
@@ -150,14 +146,9 @@ export default function ProductModal() {
               </ul>
             </div>
 
-            {/* CTA */}
-            <button
-              onClick={handleAdd}
+            <button onClick={handleAdd}
               className={`w-full flex items-center justify-center gap-2.5 py-4 text-xs tracking-[0.2em] uppercase font-sans transition-all duration-300 mt-auto
-                ${added
-                  ? 'bg-green-500 text-white'
-                  : 'bg-[#0e0d0c] text-white hover:bg-[#b89a6a]'}`}
-            >
+                ${added ? 'bg-green-500 text-white' : 'bg-[#0e0d0c] text-white hover:bg-[#b89a6a]'}`}>
               {added ? (
                 <>
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>

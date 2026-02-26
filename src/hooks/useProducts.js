@@ -3,77 +3,34 @@ import { useState, useEffect } from 'react'
 export const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6xogLCXqLvMy3wyrqgL_XqvcXG_PN3JuiqZCy6jYCWnTYwkDxkHYd3r40Df8G3dPk-lIg4kIXaBCX/pub?gid=0&single=true&output=csv'
 
 // Columnas esperadas en el CSV:
-// Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock | Imagen
+// Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock | Imagen | Destacado | Precio promo
 
 const CATEGORY_EMOJI = {
-  Argolla: '💍',
-  Pasante: '✨',
-  Cuff:    '⛓️',
-  Collar:  '🔗',
-  Dije:    '⭐',
-  Pulsera: '💎',
-  Anillo:  '💍',
+  Argolla: '💍', Pasante: '✨', Cuff: '⛓️',
+  Collar: '🔗', Dije: '⭐', Pulsera: '💎', Anillo: '💍',
 }
 
 const NAME_CORRECTIONS = {
-  'basic gold':         'Basic Gold',
-  'basic silver':       'Basic Silver',
-  'mini silver':        'Mini Silver',
-  'mini gold':          'Mini Gold',
-  'curly white':        'Curly White',
-  'cubic':              'Cubic',
-  'star cubic':         'Star Cubic',
-  'colorful rainbow':   'Colorful Rainbow',
-  'pop love violeta':   'Pop Love Violeta',
-  'argolla love':       'Argolla Love',
-  'spark white':        'Spark White',
-  'aubrey':             'Aubrey',
-  'white cori':         'White Cori',
-  'nudo malik':         'Nudo Malik',
-  'phoebe':             'Phoebe',
-  'colorful alena':     'Colorful Alena',
-  'colorful tabita':    'Colorful Tabita',
-  'shiny storm':        'Shiny Storm',
-  'lita':               'Lita',
-  'baris':              'Baris',
-  'kylie shiny':        'Kylie Shiny',
-  'drop silver':        'Drop Silver',
-  'dots gold':          'Dots Gold',
-  'chain silver':       'Chain Silver',
-  'tourbillon':         'Tourbillón',
-  'tourbillón':         'Tourbillón',
-  'veneciana':          'Veneciana',
-  'susano cubic':       'Susano Cubic',
-  'susano ambar':       'Susano Ámbar',
-  'susano ámbar':       'Susano Ámbar',
-  'gummy bear':         'Gummy Bear',
-  'stella':             'Stella',
-  'baly red':           'Baly Red',
-  'baly aqua':          'Baly Aqua',
-  'verai lila':         'Verai Lila',
-  'verai celeste':      'Verai Celeste',
-  'laila green':        'Laila Green',
-  'laila blue':         'Laila Blue',
-  'tennis white':       'Tennis White',
-  'tennis knot':        'Tennis Knot',
-  'tennis doble':       'Tennis Doble',
-  'tennis dark':        'Tennis Dark',
-  'tennis heart':       'Tennis Heart',
-  'cristal eye':        'Cristal Eye',
-  'malaquita verde':    'Malaquita Verde',
-  'malaquita negra':    'Malaquita Negra',
-  'sia':                'Sia',
-  'lina':               'Lina',
-  'heart':              'Heart',
-  'conjunto love':      'Conjunto Love',
-  'eclectic moon':      'Eclectic Moon',
-  'shiny heart silver': 'Shiny Heart Silver',
+  'basic gold':'Basic Gold','basic silver':'Basic Silver','mini silver':'Mini Silver',
+  'mini gold':'Mini Gold','curly white':'Curly White','cubic':'Cubic','star cubic':'Star Cubic',
+  'colorful rainbow':'Colorful Rainbow','pop love violeta':'Pop Love Violeta','argolla love':'Argolla Love',
+  'spark white':'Spark White','aubrey':'Aubrey','white cori':'White Cori','nudo malik':'Nudo Malik',
+  'phoebe':'Phoebe','colorful alena':'Colorful Alena','colorful tabita':'Colorful Tabita',
+  'shiny storm':'Shiny Storm','lita':'Lita','baris':'Baris','kylie shiny':'Kylie Shiny',
+  'drop silver':'Drop Silver','dots gold':'Dots Gold','chain silver':'Chain Silver',
+  'tourbillon':'Tourbillón','tourbillón':'Tourbillón','veneciana':'Veneciana',
+  'susano cubic':'Susano Cubic','susano ambar':'Susano Ámbar','susano ámbar':'Susano Ámbar',
+  'gummy bear':'Gummy Bear','stella':'Stella','baly red':'Baly Red','baly aqua':'Baly Aqua',
+  'verai lila':'Verai Lila','verai celeste':'Verai Celeste','laila green':'Laila Green',
+  'laila blue':'Laila Blue','tennis white':'Tennis White','tennis knot':'Tennis Knot',
+  'tennis doble':'Tennis Doble','tennis dark':'Tennis Dark','tennis heart':'Tennis Heart',
+  'cristal eye':'Cristal Eye','malaquita verde':'Malaquita Verde','malaquita negra':'Malaquita Negra',
+  'sia':'Sia','lina':'Lina','heart':'Heart','conjunto love':'Conjunto Love',
+  'eclectic moon':'Eclectic Moon','shiny heart silver':'Shiny Heart Silver',
 }
 
 function correctName(raw = '') {
-  const key = raw.trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, ' ')
+  const key = raw.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ')
   return NAME_CORRECTIONS[key] || toTitleCase(raw.trim())
 }
 
@@ -102,32 +59,24 @@ function normalizeCategory(raw = '') {
   return toTitleCase(raw.trim())
 }
 
-// ── Material: solo 4 valores posibles ────────────────────────
-// Plata | Plata Dorada | Acero Blanco | Bijou (todo lo demás)
-const KNOWN_MATERIALS = ['Plata', 'Plata Dorada', 'Acero Blanco']
+export const KNOWN_MATERIALS = ['Plata', 'Plata Dorada', 'Acero Blanco']
 
 function normalizeMaterial(raw = '') {
   const s = raw.trim().toLowerCase()
   if (s === 'plata')                         return 'Plata'
   if (s === 'plata dorada' || s === 'oro')   return 'Plata Dorada'
   if (s === 'acero' || s === 'acero blanco') return 'Acero Blanco'
-  return 'Bijou' // todo lo demás: bijou, cuentas, resina, vacío, etc.
+  return 'Bijou'
 }
 
 const CATEGORY_LABELS = {
-  Argolla: 'Argollas',
-  Pasante: 'Pasantes',
-  Cuff:    'Cuffs',
-  Collar:  'Collares',
-  Dije:    'Dijes',
-  Pulsera: 'Pulseras',
-  Anillo:  'Anillos',
+  Argolla:'Argollas', Pasante:'Pasantes', Cuff:'Cuffs',
+  Collar:'Collares', Dije:'Dijes', Pulsera:'Pulseras', Anillo:'Anillos',
 }
 
 function toDropboxRaw(url = '') {
   if (!url) return ''
-  return url
-    .trim()
+  return url.trim()
     .replace(/[?&]dl=0/, '?raw=1')
     .replace(/[?&]dl=1/, '?raw=1')
     .replace(/\?raw=1.*$/, '?raw=1')
@@ -138,11 +87,9 @@ function parseCSV(text) {
   const lines = text.trim().split('\n')
   if (lines.length < 2) return []
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
-
   return lines.slice(1).map(line => {
     const values = []
-    let cur = ''
-    let inQuotes = false
+    let cur = '', inQuotes = false
     for (let i = 0; i < line.length; i++) {
       const ch = line[i]
       if (ch === '"') { inQuotes = !inQuotes }
@@ -169,28 +116,39 @@ function rowToProduct(row) {
   const price    = (!isNaN(pricePar) && pricePar > 0) ? pricePar
                  : (!isNaN(priceInd) && priceInd > 0) ? priceInd
                  : null
-
   if (!price) return null
 
   const material  = normalizeMaterial(row['Material'])
   const priceNote = (!isNaN(pricePar) && pricePar > 0) ? 'par' : 'und'
   const image     = toDropboxRaw(row['Imagen'] || row['imagen'] || row['Image'] || '')
 
+  // ── Destacado ─────────────────────────────────────────────
+  const destRaw  = (row['Destacado'] || row['destacado'] || '').trim().toLowerCase()
+  const featured = ['si', 'sí', 'yes', '1', 'true'].includes(destRaw)
+
+  // ── Precio promo ──────────────────────────────────────────
+  // Solo se usa si es un número válido Y menor al precio normal.
+  // El carrito usará pricePromo cuando exista.
+  // ⚠️ "Precio costo" sigue sin incluirse nunca.
+  const promoRaw   = (row['Precio promo'] || row['precio promo'] || row['Promo'] || '').replace(/[^0-9.]/g, '')
+  const promoValue = promoRaw ? parseFloat(promoRaw) : null
+  const pricePromo = (promoValue && promoValue > 0 && promoValue < price) ? promoValue : null
+
   return {
     id:          (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
     name:        correctName(row['Nombre'] || ''),
     category,
     subcategory: rawCategory.trim(),
-    material,    // siempre uno de: 'Plata' | 'Plata Dorada' | 'Acero Blanco' | 'Bijou'
-    price,
+    material,
+    price,       // precio normal — siempre presente
+    pricePromo,  // precio de oferta — null si no hay promo
     priceNote,
     image,
-    emoji:       CATEGORY_EMOJI[category] || '✦',
+    featured,
+    emoji: CATEGORY_EMOJI[category] || '✦',
     // ⚠️ "Precio costo" NO está en este objeto
   }
 }
-
-export { KNOWN_MATERIALS }
 
 export function useProducts() {
   const [products,   setProducts]   = useState([])
@@ -205,13 +163,11 @@ export function useProducts() {
       const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const text = await res.text()
-
       const rows  = parseCSV(text)
       const items = rows.map(rowToProduct).filter(Boolean)
 
       const seenCats = new Set()
       const cats = [{ key: 'all', label: 'Todos' }]
-
       items.forEach(p => {
         if (!seenCats.has(p.category)) {
           seenCats.add(p.category)
@@ -232,9 +188,7 @@ export function useProducts() {
   }
 
   useEffect(() => { fetchProducts() }, [])
-
   return { products, categories, loading, error, refetch: fetchProducts }
 }
 
-export const formatPrice = (n) =>
-  '$' + Number(n).toLocaleString('es-AR')
+export const formatPrice = (n) => '$' + Number(n).toLocaleString('es-AR')
