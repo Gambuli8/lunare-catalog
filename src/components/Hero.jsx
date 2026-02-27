@@ -30,7 +30,7 @@ export default function Hero() {
             Explorar Tienda
           </a>
           <a
-            href='#catalogo'
+            href='#featured'
             className='inline-flex items-center gap-1.5 text-xs tracking-[0.15em] uppercase font-sans text-[#7a7269] hover:text-[#b89a6a] transition-colors duration-300'
           >
             Ver destacados
