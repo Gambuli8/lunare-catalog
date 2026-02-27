@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useModal } from '../context/ModalContext'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../hooks/useProducts'
@@ -33,10 +33,37 @@ const CARE_TIPS = [
   'Limpiá con un paño suave y seco.',
 ]
 
+// ── Vibración háptica corta (solo mobile) ─────────────────────
+function haptic(ms = 40) {
+  if (navigator?.vibrate) navigator.vibrate(ms)
+}
+
 export default function ProductModal() {
   const { selectedProduct: p, closeModal } = useModal()
   const { addItem } = useCart()
   const [added, setAdded] = useState(false)
+
+  // ── Swipe para cerrar ─────────────────────────────────────
+  const panelRef    = useRef(null)
+  const touchStartY = useRef(null)
+  const [dragY, setDragY] = useState(0)
+
+  const onTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const onTouchMove = (e) => {
+    const dy = e.touches[0].clientY - touchStartY.current
+    if (dy > 0) setDragY(dy) // solo hacia abajo
+  }
+
+  const onTouchEnd = () => {
+    if (dragY > 120) {
+      haptic(30)
+      closeModal()
+    }
+    setDragY(0)
+  }
 
   useEffect(() => {
     if (!p) return
@@ -49,7 +76,7 @@ export default function ProductModal() {
     }
   }, [p, closeModal])
 
-  useEffect(() => { setAdded(false) }, [p])
+  useEffect(() => { setAdded(false); setDragY(0) }, [p])
 
   if (!p) return null
 
@@ -57,32 +84,61 @@ export default function ProductModal() {
   const effectivePrice = p.pricePromo ?? p.price
 
   const handleAdd = () => {
+    haptic(60) // vibración corta al agregar
     addItem({ ...p, price: effectivePrice })
     setAdded(true)
     setTimeout(() => setAdded(false), 1600)
   }
 
+  // Opacidad del overlay va bajando con el drag
+  const overlayOpacity = Math.max(0.2, 0.5 - dragY / 400)
+
   return (
     <>
-      <div onClick={closeModal}
-        className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm"
-        style={{ animation: 'fadeIn 0.2s ease both' }} />
+      {/* Overlay */}
+      <div
+        onClick={closeModal}
+        className="fixed inset-0 z-[70] backdrop-blur-sm"
+        style={{
+          backgroundColor: `rgba(0,0,0,${overlayOpacity})`,
+          animation: dragY > 0 ? 'none' : 'fadeIn 0.2s ease both',
+        }}
+      />
 
-      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 pointer-events-none">
+      {/* Panel — en mobile sube desde abajo como bottom sheet */}
+      <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center md:p-4 pointer-events-none">
         <div
-          className="relative w-full max-w-2xl bg-[#F9F5F2] shadow-2xl pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[90vh]"
-          style={{ animation: 'modalIn 0.3s cubic-bezier(0.4,0,0.2,1) both' }}
+          ref={panelRef}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          className="relative w-full max-w-2xl bg-[#F9F5F2] shadow-2xl pointer-events-auto flex flex-col md:flex-row overflow-hidden md:max-h-[90vh]"
+          style={{
+            transform: `translateY(${dragY}px)`,
+            transition: dragY === 0 ? 'transform 0.3s ease' : 'none',
+            animation: dragY > 0 ? 'none' : 'modalIn 0.35s cubic-bezier(0.32,0.72,0,1) both',
+            borderRadius: '12px 12px 0 0',
+            maxHeight: '92vh',
+          }}
         >
+          {/* Handle de swipe — solo visible en mobile */}
+          <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+            <div className="w-10 h-1 rounded-full bg-[#d0c8c0]" />
+          </div>
+
+          {/* Botón cerrar — desktop */}
           <button onClick={closeModal}
-            className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#7a7269] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm">
+            className="hidden md:flex absolute top-4 right-4 z-20 w-8 h-8 items-center justify-center text-[#7a7269] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm">
             ✕
           </button>
 
-          <div className="w-full md:w-2/5 flex-shrink-0 h-56 md:h-auto relative overflow-hidden bg-[#f0ece6]">
+          {/* Imagen */}
+          <div className="w-full md:w-2/5 flex-shrink-0 h-52 md:h-auto relative overflow-hidden bg-[#f0ece6]">
             <ModalImage image={p.image} emoji={p.emoji} name={p.name} />
           </div>
 
-          <div className="flex-1 overflow-y-auto p-7 flex flex-col gap-5">
+          {/* Contenido scrolleable */}
+          <div className="flex-1 overflow-y-auto p-6 md:p-7 flex flex-col gap-5">
 
             <span className="self-start text-[9px] tracking-[0.2em] uppercase px-3 py-1 rounded-sm font-sans font-medium"
               style={{ backgroundColor: badge.bg, color: badge.text }}>
@@ -95,7 +151,7 @@ export default function ProductModal() {
               <p className="text-[12px] text-[#7a7269] mt-1 tracking-wide">{p.subcategory}</p>
             </div>
 
-            {/* ── Precio con promo ── */}
+            {/* Precio */}
             <div className="border-t border-b border-[#e8e2da] py-4">
               {p.pricePromo ? (
                 <>
@@ -121,6 +177,7 @@ export default function ProductModal() {
               </div>
             </div>
 
+            {/* Material */}
             <div>
               <p className="text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2">Material</p>
               <p className="text-sm text-[#0e0d0c] leading-relaxed">
@@ -134,6 +191,7 @@ export default function ProductModal() {
               </p>
             </div>
 
+            {/* Cuidados */}
             <div>
               <p className="text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2">Cuidados</p>
               <ul className="flex flex-col gap-1.5">
@@ -146,6 +204,7 @@ export default function ProductModal() {
               </ul>
             </div>
 
+            {/* CTA */}
             <button onClick={handleAdd}
               className={`w-full flex items-center justify-center gap-2.5 py-4 text-xs tracking-[0.2em] uppercase font-sans transition-all duration-300 mt-auto
                 ${added ? 'bg-green-500 text-white' : 'bg-[#0e0d0c] text-white hover:bg-[#b89a6a]'}`}>
@@ -167,8 +226,14 @@ export default function ProductModal() {
 
       <style>{`
         @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.95) translateY(12px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
+          from { opacity: 0; transform: translateY(100%); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @media (min-width: 768px) {
+          @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(12px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+          }
         }
         @keyframes fadeIn {
           from { opacity: 0; }

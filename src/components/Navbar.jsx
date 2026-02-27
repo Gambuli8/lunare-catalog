@@ -77,7 +77,7 @@ export default function Navbar() {
               />
               <path d='M16 10a4 4 0 01-8 0' />
             </svg>
-            {count > 0 && <span className='absolute -top-2 -right-2 bg-[#b89a6a] text-white text-[10px] w-[18px] h-[18px] rounded-full flex items-center justify-center font-sans font-medium'>{count}</span>}
+            {count > 0 && <span className='absolute -top-2 -right-2 bg-[#b89a6a] text-white text-[10px] w-[18px] h-[18px] rounded-full flex items-center justify-center font-sans font-medium'>{count > 9 ? '9+' : count}</span>}
           </button>
 
           {/* Hamburger */}
