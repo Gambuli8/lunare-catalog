@@ -36,26 +36,16 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
     <div>
       {pricePromo ? (
         <>
-          <span className="inline-block bg-red-500 text-white text-[8px] tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm font-sans mb-1">
-            Oferta
-          </span>
-          <div className="flex items-baseline gap-2 flex-wrap leading-none">
-            <span className={`font-serif ${mainSize} font-medium text-red-600 leading-none`}>
-              {formatPrice(pricePromo)}
-            </span>
-            <span className="font-serif text-[14px] text-[#b8b0a8] line-through leading-none">
-              {formatPrice(price)}
-            </span>
+          <span className='inline-block bg-red-500 text-white text-[8px] tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm font-sans mb-1'>Oferta</span>
+          <div className='flex flex-wrap items-baseline gap-2 leading-none'>
+            <span className={`font-serif ${mainSize} font-medium text-red-600 leading-none`}>{formatPrice(pricePromo)}</span>
+            <span className='font-serif text-[14px] text-[#b8b0a8] line-through leading-none'>{formatPrice(price)}</span>
           </div>
         </>
       ) : (
-        <div className={`font-serif ${mainSize} font-medium text-[#0e0d0c] leading-none`}>
-          {formatPrice(price)}
-        </div>
+        <div className={`font-serif ${mainSize} font-medium text-[#0e0d0c] leading-none`}>{formatPrice(price)}</div>
       )}
-      <div className={`${noteSize} text-[#7a7269] tracking-widest mt-0.5`}>
-        {priceNote === 'par' ? 'precio por par' : 'por unidad'}
-      </div>
+      <div className={`${noteSize} text-[#7a7269] tracking-widest mt-0.5`}>{priceNote === 'par' ? 'precio por par' : 'por unidad'}</div>
     </div>
   )
 }
@@ -81,9 +71,15 @@ export default function ProductCard({ product, index }) {
       style={{ animationDelay: `${index * 0.04}s` }}
     >
       <div className='relative overflow-hidden aspect-square'>
-        <ProductImage image={product.image} emoji={product.emoji} name={product.name} />
-        <span className='absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium z-10'
-          style={{ backgroundColor: badge.bg, color: badge.text }}>
+        <ProductImage
+          image={product.image}
+          emoji={product.emoji}
+          name={product.name}
+        />
+        <span
+          className='absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium z-10'
+          style={{ backgroundColor: badge.bg, color: badge.text }}
+        >
           {product.material}
         </span>
         <div className='absolute inset-0 z-10 flex items-end justify-center pb-3 transition-colors duration-300 opacity-0 bg-black/0 group-hover:bg-black/10 group-hover:opacity-100'>
@@ -96,19 +92,41 @@ export default function ProductCard({ product, index }) {
         <h3 className='font-serif text-[20px] font-light leading-snug text-[#0e0d0c] mb-1'>{product.name}</h3>
         <p className='text-[11px] text-[#7a7269] tracking-wider mb-4'>{product.subcategory}</p>
 
-        <div className='flex items-end justify-between mt-auto gap-2'>
+        <div className='flex items-end justify-between gap-2 mt-auto'>
           <PriceDisplay
             price={product.price}
             pricePromo={product.pricePromo}
             priceNote={product.priceNote}
           />
-          <button onClick={handleAdd} aria-label='Agregar al carrito'
+          <button
+            onClick={handleAdd}
+            aria-label='Agregar al carrito'
             className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0
-              ${added ? 'bg-green-500 scale-110' : 'bg-[#0e0d0c] hover:bg-[#b89a6a] hover:scale-110'}`}>
-            {added
-              ? <svg width='14' height='14' fill='none' stroke='currentColor' strokeWidth='2.5' viewBox='0 0 24 24'><path d='M5 13l4 4L19 7'/></svg>
-              : <svg width='14' height='14' fill='none' stroke='currentColor' strokeWidth='2.5' viewBox='0 0 24 24'><path d='M12 5v14M5 12h14'/></svg>
-            }
+              ${added ? 'bg-green-500 scale-110' : 'bg-[#0e0d0c] hover:bg-[#b89a6a] hover:scale-110'}`}
+          >
+            {added ? (
+              <svg
+                width='14'
+                height='14'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.5'
+                viewBox='0 0 24 24'
+              >
+                <path d='M5 13l4 4L19 7' />
+              </svg>
+            ) : (
+              <svg
+                width='14'
+                height='14'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.5'
+                viewBox='0 0 24 24'
+              >
+                <path d='M12 5v14M5 12h14' />
+              </svg>
+            )}
           </button>
         </div>
       </div>
