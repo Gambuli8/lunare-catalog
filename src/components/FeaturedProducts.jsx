@@ -15,12 +15,12 @@ function getMaterialBadgeStyle(material = '') {
 
 function FeaturedCard({ product, index }) {
   const { openModal } = useModal()
-  const { addItem }   = useCart()
+  const { addItem } = useCart()
   const [added, setAdded] = useState(false)
   const badge = getMaterialBadgeStyle(product.material)
   const effectivePrice = product.pricePromo ?? product.price
 
-  const handleAdd = (e) => {
+  const handleAdd = e => {
     e.stopPropagation()
     addItem({ ...product, price: effectivePrice })
     setAdded(true)
@@ -29,7 +29,7 @@ function FeaturedCard({ product, index }) {
 
   const fallback = (
     <div className='absolute inset-0 bg-gradient-to-br from-[#2a2420] to-[#7d6b5e] flex items-center justify-center'>
-      <span className='transition-transform duration-700 select-none text-7xl opacity-30 group-hover:scale-110'>{product.emoji}</span>
+      <span className='transition-transform duration-700 select-none text-7xl opacity-30 md:group-hover:scale-110'>{product.emoji}</span>
     </div>
   )
 
@@ -49,7 +49,7 @@ function FeaturedCard({ product, index }) {
           src={product.image}
           alt={product.name}
           priority={index < 2}
-          className='absolute inset-0 object-cover w-full h-full transition-transform duration-700 group-hover:scale-110'
+          className='absolute inset-0 object-cover w-full h-full transition-transform duration-700 md:group-hover:scale-110'
           fallback={fallback}
         />
       </div>
@@ -57,55 +57,52 @@ function FeaturedCard({ product, index }) {
       {/* Gradiente oscuro desde abajo */}
       <div className='absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent' />
 
-      {/* Badge material — arriba derecha */}
-      <div className='absolute z-10 top-3 right-3'>
+      {/* Contenedor de Badges Unificado (Soluciona el solapamiento) */}
+      <div className='absolute z-10 flex flex-col items-start gap-2 top-3 left-3 right-3 sm:flex-row sm:justify-between'>
+        <span className='text-[10px] md:text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-sm font-sans bg-[#b89a6a]/90 text-white backdrop-blur-sm'>✦ Destacado</span>
         <span
-          className='text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium backdrop-blur-sm'
+          className='text-[10px] md:text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium backdrop-blur-sm'
           style={{ backgroundColor: badge.bg, color: badge.text }}
         >
           {product.material}
         </span>
       </div>
 
-      {/* Badge destacado — arriba izquierda */}
-      <div className='absolute z-10 top-3 left-3'>
-        <span className='text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-sm font-sans bg-[#b89a6a]/90 text-white backdrop-blur-sm'>✦ Destacado</span>
-      </div>
-
       {/* Contenido inferior */}
-      <div className='absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-3 p-5'>
+      <div className='absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-3 p-4 md:p-5'>
         <div>
-          <p className='text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1'>{product.category}</p>
-          <h3 className='font-serif text-xl font-light leading-tight text-white md:text-2xl'>{product.name}</h3>
-          <p className='text-[11px] text-white/60 tracking-wide mt-0.5'>{product.subcategory}</p>
+          <p className='text-[11px] md:text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1'>{product.category}</p>
+          <h3 className='font-serif text-lg font-light leading-tight text-white md:text-xl'>{product.name}</h3>
+          <p className='text-xs md:text-[11px] text-white/70 tracking-wide mt-0.5'>{product.subcategory}</p>
         </div>
 
         <div className='flex items-end justify-between gap-2'>
           <div>
             {product.pricePromo ? (
               <>
-                <span className='inline-block bg-red-500 text-white text-[8px] tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm font-sans mb-1'>Oferta</span>
+                <span className='inline-block bg-red-500 text-white text-[10px] md:text-[8px] tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm font-sans mb-1'>Oferta</span>
                 <div className='flex items-baseline gap-2'>
-                  <span className='font-serif text-xl font-medium leading-none text-red-400'>{formatPrice(product.pricePromo)}</span>
-                  <span className='font-serif text-sm leading-none line-through text-white/40'>{formatPrice(product.price)}</span>
+                  <span className='font-serif text-lg font-medium leading-none text-red-400 md:text-xl'>{formatPrice(product.pricePromo)}</span>
+                  <span className='font-serif text-xs leading-none line-through md:text-sm text-white/50'>{formatPrice(product.price)}</span>
                 </div>
               </>
             ) : (
-              <span className='font-serif text-xl font-medium leading-none text-white'>{formatPrice(product.price)}</span>
+              <span className='font-serif text-lg font-medium leading-none text-white md:text-xl'>{formatPrice(product.price)}</span>
             )}
-            <p className='text-[10px] text-white/50 tracking-widest mt-0.5'>{product.priceNote === 'par' ? 'por par' : 'por unidad'}</p>
+            <p className='text-[11px] md:text-[10px] text-white/60 tracking-widest mt-0.5'>{product.priceNote === 'par' ? 'por par' : 'por unidad'}</p>
           </div>
 
+          {/* Botón de carrito con área táctil mejorada en mobile */}
           <button
             onClick={handleAdd}
             aria-label='Agregar al carrito'
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0 border border-white/30
-              ${added ? 'bg-green-500 border-green-500 scale-110' : 'bg-white/10 hover:bg-[#b89a6a] hover:border-[#b89a6a] hover:scale-110 backdrop-blur-sm'}`}
+            className={`w-11 h-11 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0 border border-white/30
+              ${added ? 'bg-green-500 border-green-500 md:scale-110' : 'bg-white/10 hover:bg-[#b89a6a] hover:border-[#b89a6a] md:hover:scale-110 backdrop-blur-sm'}`}
           >
             {added ? (
               <svg
-                width='14'
-                height='14'
+                width='16'
+                height='16'
                 fill='none'
                 stroke='currentColor'
                 strokeWidth='2.5'
@@ -115,8 +112,8 @@ function FeaturedCard({ product, index }) {
               </svg>
             ) : (
               <svg
-                width='14'
-                height='14'
+                width='16'
+                height='16'
                 fill='none'
                 stroke='currentColor'
                 strokeWidth='2.5'
@@ -128,7 +125,8 @@ function FeaturedCard({ product, index }) {
           </button>
         </div>
 
-        <div className='overflow-hidden transition-all duration-300 max-h-0 group-hover:max-h-10'>
+        {/* Ver detalle: Oculto en mobile, visible en desktop al hacer hover */}
+        <div className='hidden overflow-hidden transition-all duration-300 max-h-0 md:block group-hover:max-h-10'>
           <div className='flex items-center justify-center gap-1.5 text-[10px] tracking-[0.2em] uppercase font-sans text-white/70 pt-1 border-t border-white/20'>
             <svg
               width='11'
