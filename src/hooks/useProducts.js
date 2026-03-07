@@ -142,17 +142,18 @@ function rowToProduct(row) {
   const pricePromo = (promoValue && promoValue > 0 && promoValue < price) ? promoValue : null
 
   return {
-    id:          (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
-    name:        correctName(row['Nombre'] || ''),
+    id: (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
+    name: correctName(row['Nombre'] || ''),
     category,
     subcategory: rawCategory.trim(),
     material,
-    price,       // precio normal — siempre presente
-    pricePromo,  // precio de oferta — null si no hay promo
+    price, // precio normal — siempre presente
+    pricePromo, // precio de oferta — null si no hay promo
     priceNote,
+    stock, // stock disponible — usado para limitar qty en el carrito
     image,
     featured,
-    emoji: CATEGORY_EMOJI[category] || '✦',
+    emoji: CATEGORY_EMOJI[category] || '✦'
     // ⚠️ "Precio costo" NO está en este objeto
   }
 }

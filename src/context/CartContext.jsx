@@ -9,7 +9,12 @@ export function CartProvider({ children }) {
   const addItem = useCallback((product) => {
     setItems(prev => {
       const existing = prev.find(i => i.id === product.id)
-      if (existing) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
+      if (existing) {
+        // No superar el stock disponible
+        const maxQty = product.stock ?? existing.stock ?? Infinity
+        if (existing.qty >= maxQty) return prev
+        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
+      }
       return [...prev, { ...product, qty: 1 }]
     })
     setIsOpen(true)
@@ -24,7 +29,11 @@ export function CartProvider({ children }) {
       prev.flatMap(i => {
         if (i.id !== id) return [i]
         const next = i.qty + delta
-        return next <= 0 ? [] : [{ ...i, qty: next }]
+        if (next <= 0) return []
+        // No superar el stock disponible
+        const maxQty = i.stock ?? Infinity
+        if (next > maxQty) return [i]
+        return [{ ...i, qty: next }]
       })
     )
   }, [])

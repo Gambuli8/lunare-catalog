@@ -46,14 +46,20 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
 }
 
 export default function ProductCard({ product, index }) {
-  const { addItem }   = useCart()
-  const { openModal } = useModal()
-  const [added, setAdded] = useState(false)
+  const { addItem, items } = useCart()
+  const { openModal }      = useModal()
+  const [added, setAdded]  = useState(false)
   const badge    = getMaterialBadgeStyle(product.material)
   const priority = index < 2  // primeras 2 cards = above the fold en mobile
 
+  // Qty actual en el carrito para este producto
+  const cartQty  = items.find(i => i.id === product.id)?.qty ?? 0
+  const maxQty   = product.stock ?? Infinity
+  const atMax    = cartQty >= maxQty
+
   const handleAdd = (e) => {
     e.stopPropagation()
+    if (atMax) return
     addItem({ ...product, price: product.pricePromo ?? product.price })
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
@@ -108,8 +114,10 @@ export default function ProductCard({ product, index }) {
           <button
             onClick={handleAdd}
             aria-label='Agregar al carrito'
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0
-              ${added ? 'bg-green-500 scale-110' : 'bg-[#0e0d0c] hover:bg-[#b89a6a] hover:scale-110'}`}
+            disabled={atMax && !added}
+          title={atMax ? 'Stock máximo en carrito' : undefined}
+          className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0
+              ${added ? 'bg-green-500 scale-110' : atMax ? 'bg-[#c8c0b8] cursor-not-allowed' : 'bg-[#0e0d0c] hover:bg-[#b89a6a] hover:scale-110'}`}
           >
             {added
               ? <svg width='14' height='14' fill='none' stroke='currentColor' strokeWidth='2.5' viewBox='0 0 24 24'><path d='M5 13l4 4L19 7'/></svg>

@@ -1,5 +1,6 @@
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../hooks/useProducts'
+import CloudinaryImage from './CloudinaryImage'
 
 export default function CartSidebar() {
   const { items, removeItem, changeQty, total, isOpen, setIsOpen } = useCart()
@@ -8,7 +9,7 @@ export default function CartSidebar() {
     if (!items.length) return
     let msg = '¡Hola! Me gustaría hacer el siguiente pedido:\n\n'
     items.forEach(i => {
-      msg += `• ${i.name} (${i.material}) — ${i.qty} x ${formatPrice(i.price)} = ${formatPrice(i.price * i.qty)}\n`
+      msg += `• [Cód: ${i.id}] ${i.name} (${i.material}) — ${i.qty} x ${formatPrice(i.price)} = ${formatPrice(i.price * i.qty)}\n`
     })
     msg += `\n*Total: ${formatPrice(total)}*\n\n¿Podemos coordinar la compra? 😊`
     window.open(`https://wa.me/542954476558?text=${encodeURIComponent(msg)}`, '_blank')
@@ -40,54 +41,77 @@ export default function CartSidebar() {
           {items.length === 0 ? (
             <p className='mt-12 font-sans text-sm text-center text-muted'>Tu carrito está vacío.</p>
           ) : (
-            items.map(item => (
-              <div
-                key={item.id}
-                className='flex gap-4 p-4 bg-white border rounded-sm border-border'
-              >
-                <div className='w-14 h-14 bg-[#ede7df] rounded-sm flex items-center justify-center text-2xl flex-shrink-0'>
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className='object-cover w-full h-full rounded-sm'
-                    />
-                  ) : (
-                    item.emogi
-                  )}
-                </div>
-                <div className='flex-1 min-w-0'>
-                  <p className='font-serif text-[17px] capitalize leading-tight truncate'>{item.name}</p>
-                  <p className='text-[10px] text-muted tracking-wide uppercase font-sans mt-0.5'>
-                    {item.material} · {item.subcategory}
-                  </p>
-                  <div className='flex items-center justify-between mt-2.5'>
-                    <span className='font-sans text-sm font-medium'>{formatPrice(item.price * item.qty)}</span>
-                    <div className='flex items-center gap-2.5'>
-                      <button
-                        onClick={() => changeQty(item.id, -1)}
-                        className='flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full border-border hover:bg-dark hover:text-white hover:border-dark'
-                      >
-                        −
-                      </button>
-                      <span className='text-sm min-w-[16px] text-center font-sans'>{item.qty}</span>
-                      <button
-                        onClick={() => changeQty(item.id, 1)}
-                        className='flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full border-border hover:bg-dark hover:text-white hover:border-dark'
-                      >
-                        +
-                      </button>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className='ml-1 text-xs transition-colors duration-200 text-muted hover:text-red-500'
-                      >
-                        ✕
-                      </button>
+            items.map(item => {
+              const maxQty = item.stock ?? Infinity
+              const atMax = item.qty >= maxQty
+
+              return (
+                <div
+                  key={item.id}
+                  className='flex gap-4 p-4 bg-white border rounded-sm border-border'
+                >
+                  {/* Miniatura */}
+                  <div className='w-14 h-14 bg-[#ede7df] rounded-sm flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden'>
+                    {item.image ? (
+                      <CloudinaryImage
+                        src={item.image}
+                        alt={item.name}
+                        priority={false}
+                        className='object-cover w-full h-full'
+                        fallback={<span>{item.emoji}</span>}
+                      />
+                    ) : (
+                      <span>{item.emoji}</span>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className='flex-1 min-w-0'>
+                    <p className='font-serif text-[17px] capitalize leading-tight truncate'>{item.name}</p>
+                    <p className='text-[10px] text-muted tracking-wide uppercase font-sans mt-0.5'>
+                      {item.material} · {item.subcategory}
+                    </p>
+
+                    <div className='flex items-center justify-between mt-2.5'>
+                      <span className='font-sans text-sm font-medium'>{formatPrice(item.price * item.qty)}</span>
+
+                      <div className='flex items-center gap-2.5'>
+                        {/* Botón − */}
+                        <button
+                          onClick={() => changeQty(item.id, -1)}
+                          className='flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full border-border hover:bg-dark hover:text-white hover:border-dark'
+                        >
+                          −
+                        </button>
+
+                        <span className='text-sm min-w-[16px] text-center font-sans'>{item.qty}</span>
+
+                        {/* Botón + — deshabilitado si llegó al stock */}
+                        <button
+                          onClick={() => changeQty(item.id, 1)}
+                          disabled={atMax}
+                          title={atMax ? 'Stock máximo alcanzado' : undefined}
+                          className={`flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full
+                            ${atMax ? 'border-border text-[#c8c0b8] cursor-not-allowed' : 'border-border hover:bg-dark hover:text-white hover:border-dark'}`}
+                        >
+                          +
+                        </button>
+
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className='ml-1 text-xs transition-colors duration-200 text-muted hover:text-red-500'
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Mensaje sutil cuando está en el máximo */}
+                    {atMax && <p className='text-[10px] text-[#b89a6a] font-sans mt-1 tracking-wide'>Stock máximo disponible</p>}
                   </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
 
