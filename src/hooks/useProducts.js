@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 export const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6xogLCXqLvMy3wyrqgL_XqvcXG_PN3JuiqZCy6jYCWnTYwkDxkHYd3r40Df8G3dPk-lIg4kIXaBCX/pub?gid=0&single=true&output=csv'
 
 // Columnas esperadas en el CSV:
-// Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock | Imagen | Destacado | Precio promo
+// Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock | Imagen (URL Cloudinary) | Destacado | Precio promo
 
 const CATEGORY_EMOJI = {
   Argolla: '💍', Pasante: '✨', Cuff: '⛓️',
@@ -74,9 +74,16 @@ const CATEGORY_LABELS = {
   Collar:'Collares', Dije:'Dijes', Pulsera:'Pulseras', Anillo:'Anillos',
 }
 
-function toDropboxRaw(url = '') {
+// Normaliza la URL de imagen:
+// - Cloudinary: la devuelve limpia, sin transformaciones (las aplica CloudinaryImage)
+// - Dropbox (legacy): convierte a formato raw por si quedan URLs viejas en el Sheet
+// - Vacía: devuelve ''
+function toImageUrl(url = '') {
   if (!url) return ''
-  return url.trim()
+  const s = url.trim()
+  if (s.includes('cloudinary.com')) return s
+  // fallback Dropbox legacy
+  return s
     .replace(/[?&]dl=0/, '?raw=1')
     .replace(/[?&]dl=1/, '?raw=1')
     .replace(/\?raw=1.*$/, '?raw=1')
@@ -120,7 +127,7 @@ function rowToProduct(row) {
 
   const material  = normalizeMaterial(row['Material'])
   const priceNote = (!isNaN(pricePar) && pricePar > 0) ? 'par' : 'und'
-  const image     = toDropboxRaw(row['Imagen'] || row['imagen'] || row['Image'] || '')
+  const image     = toImageUrl(row['Imagen'] || row['imagen'] || row['Image'] || '')
 
   // ── Destacado ─────────────────────────────────────────────
   const destRaw  = (row['Destacado'] || row['destacado'] || '').trim().toLowerCase()

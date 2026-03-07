@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { useModal } from '../context/ModalContext'
 import { useCart } from '../context/CartContext'
+import { PriceDisplay } from './ProductCard'
+import CloudinaryImage from './CloudinaryImage'
 
 function getMaterialBadgeStyle(material = '') {
   const m = material.toLowerCase().trim()
@@ -9,25 +11,6 @@ function getMaterialBadgeStyle(material = '') {
   if (m === 'plata')  return { bg: '#ddebff', text: '#1a3a4a' }
   if (m.includes('acero')) return { bg: '#bfe1f6', text: '#1a3a4a' }
   return { bg: '#e8c547', text: '#3d2e00' }
-}
-
-function FeaturedImage({ image, emoji, name }) {
-  const [failed, setFailed] = useState(false)
-  if (image && !failed) {
-    return (
-      <img
-        src={image}
-        alt={name}
-        onError={() => setFailed(true)}
-        className='absolute inset-0 object-cover w-full h-full transition-transform duration-700 group-hover:scale-110'
-      />
-    )
-  }
-  return (
-    <div className='absolute inset-0 bg-gradient-to-br from-[#2a2420] to-[#1a1210] flex items-center justify-center'>
-      <span className='transition-transform duration-700 select-none text-7xl opacity-30 group-hover:scale-110'>{emoji}</span>
-    </div>
-  )
 }
 
 function FeaturedCard({ product, index }) {
@@ -44,6 +27,12 @@ function FeaturedCard({ product, index }) {
     setTimeout(() => setAdded(false), 1500)
   }
 
+  const fallback = (
+    <div className='absolute inset-0 bg-gradient-to-br from-[#2a2420] to-[#7d6b5e] flex items-center justify-center'>
+      <span className='transition-transform duration-700 select-none text-7xl opacity-30 group-hover:scale-110'>{product.emoji}</span>
+    </div>
+  )
+
   return (
     <div
       onClick={() => openModal(product)}
@@ -54,15 +43,19 @@ function FeaturedCard({ product, index }) {
         animationDelay: `${index * 0.12}s`
       }}
     >
-      {/* Imagen de fondo */}
-      <FeaturedImage
-        image={product.image}
-        emoji={product.emoji}
-        name={product.name}
-      />
+      {/* Imagen full */}
+      <div className='absolute inset-0'>
+        <CloudinaryImage
+          src={product.image}
+          alt={product.name}
+          priority={index < 2}
+          className='absolute inset-0 object-cover w-full h-full transition-transform duration-700 group-hover:scale-110'
+          fallback={fallback}
+        />
+      </div>
 
       {/* Gradiente oscuro desde abajo */}
-      <div className='absolute inset-0 bg-gradient-to-t from-#7d6b5e/85 via-#7d6b5e/30 to-transparent' />
+      <div className='absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent' />
 
       {/* Badge material — arriba derecha */}
       <div className='absolute z-10 top-3 right-3'>
@@ -79,18 +72,15 @@ function FeaturedCard({ product, index }) {
         <span className='text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-sm font-sans bg-[#b89a6a]/90 text-white backdrop-blur-sm'>✦ Destacado</span>
       </div>
 
-      {/* Contenido inferior — siempre visible */}
+      {/* Contenido inferior */}
       <div className='absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-3 p-5'>
-        {/* Categoría + nombre */}
         <div>
           <p className='text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1'>{product.category}</p>
           <h3 className='font-serif text-xl font-light leading-tight text-white md:text-2xl'>{product.name}</h3>
           <p className='text-[11px] text-white/60 tracking-wide mt-0.5'>{product.subcategory}</p>
         </div>
 
-        {/* Precio + botón */}
         <div className='flex items-end justify-between gap-2'>
-          {/* Precio */}
           <div>
             {product.pricePromo ? (
               <>
@@ -106,7 +96,6 @@ function FeaturedCard({ product, index }) {
             <p className='text-[10px] text-white/50 tracking-widest mt-0.5'>{product.priceNote === 'par' ? 'por par' : 'por unidad'}</p>
           </div>
 
-          {/* Botón carrito */}
           <button
             onClick={handleAdd}
             aria-label='Agregar al carrito'
@@ -139,7 +128,6 @@ function FeaturedCard({ product, index }) {
           </button>
         </div>
 
-        {/* Hint "Ver detalle" — aparece al hover */}
         <div className='overflow-hidden transition-all duration-300 max-h-0 group-hover:max-h-10'>
           <div className='flex items-center justify-center gap-1.5 text-[10px] tracking-[0.2em] uppercase font-sans text-white/70 pt-1 border-t border-white/20'>
             <svg
@@ -175,14 +163,11 @@ export default function FeaturedProducts() {
       id='featured'
       className='px-6 md:px-12 py-20 bg-[#7d6b5e]'
     >
-      {/* Header — sobre fondo oscuro */}
       <div className='mb-10 text-center'>
         <p className='text-[11px] tracking-[0.3em] uppercase text-[#b89a6a] font-sans mb-2'>Lo más nuevo</p>
         <h2 className='font-serif text-[clamp(28px,4vw,42px)] font-light text-white'>Productos Destacados</h2>
         <p className='mt-2 font-sans text-sm text-white/40'>Clickeá una joya para ver todos los detalles</p>
       </div>
-
-      {/* Grid de cards */}
       <div className='grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4'>
         {featured.map((p, i) => (
           <FeaturedCard
@@ -192,8 +177,6 @@ export default function FeaturedProducts() {
           />
         ))}
       </div>
-
-      {/* CTA */}
       <div className='mt-10 text-center'>
         <a
           href='#catalogo'
@@ -212,7 +195,6 @@ export default function FeaturedProducts() {
           </svg>
         </a>
       </div>
-
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }

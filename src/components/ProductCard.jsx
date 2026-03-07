@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useCart } from '../context/CartContext'
 import { useModal } from '../context/ModalContext'
 import { formatPrice } from '../hooks/useProducts'
+import CloudinaryImage from './CloudinaryImage'
 
 function getMaterialBadgeStyle(material = '') {
   const m = material.toLowerCase().trim()
@@ -11,23 +12,7 @@ function getMaterialBadgeStyle(material = '') {
   return { bg: '#010101', text: '#fff' }
 }
 
-function ProductImage({ image, emoji, name }) {
-  const [failed, setFailed] = useState(false)
-  if (image && !failed) {
-    return (
-      <img src={image} alt={name} onError={() => setFailed(true)}
-        className='object-cover w-full h-full transition-transform duration-500 group-hover:scale-105' />
-    )
-  }
-  return (
-    <div className='w-full h-full bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center'>
-      <span className='text-5xl transition-transform duration-500 opacity-50 select-none group-hover:scale-110'>{emoji}</span>
-    </div>
-  )
-}
-
 // ── Bloque de precio reutilizable ─────────────────────────────
-// Exportado para usarse en FeaturedProducts y ProductModal también
 export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
   const mainSize = size === 'lg' ? 'text-[32px]' : 'text-[22px]'
   const noteSize = size === 'lg' ? 'text-[12px]' : 'text-[10px]'
@@ -36,16 +21,26 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
     <div>
       {pricePromo ? (
         <>
-          <span className='inline-block bg-red-500 text-white text-[8px] tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm font-sans mb-1'>Oferta</span>
+          <span className='inline-block bg-red-500 text-white text-[8px] tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm font-sans mb-1'>
+            Oferta
+          </span>
           <div className='flex flex-wrap items-baseline gap-2 leading-none'>
-            <span className={`font-serif ${mainSize} font-medium text-red-600 leading-none`}>{formatPrice(pricePromo)}</span>
-            <span className='font-serif text-[14px] text-[#b8b0a8] line-through leading-none'>{formatPrice(price)}</span>
+            <span className={`font-serif ${mainSize} font-medium text-red-600 leading-none`}>
+              {formatPrice(pricePromo)}
+            </span>
+            <span className='font-serif text-[14px] text-[#b8b0a8] line-through leading-none'>
+              {formatPrice(price)}
+            </span>
           </div>
         </>
       ) : (
-        <div className={`font-serif ${mainSize} font-medium text-[#0e0d0c] leading-none`}>{formatPrice(price)}</div>
+        <div className={`font-serif ${mainSize} font-medium text-[#0e0d0c] leading-none`}>
+          {formatPrice(price)}
+        </div>
       )}
-      <div className={`${noteSize} text-[#7a7269] tracking-widest mt-0.5`}>{priceNote === 'par' ? 'precio por par' : 'por unidad'}</div>
+      <div className={`${noteSize} text-[#7a7269] tracking-widest mt-0.5`}>
+        {priceNote === 'par' ? 'precio por par' : 'por unidad'}
+      </div>
     </div>
   )
 }
@@ -54,15 +49,23 @@ export default function ProductCard({ product, index }) {
   const { addItem }   = useCart()
   const { openModal } = useModal()
   const [added, setAdded] = useState(false)
-  const badge = getMaterialBadgeStyle(product.material)
+  const badge    = getMaterialBadgeStyle(product.material)
+  const priority = index < 2  // primeras 2 cards = above the fold en mobile
 
   const handleAdd = (e) => {
     e.stopPropagation()
-    // Al carrito entra el precio efectivo: promo si existe, normal si no
     addItem({ ...product, price: product.pricePromo ?? product.price })
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
   }
+
+  const fallback = (
+    <div className='w-full h-full bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center'>
+      <span className='text-5xl opacity-50 select-none transition-transform duration-500 group-hover:scale-110'>
+        {product.emoji}
+      </span>
+    </div>
+  )
 
   return (
     <div
@@ -71,10 +74,12 @@ export default function ProductCard({ product, index }) {
       style={{ animationDelay: `${index * 0.04}s` }}
     >
       <div className='relative overflow-hidden aspect-square'>
-        <ProductImage
-          image={product.image}
-          emoji={product.emoji}
-          name={product.name}
+        <CloudinaryImage
+          src={product.image}
+          alt={product.name}
+          priority={priority}
+          className='object-cover w-full h-full transition-transform duration-500 group-hover:scale-105'
+          fallback={fallback}
         />
         <span
           className='absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium z-10'
@@ -83,7 +88,9 @@ export default function ProductCard({ product, index }) {
           {product.material}
         </span>
         <div className='absolute inset-0 z-10 flex items-end justify-center pb-3 transition-colors duration-300 opacity-0 bg-black/0 group-hover:bg-black/10 group-hover:opacity-100'>
-          <span className='text-[10px] tracking-[0.2em] uppercase font-sans bg-white/90 text-[#0e0d0c] px-3 py-1.5 rounded-full shadow-sm'>Ver detalle</span>
+          <span className='text-[10px] tracking-[0.2em] uppercase font-sans bg-white/90 text-[#0e0d0c] px-3 py-1.5 rounded-full shadow-sm'>
+            Ver detalle
+          </span>
         </div>
       </div>
 
@@ -104,29 +111,10 @@ export default function ProductCard({ product, index }) {
             className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0
               ${added ? 'bg-green-500 scale-110' : 'bg-[#0e0d0c] hover:bg-[#b89a6a] hover:scale-110'}`}
           >
-            {added ? (
-              <svg
-                width='14'
-                height='14'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2.5'
-                viewBox='0 0 24 24'
-              >
-                <path d='M5 13l4 4L19 7' />
-              </svg>
-            ) : (
-              <svg
-                width='14'
-                height='14'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2.5'
-                viewBox='0 0 24 24'
-              >
-                <path d='M12 5v14M5 12h14' />
-              </svg>
-            )}
+            {added
+              ? <svg width='14' height='14' fill='none' stroke='currentColor' strokeWidth='2.5' viewBox='0 0 24 24'><path d='M5 13l4 4L19 7'/></svg>
+              : <svg width='14' height='14' fill='none' stroke='currentColor' strokeWidth='2.5' viewBox='0 0 24 24'><path d='M12 5v14M5 12h14'/></svg>
+            }
           </button>
         </div>
       </div>
