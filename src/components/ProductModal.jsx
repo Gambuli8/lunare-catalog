@@ -57,101 +57,138 @@ export default function ProductModal() {
   }
 
   const fallback = (
-    <div className="w-full h-full bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center">
-      <span className="text-8xl select-none opacity-60">{p.emoji}</span>
+    <div className='w-full h-full bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center'>
+      <span className='select-none text-8xl opacity-60'>{p.emoji}</span>
     </div>
   )
 
   return (
     <>
-      <div onClick={handleClose} className="fixed inset-0 z-[70] bg-black/40"
-        style={{ animation: closing ? 'overlayOut 0.28s ease both' : 'overlayIn 0.35s ease both' }} />
+      <div
+        onClick={handleClose}
+        className='fixed inset-0 z-[70] bg-black/40'
+        style={{ animation: closing ? 'overlayOut 0.28s ease both' : 'overlayIn 0.35s ease both' }}
+      />
 
-      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 pointer-events-none">
+      <div className='fixed inset-0 z-[80] flex items-end md:items-center justify-center md:p-4 pointer-events-none'>
         <div
-          className="relative w-full max-w-2xl bg-[#F9F5F2] shadow-2xl pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[90vh]"
+          className='relative w-full md:max-w-2xl bg-[#F9F5F2] shadow-2xl pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[92vh] md:max-h-[90vh] rounded-t-2xl md:rounded-none'
           style={{ animation: closing ? 'panelOut 0.28s cubic-bezier(0.4,0,1,1) both' : 'panelIn 0.5s cubic-bezier(0.16,1,0.3,1) both' }}
         >
-          <button onClick={handleClose}
-            className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#7a7269] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm">
+          <button
+            onClick={handleClose}
+            className='absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#7a7269] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm'
+          >
             ✕
           </button>
 
           {/* Imagen — modal usa w_800 para mejor calidad */}
           <div
-            className="w-full md:w-2/5 flex-shrink-0 h-56 md:h-auto relative overflow-hidden bg-[#f0ece6]"
+            className='w-full md:w-2/5 flex-shrink-0 h-72 md:h-auto relative overflow-hidden bg-[#f0ece6]'
             style={{ animation: closing ? 'none' : 'imageReveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both' }}
           >
             <CloudinaryImage
               src={p.image}
               alt={p.name}
               priority={true}
-              className="w-full h-full object-cover"
+              className='object-contain w-full h-full'
               fallback={fallback}
             />
           </div>
 
           <div
-            className="flex-1 overflow-y-auto p-7 flex flex-col gap-5"
+            className='flex flex-col flex-1 gap-5 overflow-y-auto p-7'
             style={{ animation: closing ? 'none' : 'contentReveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.1s both' }}
           >
-            <span className="self-start text-[9px] tracking-[0.2em] uppercase px-3 py-1 rounded-sm font-sans font-medium"
-              style={{ backgroundColor: badge.bg, color: badge.text }}>
+            <span
+              className='self-start text-[9px] tracking-[0.2em] uppercase px-3 py-1 rounded-sm font-sans font-medium'
+              style={{ backgroundColor: badge.bg, color: badge.text }}
+            >
               {p.material}
             </span>
 
             <div>
-              <p className="text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1">{p.category}</p>
-              <h2 className="font-serif text-3xl font-light text-[#0e0d0c] leading-tight">{p.name}</h2>
-              <p className="text-[12px] text-[#7a7269] mt-1 tracking-wide">{p.subcategory}</p>
+              <p className='text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1'>{p.category}</p>
+              <h2 className='font-serif text-3xl font-light text-[#0e0d0c] leading-tight'>{p.name}</h2>
+              <p className='text-[12px] text-[#7a7269] mt-1 tracking-wide'>{p.subcategory}</p>
             </div>
 
-            <div className="border-t border-b border-[#e8e2da] py-4">
+            <div className='border-t border-b border-[#e8e2da] py-4'>
               {p.pricePromo ? (
                 <>
-                  <span className="inline-block bg-red-500 text-white text-[9px] tracking-[0.15em] uppercase px-2.5 py-0.5 rounded-sm font-sans mb-2">Oferta</span>
-                  <div className="flex items-baseline gap-3 flex-wrap">
-                    <span className="font-serif text-[32px] font-medium text-red-600 leading-none">{formatPrice(p.pricePromo)}</span>
-                    <span className="font-serif text-[20px] text-[#b8b0a8] line-through leading-none">{formatPrice(p.price)}</span>
+                  <span className='inline-block bg-red-500 text-white text-[9px] tracking-[0.15em] uppercase px-2.5 py-0.5 rounded-sm font-sans mb-2'>Oferta</span>
+                  <div className='flex flex-wrap items-baseline gap-3'>
+                    <span className='font-serif text-[32px] font-medium text-red-600 leading-none'>{formatPrice(p.pricePromo)}</span>
+                    <span className='font-serif text-[20px] text-[#b8b0a8] line-through leading-none'>{formatPrice(p.price)}</span>
                   </div>
                 </>
               ) : (
-                <div className="font-serif text-[32px] font-medium text-[#0e0d0c] leading-none">{formatPrice(p.price)}</div>
+                <div className='font-serif text-[32px] font-medium text-[#0e0d0c] leading-none'>{formatPrice(p.price)}</div>
               )}
-              <div className="text-[11px] text-[#7a7269] tracking-widest mt-1">
-                {p.priceNote === 'par' ? 'precio por par' : 'precio por unidad'}
-              </div>
+              <div className='text-[11px] text-[#7a7269] tracking-widest mt-1'>{p.priceNote === 'par' ? 'precio por par' : 'precio por unidad'}</div>
             </div>
 
             <div>
-              <p className="text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2">Material</p>
-              <p className="text-sm text-[#0e0d0c] leading-relaxed">
-                {p.material === 'Plata' ? 'Plata de ley 925 — 92.5% plata pura, hipoalergénica y duradera.'
-                  : p.material === 'Plata Dorada' ? 'Plata de ley 925 con baño de oro — hipoalergénica y de larga duración.'
-                  : p.material.toLowerCase().includes('acero') ? 'Acero quirúrgico — resistente, hipoalergénico e ideal para uso diario.'
-                  : `${p.material} — accesorio de moda de alta calidad.`}
+              <p className='text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2'>Material</p>
+              <p className='text-sm text-[#0e0d0c] leading-relaxed'>
+                {p.material === 'Plata'
+                  ? 'Plata de ley 925 — 92.5% plata pura, hipoalergénica y duradera.'
+                  : p.material === 'Plata Dorada'
+                    ? 'Plata de ley 925 con baño de oro — hipoalergénica y de larga duración.'
+                    : p.material.toLowerCase().includes('acero')
+                      ? 'Acero quirúrgico — resistente, hipoalergénico e ideal para uso diario.'
+                      : `${p.material} — accesorio de moda de alta calidad.`}
               </p>
             </div>
 
             <div>
-              <p className="text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2">Cuidados</p>
-              <ul className="flex flex-col gap-1.5">
+              <p className='text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2'>Cuidados</p>
+              <ul className='flex flex-col gap-1.5'>
                 {CARE_TIPS.map((tip, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-[#7a7269]">
-                    <span className="text-[#b89a6a] mt-0.5 flex-shrink-0">🌙</span>
+                  <li
+                    key={i}
+                    className='flex items-start gap-2 text-sm text-[#7a7269]'
+                  >
+                    <span className='text-[#b89a6a] mt-0.5 flex-shrink-0'>🌙</span>
                     {tip}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <button onClick={handleAdd}
+            <button
+              onClick={handleAdd}
               className={`w-full flex items-center justify-center gap-2.5 py-4 text-xs tracking-[0.2em] uppercase font-sans transition-all duration-300 mt-auto
-                ${added ? 'bg-green-500 text-white' : 'bg-[#0e0d0c] text-white hover:bg-[#b89a6a]'}`}>
+                ${added ? 'bg-green-500 text-white' : 'bg-[#0e0d0c] text-white hover:bg-[#b89a6a]'}`}
+            >
               {added ? (
-                <><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>¡Agregado al carrito!</>
+                <>
+                  <svg
+                    width='16'
+                    height='16'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth='2.5'
+                    viewBox='0 0 24 24'
+                  >
+                    <path d='M5 13l4 4L19 7' />
+                  </svg>
+                  ¡Agregado al carrito!
+                </>
               ) : (
-                <><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Agregar al carrito</>
+                <>
+                  <svg
+                    width='16'
+                    height='16'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth='2.5'
+                    viewBox='0 0 24 24'
+                  >
+                    <path d='M12 5v14M5 12h14' />
+                  </svg>
+                  Agregar al carrito
+                </>
               )}
             </button>
           </div>

@@ -38,7 +38,7 @@ function FeaturedCard({ product, index }) {
       onClick={() => openModal(product)}
       className='relative overflow-hidden rounded-sm cursor-pointer group'
       style={{
-        aspectRatio: '3/4',
+        aspectRatio: '4 / 5',
         animation: 'fadeUp 0.6s ease both',
         animationDelay: `${index * 0.12}s`
       }}
@@ -69,34 +69,34 @@ function FeaturedCard({ product, index }) {
       </div>
 
       {/* Contenido inferior */}
-      <div className='absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-3 p-4 md:p-5'>
+      <div className='absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-1.5 p-3 md:gap-3 md:p-5'>
         <div>
-          <p className='text-[11px] md:text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1'>{product.category}</p>
-          <h3 className='font-serif text-lg font-light leading-tight text-white md:text-xl'>{product.name}</h3>
-          <p className='text-xs md:text-[11px] text-white/70 tracking-wide mt-0.5'>{product.subcategory}</p>
+          <p className='text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-[#b89a6a] font-sans mb-0.5'>{product.category}</p>
+          <h3 className='font-serif text-sm font-light leading-tight text-white md:text-xl'>{product.name}</h3>
+          <p className='text-[10px] md:text-[11px] text-white/70 tracking-wide mt-0.5 hidden sm:block'>{product.subcategory}</p>
         </div>
 
-        <div className='flex items-end justify-between gap-2'>
+        <div className='flex items-end justify-between gap-1'>
           <div>
             {product.pricePromo ? (
               <>
-                <span className='inline-block bg-red-500 text-white text-[10px] md:text-[8px] tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm font-sans mb-1'>Oferta</span>
-                <div className='flex items-baseline gap-2'>
-                  <span className='font-serif text-lg font-medium leading-none text-red-400 md:text-xl'>{formatPrice(product.pricePromo)}</span>
-                  <span className='font-serif text-xs leading-none line-through md:text-sm text-white/50'>{formatPrice(product.price)}</span>
+                <span className='inline-block bg-red-500 text-white text-[8px] tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-sm font-sans mb-0.5'>Oferta</span>
+                <div className='flex items-baseline gap-1.5 flex-wrap'>
+                  <span className='font-serif text-sm font-medium leading-none text-red-400 md:text-xl'>{formatPrice(product.pricePromo)}</span>
+                  <span className='font-serif text-[10px] leading-none line-through md:text-sm text-white/50'>{formatPrice(product.price)}</span>
                 </div>
               </>
             ) : (
-              <span className='font-serif text-lg font-medium leading-none text-white md:text-xl'>{formatPrice(product.price)}</span>
+              <span className='font-serif text-sm font-medium leading-none text-white md:text-xl'>{formatPrice(product.price)}</span>
             )}
-            <p className='text-[11px] md:text-[10px] text-white/60 tracking-widest mt-0.5'>{product.priceNote === 'par' ? 'por par' : 'por unidad'}</p>
+            <p className='text-[9px] md:text-[10px] text-white/60 tracking-widest mt-0.5'>{product.priceNote === 'par' ? 'por par' : 'por unidad'}</p>
           </div>
 
           {/* Botón de carrito con área táctil mejorada en mobile */}
           <button
             onClick={handleAdd}
             aria-label='Agregar al carrito'
-            className={`w-11 h-11 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0 border border-white/30
+            className={`w-9 h-9 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0 border border-white/30
               ${added ? 'bg-green-500 border-green-500 md:scale-110' : 'bg-white/10 hover:bg-[#b89a6a] hover:border-[#b89a6a] md:hover:scale-110 backdrop-blur-sm'}`}
           >
             {added ? (

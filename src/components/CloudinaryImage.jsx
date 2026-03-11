@@ -7,20 +7,25 @@ function buildUrl(src, transforms) {
   return src.replace('/upload/', `/upload/${transforms}/`)
 }
 
-// OPTIMIZACIÓN: Bajamos el ancho base a 400px (ideal para grillas de 2 columnas)
-// y agregamos dpr_auto para que Cloudinary ajuste la nitidez según la pantalla del celular.
-const MOBILE_T = 'f_auto,q_auto,w_400,dpr_auto,c_limit'
-const DESKTOP_T = 'f_auto,q_auto,w_800,dpr_auto,c_limit' // Ajustado a 800px para web
+// OPTIMIZACIÓN: g_auto deja que Cloudinary detecte el punto de interés (la joya)
+// dpr_2 garantiza nitidez en pantallas retina
+// Las cards usan c_fill para rellenar el contenedor sin deformar
+const MOBILE_T = 'f_auto,q_auto:best,w_600,dpr_2,c_fill,g_auto'
+const DESKTOP_T = 'f_auto,q_auto:best,w_900,dpr_2,c_fill,g_auto'
+// Modal: sin crop forzado, se muestra la foto completa con padding si es necesario
+const MODAL_T = 'f_auto,q_auto:best,w_900,dpr_2,c_limit'
 
-export default function CloudinaryImage({ src, alt = '', priority = false, className = '', fallback = null }) {
+export default function CloudinaryImage({ src, alt = '', priority = false, className = '', fallback = null, modal = false }) {
   const [failed, setFailed] = useState(false)
 
   if (!src || failed) {
     return fallback
   }
 
-  const mobileSrc = buildUrl(src, MOBILE_T)
-  const desktopSrc = buildUrl(src, DESKTOP_T)
+  // En el modal usamos c_limit (foto completa sin crop)
+  // En cards usamos c_fill,g_auto (rellena el contenedor con crop inteligente)
+  const mobileSrc = buildUrl(src, modal ? MODAL_T : MOBILE_T)
+  const desktopSrc = buildUrl(src, modal ? MODAL_T : DESKTOP_T)
 
   return (
     <picture>
