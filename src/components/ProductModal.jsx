@@ -77,7 +77,7 @@ export default function ProductModal() {
         >
           <button
             onClick={handleClose}
-            className='absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#7a7269] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm'
+            className='absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#2b2928] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm'
           >
             ✕
           </button>
