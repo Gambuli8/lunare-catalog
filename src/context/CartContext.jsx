@@ -1,10 +1,31 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 const CartContext = createContext(null)
 
+const CART_KEY = 'lunare_cart_v1'
+
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 export function CartProvider({ children }) {
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState(loadCart)
   const [isOpen, setIsOpen] = useState(false)
+
+  // Persistir el carrito ante cualquier cambio
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_KEY, JSON.stringify(items))
+    } catch {
+      /* almacenamiento no disponible (modo privado, etc.) */
+    }
+  }, [items])
 
   const addItem = useCallback((product) => {
     setItems(prev => {

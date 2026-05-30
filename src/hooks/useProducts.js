@@ -158,14 +158,55 @@ function rowToProduct(row) {
   }
 }
 
+// Construye la lista de categorías (con su label) a partir de los productos
+function buildCategories(items) {
+  const seenCats = new Set()
+  const cats = [{ key: 'all', label: 'Todos' }]
+  items.forEach(p => {
+    if (!seenCats.has(p.category)) {
+      seenCats.add(p.category)
+      cats.push({
+        key:   p.category,
+        label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's'),
+      })
+    }
+  })
+  return cats
+}
+
+// ── Caché local del catálogo (stale-while-revalidate) ─────────
+// Mostramos al instante lo último que vimos y revalidamos en background.
+const CACHE_KEY = 'lunare_catalog_v1'
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    return Array.isArray(parsed?.items) ? parsed.items : null
+  } catch {
+    return null
+  }
+}
+
+function writeCache(items) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ items, ts: Date.now() }))
+  } catch {
+    /* almacenamiento no disponible */
+  }
+}
+
 export function useProducts() {
-  const [products,   setProducts]   = useState([])
-  const [categories, setCategories] = useState([{ key: 'all', label: 'Todos' }])
-  const [loading,    setLoading]    = useState(true)
+  const cached = readCache()
+  const [products,   setProducts]   = useState(cached || [])
+  const [categories, setCategories] = useState(cached ? buildCategories(cached) : [{ key: 'all', label: 'Todos' }])
+  // Si ya hay caché, no bloqueamos la UI con el skeleton.
+  const [loading,    setLoading]    = useState(!cached)
   const [error,      setError]      = useState(null)
 
   const fetchProducts = async () => {
-    setLoading(true)
+    // Solo mostramos skeleton si todavía no hay nada en pantalla.
+    setProducts(prev => { if (prev.length === 0) setLoading(true); return prev })
     setError(null)
     try {
       const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' })
@@ -174,22 +215,15 @@ export function useProducts() {
       const rows  = parseCSV(text)
       const items = rows.map(rowToProduct).filter(Boolean)
 
-      const seenCats = new Set()
-      const cats = [{ key: 'all', label: 'Todos' }]
-      items.forEach(p => {
-        if (!seenCats.has(p.category)) {
-          seenCats.add(p.category)
-          cats.push({
-            key:   p.category,
-            label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's'),
-          })
-        }
-      })
-
       setProducts(items)
-      setCategories(cats)
+      setCategories(buildCategories(items))
+      writeCache(items)
     } catch (err) {
-      setError(err.message || 'Error al cargar el catálogo')
+      // Si ya teníamos datos cacheados, no rompemos la vista: los seguimos mostrando.
+      setProducts(prev => {
+        if (prev.length === 0) setError(err.message || 'Error al cargar el catálogo')
+        return prev
+      })
     } finally {
       setLoading(false)
     }

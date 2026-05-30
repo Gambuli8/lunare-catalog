@@ -69,10 +69,10 @@ function EmptyState({ onReset, hasSearch }) {
   )
 }
 
-// SearchBar — oculta en mobile, visible desde sm
+// SearchBar — full width en mobile, ancho fijo desde sm
 function SearchBar({ value, onChange }) {
   return (
-    <div className='relative hidden sm:block w-72'>
+    <div className='relative block w-full sm:w-72'>
       <svg
         className='absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7a7269] pointer-events-none'
         width='15'
