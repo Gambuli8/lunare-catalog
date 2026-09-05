@@ -69,10 +69,12 @@ function EmptyState({ onReset, hasSearch }) {
   )
 }
 
-// SearchBar — oculta en mobile, visible desde sm
+// SearchBar — visible en todos los tamaños. Con 103 productos y la mayoría
+// del tráfico entrando desde Instagram, ocultarla en mobile dejaba sin buscar
+// a la mayor parte de las visitas.
 function SearchBar({ value, onChange }) {
   return (
-    <div className='relative hidden sm:block w-72'>
+    <div className='relative flex-1 min-w-0 sm:flex-none sm:w-72'>
       <svg
         className='absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7a7269] pointer-events-none'
         width='15'
@@ -308,7 +310,6 @@ export default function Catalog() {
       {!loading && !error && products.length > 0 && (
         <div className='flex flex-col gap-4 mb-12'>
           <div className='flex items-center gap-3'>
-            {/* SearchBar — oculta en mobile */}
             <SearchBar
               value={search}
               onChange={handleSearch}

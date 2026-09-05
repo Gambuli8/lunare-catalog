@@ -1,0 +1,19 @@
+# Variables de entorno — la URL del Sheet vive acá y NO se commitea
+.env
+.env.*
+!.env.example
+
+# Build
+dist/
+.vercel/
+
+# Dependencias
+# ⚠️ node_modules ya está trackeado en este repo desde antes. Agregarlo acá
+# no lo destrackea: para eso hay que correr `git rm -r --cached node_modules`
+# en un commit aparte.
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
