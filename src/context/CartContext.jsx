@@ -40,40 +40,45 @@ export function CartProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false)
   const { products } = useProducts()
   const reconciled = useRef(false)
+  const itemsRef = useRef(items)
 
-  useEffect(() => { writeStoredCart(items) }, [items])
+  useEffect(() => {
+    itemsRef.current = items
+    writeStoredCart(items)
+  }, [items])
 
   // Un carrito guardado hace días puede tener precios viejos o piezas que
   // ya no tienen stock. En cuanto llega el catálogo fresco lo reconciliamos
   // para no cotizarle a la clienta un precio que ya no existe.
+  // El cálculo va acá y no dentro del updater de setItems: el updater corre
+  // en fase de render y el toast sería un setState sobre otro componente.
   useEffect(() => {
     if (!products.length || reconciled.current) return
     reconciled.current = true
 
-    setItems(prev => {
-      if (!prev.length) return prev
-      let changed = false
+    const prev = itemsRef.current
+    if (!prev.length) return
 
-      const next = prev.reduce((acc, item) => {
-        const fresh = products.find(p => p.id === item.id)
-        if (!fresh) { changed = true; return acc } // se quedó sin stock
+    let changed = false
+    const next = prev.reduce((acc, item) => {
+      const fresh = products.find(p => p.id === item.id)
+      if (!fresh) { changed = true; return acc } // se quedó sin stock
 
-        const price = fresh.pricePromo ?? fresh.price
-        const qty = Math.min(item.qty, fresh.stock)
-        if (price !== item.price || qty !== item.qty) changed = true
+      const price = fresh.pricePromo ?? fresh.price
+      const qty = Math.min(item.qty, fresh.stock)
+      if (price !== item.price || qty !== item.qty) changed = true
 
-        acc.push({ ...fresh, price, qty })
-        return acc
-      }, [])
+      acc.push({ ...fresh, price, qty })
+      return acc
+    }, [])
 
-      if (!changed) return prev
-      showToast(
-        next.length
-          ? 'Actualizamos tu carrito con los precios y el stock de hoy'
-          : 'Las piezas que tenías guardadas ya no tienen stock'
-      )
-      return next
-    })
+    if (!changed) return
+    setItems(next)
+    showToast(
+      next.length
+        ? 'Actualizamos tu carrito con los precios y el stock de hoy'
+        : 'Las piezas que tenías guardadas ya no tienen stock'
+    )
   }, [products])
 
   const addItem = useCallback(product => {
