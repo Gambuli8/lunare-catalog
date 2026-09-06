@@ -30,6 +30,13 @@ const PAGINAS = {
     desc: 'Escribinos por WhatsApp al +54 2954 476558 o seguinos en Instagram ' +
       '@lunare.acc. Retiro coordinado en Santa Rosa (La Pampa) y Nueva Córdoba.',
   },
+  arrepentimiento: {
+    ruta: '/arrepentimiento',
+    title: 'Botón de arrepentimiento | Lunare Accesorios',
+    desc: 'Podés arrepentirte de tu compra dentro de los 10 días corridos, sin ' +
+      'costo y sin dar explicaciones. Completá el formulario y recibís el código ' +
+      'del trámite en el momento.',
+  },
 }
 
 // Las FAQ como datos estructurados: es lo que le permite a Google mostrar

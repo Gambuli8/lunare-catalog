@@ -249,6 +249,47 @@ Sin `RESEND_API_KEY` no se manda nada y el checkout funciona como siempre.
 ⚠️ El dominio del remitente tiene que estar verificado en Resend (registros DNS)
 o los mails se van a spam.
 
+## Botón de arrepentimiento
+
+Vender online en Argentina obliga a tener publicado un link llamado
+**BOTÓN DE ARREPENTIMIENTO**, de acceso fácil y directo desde la home y en un
+lugar destacado (Resolución 424/2020 de la Secretaría de Comercio Interior). Va
+en el footer, aparte de la fila de links y con borde, para que se vea.
+
+La norma prohíbe pedir registración previa o cualquier trámite extra, así que
+`/arrepentimiento` no tiene login y el número de pedido es opcional: alcanza con
+nombre y correo.
+
+### El código sale en el acto
+
+La norma da 24 horas para entregarle a la clienta un código de identificación del
+trámite. Como lo genera la base en el insert (`ARR-1000`, `ARR-1001`…), se lo
+mostramos en pantalla al enviar el formulario y se lo mandamos por mail. El plazo
+deja de depender de que alguien conteste a tiempo.
+
+`crear_arrepentimiento()` engancha el pedido si el número existe —normalizando
+mayúsculas y espacios— y lo guarda igual si no, porque no es un requisito. La
+tabla usa el mismo criterio que `pedidos`: RLS prendido sin políticas y `EXECUTE`
+revocado, incluido el que Postgres le da a `PUBLIC` por defecto.
+
+### Datos fiscales
+
+Van en `src/lib/fiscal.js`, que es lo único que hay que tocar:
+
+| Constante | Qué es |
+|---|---|
+| `RAZON_SOCIAL` | El nombre con el que factura |
+| `CUIT` | El CUIT |
+| `DOMICILIO` | Domicilio fiscal |
+| `DATA_FISCAL_URL` | El link de `qr.afip.gob.ar` que da el Formulario 960/D en ARCA |
+
+⚠️ **Están vacíos.** Mientras lo estén el footer no muestra el bloque —es
+preferible a publicar un CUIT equivocado— pero el sitio no debería salir de la
+cortina así. Los valores los confirma el contador.
+
+⚠️ Esto implementa el mecanismo, no reemplaza asesoramiento legal. Ver también
+"Pendiente": el texto de `/cambios` hoy contradice esta página.
+
 ### Pendiente
 
 - **Mercado Pago**: falta el access token. El checkout ya ofrece la opción y
@@ -257,6 +298,14 @@ o los mails se van a spam.
   la API del correo que las calcula por código postal y peso.
 - **Descuento de stock en la planilla**: sigue siendo manual. La base evita
   vender de más, pero no edita el Sheet.
+- **El texto de `/cambios` contradice a `/arrepentimiento`**: dice "no
+  realizamos devoluciones" y "los productos NO tienen garantía". Para una compra
+  online las dos cosas van contra la Ley 24.240 —el derecho a arrepentirse no se
+  puede renunciar (art. 34) y la garantía legal es de 6 meses (arts. 11 a 18)—,
+  así que esas cláusulas no se sostienen. Hay que reescribir la página; el texto
+  lo tiene que aprobar quien los asesore.
+- **Datos fiscales**: `src/lib/fiscal.js` está vacío. Ver "Botón de
+  arrepentimiento".
 
 ## Modo mantenimiento
 

@@ -344,3 +344,137 @@ export async function avisarPedido({ pedido, datos, items }) {
 
   return salida
 }
+
+// ── Arrepentimientos ──────────────────────────────────────────
+// La Resolución 424/2020 pide devolverle a la clienta un código de
+// identificación dentro de las 24 horas y por el mismo medio. El código
+// ya se lo mostramos en pantalla al enviar el formulario; el mail es el
+// respaldo escrito, y el que le llega a Lunare es el que abre el reloj.
+
+function mailArrepentimientoTienda({ arrepentimiento: a, datos }) {
+  const wa = waLink(datos.telefono)
+  const cuando = fecha(a.creado_en)
+
+  const encabezado = `
+    <div style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:${GRIS}">Arrepentimiento${cuando ? ` · ${esc(cuando)}` : ''}</div>
+    <div style="font-size:30px;color:${ORO};padding-top:6px;letter-spacing:0.04em">${esc(a.codigo)}</div>
+    <div style="font-size:16px;color:#2b2621;padding-top:4px">${esc(datos.nombre)}</div>`
+
+  const cuerpo = `
+    <div style="padding:14px 16px;background:#faf8f5;border-radius:6px;font-size:14px;color:#2b2621;line-height:1.6">
+      Pidió revocar la compra. Por ley tenés que devolverle el importe sin cargo
+      ni penalidad; el costo de la devolución corre por cuenta del negocio.
+    </div>
+
+    ${wa ? `<div style="padding:22px 0">${boton(wa, 'Escribirle por WhatsApp')}</div>` : '<div style="height:22px"></div>'}
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+      ${dato('Correo', `<a href="mailto:${esc(datos.email)}" style="color:${ORO};text-decoration:none">${esc(datos.email)}</a>`)}
+      ${dato('Teléfono', datos.telefono ? esc(datos.telefono) : '')}
+      ${dato('Pedido', a.pedido_numero
+        ? `${esc(a.pedido_numero)}${a.pedido_encontrado ? '' : ' <span style="color:#b4442e">— no existe en la base, verificalo</span>'}`
+        : '<span style="color:' + GRIS + '">no lo indicó</span>')}
+      ${dato('Motivo', datos.detalle ? esc(datos.detalle) : `<span style="color:${GRIS}">no dejó detalle</span>`)}
+    </table>
+
+    <div style="margin-top:24px;font-size:13px;color:${GRIS};line-height:1.6">
+      Ya le mandamos el código ${esc(a.codigo)} por mail, así que el plazo de 24 horas
+      está cubierto. Queda en <b style="color:#2b2621">recibido</b> hasta que lo cambies en la base.
+    </div>`
+
+  const texto = [
+    `Arrepentimiento ${a.codigo}${cuando ? ` — ${cuando}` : ''}`,
+    '',
+    `${datos.nombre} — ${datos.email}`,
+    datos.telefono ? `Teléfono: ${datos.telefono}` : '',
+    wa ? `WhatsApp: ${wa}` : '',
+    a.pedido_numero
+      ? `Pedido: ${a.pedido_numero}${a.pedido_encontrado ? '' : ' (no existe en la base, verificalo)'}`
+      : 'Pedido: no lo indicó',
+    datos.detalle ? `Motivo: ${datos.detalle}` : '',
+    '',
+    'Pidió revocar la compra. Por ley hay que devolverle el importe sin cargo',
+    'ni penalidad, y el costo de la devolución corre por cuenta del negocio.',
+    '',
+    `Ya le mandamos el código ${a.codigo} por mail: el plazo de 24 horas está cubierto.`,
+  ].filter(Boolean).join('\n')
+
+  return {
+    to: destino(),
+    subject: `Arrepentimiento ${a.codigo} · ${datos.nombre}${a.pedido_numero ? ` · ${a.pedido_numero}` : ''}`,
+    responderA: datos.email,
+    html: envoltorio({ titulo: `Arrepentimiento ${a.codigo}`, encabezado, cuerpo }),
+    texto,
+  }
+}
+
+function mailArrepentimientoClienta({ arrepentimiento: a, datos }) {
+  const encabezado = `
+    <div style="font-size:22px;color:#2b2621">Recibimos tu pedido de arrepentimiento</div>
+    <div style="font-size:14px;color:${GRIS};padding-top:8px;line-height:1.6">Tu código de identificación es</div>
+    <div style="font-size:30px;color:${ORO};padding-top:2px;letter-spacing:0.04em">${esc(a.codigo)}</div>`
+
+  const cuerpo = `
+    <div style="font-size:15px;color:#2b2621;line-height:1.7">
+      Guardá este código: identifica tu trámite. Te vamos a escribir para coordinar
+      la devolución del importe y, si ya tenías la pieza, cómo nos la hacés llegar.
+      No tenés que pagar nada por devolverla.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:24px">
+      ${dato('Código', `<b>${esc(a.codigo)}</b>`)}
+      ${dato('Pedido', a.pedido_numero ? esc(a.pedido_numero) : '')}
+      ${dato('A nombre de', esc(datos.nombre))}
+    </table>
+
+    <div style="margin-top:26px;font-size:14px;color:${GRIS};line-height:1.7">
+      Si algo de esto no es lo que pediste, escribinos y lo corregimos.
+    </div>
+    <div style="padding-top:14px">${boton(`https://wa.me/${WHATSAPP_LUNARE}`, 'Escribirnos por WhatsApp')}</div>`
+
+  const texto = [
+    'Recibimos tu pedido de arrepentimiento.',
+    `Tu código de identificación es ${a.codigo}.`,
+    '',
+    'Guardá este código: identifica tu trámite. Te vamos a escribir para coordinar',
+    'la devolución del importe y, si ya tenías la pieza, cómo nos la hacés llegar.',
+    'No tenés que pagar nada por devolverla.',
+    '',
+    a.pedido_numero ? `Pedido: ${a.pedido_numero}` : '',
+    `A nombre de: ${datos.nombre}`,
+    '',
+    `Cualquier cosa escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
+  ].filter(Boolean).join('\n')
+
+  return {
+    to: [datos.email],
+    subject: `Tu arrepentimiento ${a.codigo} — Lunare Accesorios`,
+    html: envoltorio({ titulo: `Arrepentimiento ${a.codigo}`, encabezado, cuerpo }),
+    texto,
+  }
+}
+
+export async function avisarArrepentimiento({ arrepentimiento, datos }) {
+  const salida = { tienda: false, clienta: false }
+
+  if (!avisosConfigurados()) {
+    console.warn(`[aviso] sin RESEND_API_KEY o AVISO_EMAIL_DESTINO: el arrepentimiento ${arrepentimiento.codigo} no se avisó`)
+    return salida
+  }
+
+  try {
+    await enviar(mailArrepentimientoTienda({ arrepentimiento, datos }))
+    salida.tienda = true
+  } catch (err) {
+    console.error(`[aviso] no salió el mail a la tienda por ${arrepentimiento.codigo}`, err)
+  }
+
+  try {
+    await enviar(mailArrepentimientoClienta({ arrepentimiento, datos }))
+    salida.clienta = true
+  } catch (err) {
+    console.error(`[aviso] no salió el mail a la clienta por ${arrepentimiento.codigo}`, err)
+  }
+
+  return salida
+}
