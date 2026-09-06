@@ -13,9 +13,12 @@ export function parsePath(pathname = window.location.pathname, search = window.l
   if (!seg.length) return { name: 'home', query }
   if (seg[0] === 'producto' && seg[1]) return { name: 'product', slug: decodeURIComponent(seg[1]), query }
   if (seg[0] === 'tienda') return { name: 'shop', categorySlug: seg[1] ? decodeURIComponent(seg[1]) : null, query }
-  if (seg[0] === 'cuidados') return { name: 'home', anchor: 'cuidados', query }
-  if (seg[0] === 'cambios') return { name: 'home', anchor: 'politicas', query }
-  if (seg[0] === 'contacto') return { name: 'home', anchor: 'contacto', query }
+  // Cada una es su propia página, no un ancla de la home: si sirvieran el
+  // HTML de la home, las tres tendrían el mismo canonical y Google las
+  // trataría como duplicados. Además están en el sitemap.
+  if (seg[0] === 'cuidados') return { name: 'care', query }
+  if (seg[0] === 'cambios') return { name: 'policy', query }
+  if (seg[0] === 'contacto') return { name: 'contact', query }
   return { name: 'notfound', query }
 }
 

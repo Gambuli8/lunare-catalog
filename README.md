@@ -25,6 +25,7 @@ lunare-catalog/
 │   ├── products.js           ← el catálogo que consume el navegador
 │   ├── page.js               ← HTML de la ficha con meta y datos estructurados
 │   ├── shop.js               ← HTML de /tienda y /tienda/:categoria
+│   ├── pagina.js             ← HTML de /cuidados, /cambios y /contacto
 │   └── sitemap.js            ← sitemap.xml generado del catálogo
 └── src/
     ├── main.jsx
@@ -40,6 +41,9 @@ lunare-catalog/
     └── components/
         ├── Navbar.jsx
         ├── Hero.jsx
+        ├── Categories.jsx
+        ├── Trust.jsx
+        ├── Icon.jsx
         ├── FeaturedProducts.jsx
         ├── Catalog.jsx
         ├── ProductCard.jsx
@@ -130,10 +134,14 @@ toma el control en el navegador.
 | `/producto/:slug` | `api/page.js` — meta propias + `Product` y `BreadcrumbList` |
 | `/tienda` | `api/shop.js` — catálogo completo + `ItemList` |
 | `/tienda/:categoria` | `api/shop.js` — una página indexable por categoría |
+| `/cuidados`, `/cambios`, `/contacto` | `api/pagina.js` — cada una con su canonical; contacto suma `FAQPage` |
 | `/sitemap.xml` | `api/sitemap.js` — piezas y categorías con stock |
 | `/robots.txt` | estático, en `public/` |
-| `/cuidados`, `/cambios`, `/contacto` | la home, con scroll a la sección |
 | todo lo demás | `index.html` (la SPA) |
+
+Cuidados, cambios y contacto eran anclas de la home: las tres devolvían el mismo
+HTML con el canonical apuntando a `/`, así que Google las trataba como
+duplicados aunque estuvieran en el sitemap. Ahora son páginas propias.
 
 Los filtros de material, orden y búsqueda van en la query
 (`/tienda/argollas?material=Plata&orden=menor`): se pueden compartir y el botón
@@ -159,6 +167,16 @@ Si el sitio cambia de dominio, actualizá la variable `SITE_URL` (por defecto
 - ✅ **Solo productos en stock** — sin stock = no aparecen
 - ✅ **Responsive** — mobile, tablet, desktop
 - ✅ **Secciones**: Inicio, Tienda, Contacto, Cuidados, Políticas
+
+## Estructura de las páginas
+
+La home era de casi 12.000 px en el celular: tenía el catálogo entero embebido,
+más cuidados y políticas. Como la mayoría del tráfico entra desde Instagram al
+celular, eso son casi 15 pantallas de scroll.
+
+Ahora la home es portada, categorías, destacados, confianza y un cierre hacia la
+tienda — 4.145 px, 5 pantallas. El catálogo vive en `/tienda` y cada sección
+larga tiene su propia dirección, que además es indexable por separado.
 
 ## Modo mantenimiento
 

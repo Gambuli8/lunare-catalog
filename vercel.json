@@ -4,6 +4,9 @@
     { "source": "/producto/:slug", "destination": "/api/page?slug=:slug" },
     { "source": "/tienda", "destination": "/api/shop" },
     { "source": "/tienda/:cat", "destination": "/api/shop?cat=:cat" },
+    { "source": "/cuidados", "destination": "/api/pagina?pagina=cuidados" },
+    { "source": "/cambios", "destination": "/api/pagina?pagina=cambios" },
+    { "source": "/contacto", "destination": "/api/pagina?pagina=contacto" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],

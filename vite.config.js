@@ -14,6 +14,7 @@ function apiDevServer() {
         { test: /^\/producto\/([^/?]+)\/?$/, file: 'page', param: 'slug' },
         { test: /^\/tienda\/([^/?]+)\/?$/, file: 'shop', param: 'cat' },
         { test: /^\/tienda\/?$/, file: 'shop' },
+        { test: /^\/(cuidados|cambios|contacto)\/?$/, file: 'pagina', param: 'pagina' },
         { test: /^\/sitemap\.xml$/, file: 'sitemap' },
       ]
 

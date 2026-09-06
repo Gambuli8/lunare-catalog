@@ -24,11 +24,16 @@ export default function Politicas() {
   return (
     <section
       id='politicas'
-      className='px-6 py-24 md:px-12 bg-paper'
+      className='px-6 pt-8 pb-24 md:px-12 bg-paper'
     >
       <div className='max-w-3xl mx-auto'>
+      <nav aria-label='Ruta de navegación' className='flex items-center gap-2 mb-6 text-xs tracking-wide text-muted'>
+        <a href='/' className='transition-colors hover:text-gold'>Inicio</a>
+        <span className='text-[#8f877e]'>/</span>
+        <span className='text-dark'>Cambios</span>
+      </nav>
         <p className='text-[11px] tracking-[0.2em] uppercase text-gold font-medium mb-2'>Términos y condiciones</p>
-        <h2 className='font-serif text-[clamp(34px,5vw,52px)] font-light text-dark mb-12'>Cambios y devoluciones</h2>
+        <h1 className='font-serif text-[clamp(34px,5vw,52px)] font-light text-dark mb-12'>Cambios y devoluciones</h1>
 
         <div className='flex flex-col gap-12'>
           {POLICIES.map(block => (
