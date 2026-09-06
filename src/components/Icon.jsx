@@ -7,6 +7,7 @@
 const PATHS = {
   flecha: <path d='M5 12h14M13 6l6 6-6 6' />,
   mas: <path d='M12 5v14M5 12h14' />,
+  menos: <path d='M5 12h14' />,
   check: <path d='M5 13l4 4L19 7' />,
   cerrar: <path d='M18 6L6 18M6 6l12 12' />,
   chevron: <path d='M6 9l6 6 6-6' />,

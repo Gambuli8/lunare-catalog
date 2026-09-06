@@ -73,13 +73,18 @@ export default function Contact() {
   return (
     <section
       id='contacto'
-      className='px-6 py-24 border-t md:px-12 bg-paper border-border'
+      className='px-6 pt-8 pb-24 md:px-12 bg-paper'
     >
       <div className='max-w-5xl mx-auto'>
 
+      <nav aria-label='Ruta de navegación' className='flex items-center gap-2 mb-6 text-xs tracking-wide text-muted'>
+        <a href='/' className='transition-colors hover:text-gold'>Inicio</a>
+        <span className='text-[#8f877e]'>/</span>
+        <span className='text-dark'>Contacto</span>
+      </nav>
         <div className='flex flex-col gap-3 mb-10'>
           <p className='text-[11px] tracking-[0.2em] uppercase text-gold font-medium'>Hablemos</p>
-          <h2 className='font-serif text-[clamp(34px,5vw,52px)] font-light text-dark'>Contacto</h2>
+          <h1 className='font-serif text-[clamp(34px,5vw,52px)] font-light text-dark'>Contacto</h1>
           <p className='max-w-md text-[16px] leading-relaxed text-muted'>
             Ante cualquier duda escribinos por WhatsApp o seguinos en Instagram. Respondemos todos los días.
           </p>
