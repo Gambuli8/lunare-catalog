@@ -15,7 +15,10 @@
 // Los archivos de api/ que empiezan con "_" no son endpoints: Vercel
 // los ignora al armar las rutas.
 
-const CSV_URL = process.env.SHEET_CSV_URL
+// Se lee dentro de la función y no al cargar el módulo: así, si la
+// variable se carga en Vercel después del build, alcanza con redeployar
+// sin que quede un valor viejo capturado en una lambda tibia.
+const csvUrl = () => process.env.SHEET_CSV_URL
 
 // ── Parser CSV ────────────────────────────────────────────────
 // Máquina de estados: soporta comas, saltos de línea y comillas
@@ -214,10 +217,11 @@ const TTL = 60_000
 // Cachea en memoria mientras la función serverless sigue tibia, para no
 // pegarle a Google Sheets una vez por request.
 export async function getCatalog({ force = false } = {}) {
-  if (!CSV_URL) throw new Error('Falta la variable de entorno SHEET_CSV_URL')
+  const url = csvUrl()
+  if (!url) throw new Error('Falta la variable de entorno SHEET_CSV_URL')
   if (!force && cache && Date.now() - cache.at < TTL) return cache.products
 
-  const res = await fetch(CSV_URL, {
+  const res = await fetch(url, {
     headers: { 'User-Agent': 'lunare-catalog' },
     signal: AbortSignal.timeout(10000),
   })
