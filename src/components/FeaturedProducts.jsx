@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useProducts, formatPrice } from '../hooks/useProducts'
-import { useModal } from '../context/ModalContext'
 import { useCart } from '../context/CartContext'
 import { PriceDisplay } from './ProductCard'
 import CloudinaryImage from './CloudinaryImage'
@@ -14,13 +13,13 @@ function getMaterialBadgeStyle(material = '') {
 }
 
 function FeaturedCard({ product, index }) {
-  const { openModal } = useModal()
   const { addItem } = useCart()
   const [added, setAdded] = useState(false)
   const badge = getMaterialBadgeStyle(product.material)
   const effectivePrice = product.pricePromo ?? product.price
 
   const handleAdd = e => {
+    e.preventDefault()
     e.stopPropagation()
     addItem({ ...product, price: effectivePrice })
     setAdded(true)
@@ -34,15 +33,22 @@ function FeaturedCard({ product, index }) {
   )
 
   return (
-    <div
-      onClick={() => openModal(product)}
-      className='relative overflow-hidden rounded-sm cursor-pointer group'
+    <article
+      className='relative overflow-hidden rounded-sm group'
       style={{
         aspectRatio: '4 / 5',
         animation: 'fadeUp 0.6s ease both',
         animationDelay: `${index * 0.12}s`
       }}
     >
+      {/* Link real que cubre la card: el robot lo sigue y se puede abrir
+          en otra pestaña. El botón de agregar va por encima (z-30). */}
+      <a
+        href={`/producto/${product.slug}`}
+        className='absolute inset-0 z-20'
+        aria-label={`Ver ${product.name}`}
+      />
+
       {/* Imagen full */}
       <div className='absolute inset-0'>
         <CloudinaryImage
@@ -95,8 +101,8 @@ function FeaturedCard({ product, index }) {
           {/* Botón de carrito con área táctil mejorada en mobile */}
           <button
             onClick={handleAdd}
-            aria-label='Agregar al carrito'
-            className={`w-9 h-9 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0 border border-white/30
+            aria-label={`Agregar ${product.name} al pedido`}
+            className={`relative z-30 w-9 h-9 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0 border border-white/30
               ${added ? 'bg-green-500 border-green-500 md:scale-110' : 'bg-white/10 hover:bg-[#b89a6a] hover:border-[#b89a6a] md:hover:scale-110 backdrop-blur-sm'}`}
           >
             {added ? (
@@ -147,7 +153,7 @@ function FeaturedCard({ product, index }) {
           </div>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 

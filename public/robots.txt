@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# El catalogo se sirve desde /api; no hay nada que indexar ahi.
+Disallow: /api/
+
+Sitemap: https://www.lunareacc.com/sitemap.xml

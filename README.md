@@ -15,24 +15,30 @@ lunare-catalog/
 ├── tailwind.config.js
 ├── postcss.config.js
 ├── .env.example
+├── vercel.json               ← reescrituras: /producto/:slug y /sitemap.xml
+├── public/
+│   └── robots.txt
 ├── api/
-│   └── products.js           ← lee el Sheet en el servidor y normaliza el catálogo
+│   ├── _catalog.js           ← lee el Sheet en el servidor y normaliza (no es endpoint)
+│   ├── products.js           ← el catálogo que consume el navegador
+│   ├── page.js               ← HTML de la ficha con meta y datos estructurados
+│   └── sitemap.js            ← sitemap.xml generado del catálogo
 └── src/
     ├── main.jsx
     ├── App.jsx
     ├── index.css
     ├── context/
-    │   ├── CartContext.jsx   ← carrito global, persistido en localStorage
-    │   └── ModalContext.jsx
+    │   └── CartContext.jsx   ← carrito global, persistido en localStorage
     ├── hooks/
-    │   └── useProducts.js    ← store compartido; pide /api/products
+    │   ├── useProducts.js    ← store compartido; pide /api/products
+    │   └── useRoute.js       ← router sobre la History API
     └── components/
         ├── Navbar.jsx
         ├── Hero.jsx
         ├── FeaturedProducts.jsx
         ├── Catalog.jsx
         ├── ProductCard.jsx
-        ├── ProductModal.jsx
+        ├── ProductPage.jsx
         ├── CloudinaryImage.jsx
         ├── CartSidebar.jsx
         ├── Contact.jsx
@@ -64,7 +70,7 @@ falta la CLI de Vercel. En producción lo sirve Vercel como función serverless.
 ## Catálogo y precios
 
 El catálogo sale de un Google Sheet publicado como CSV. **La URL del Sheet la
-lee únicamente el servidor**, en `api/products.js`, desde la variable de entorno
+lee únicamente el servidor**, en `api/_catalog.js`, desde la variable de entorno
 `SHEET_CSV_URL`. El navegador solo habla con `/api/products`, que devuelve los
 productos ya normalizados y **sin la columna `Precio costo`**.
 
@@ -102,8 +108,35 @@ Precio Par | Stock | Imagen | Destacado | Precio promo
 El endpoint cachea la respuesta 60 s en el CDN de Vercel y revalida por atrás,
 así que una visita nunca espera a Google Sheets.
 
+## Direcciones y SEO
+
+Cada pieza tiene su propia dirección: `/producto/mini-silver-argolla-10mm`. El
+slug sale del nombre más la subcategoría y **es estable**: si cambia, se pierde
+el posicionamiento y los links que ya circulan. Si dos piezas coinciden, desempata
+el código del Sheet.
+
+WhatsApp, Instagram y el robot de Google no ejecutan JavaScript, así que las
+etiquetas no pueden escribirse desde React. `api/page.js` devuelve el HTML con el
+`<title>`, las meta de compartir y el JSON-LD ya puestos, y recién después React
+toma el control en el navegador.
+
+| Dirección | Qué la sirve |
+|---|---|
+| `/producto/:slug` | `api/page.js` — meta propias + `Product` y `BreadcrumbList` |
+| `/sitemap.xml` | `api/sitemap.js` — una entrada por pieza con stock |
+| `/robots.txt` | estático, en `public/` |
+| `/tienda`, `/cuidados`, `/cambios`, `/contacto` | la home, con scroll a la sección |
+| todo lo demás | `index.html` (la SPA) |
+
+Las piezas sin stock desaparecen del catálogo, del sitemap y devuelven 404 con
+`noindex`.
+
+Si el sitio cambia de dominio, actualizá la variable `SITE_URL` (por defecto
+`https://www.lunareacc.com`) y la línea `Sitemap:` de `public/robots.txt`.
+
 ## Funcionalidades
 
+- ✅ **Una dirección por pieza**, indexable y compartible con vista previa
 - ✅ **Catálogo filtrable** por categoría y material, con búsqueda por nombre
 - ✅ **Carrito lateral** con control de cantidades y tope por stock
 - ✅ **Carrito persistente** — sobrevive al refresh 7 días (localStorage) y se
@@ -125,4 +158,4 @@ Número configurado: `+54 2954-476558` (`src/components/CartSidebar.jsx`).
 
 - **Productos**: se editan en el Google Sheet, no en el código.
 - **Colores y tipografías**: `tailwind.config.js`.
-- **Normalización de categorías, materiales y nombres**: `api/products.js`.
+- **Normalización de categorías, materiales y nombres**: `api/_catalog.js`.
