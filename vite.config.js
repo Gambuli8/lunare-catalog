@@ -50,6 +50,18 @@ function apiDevServer() {
         }
         req.query = query
 
+        // Vercel parsea el cuerpo JSON solo; Vite no, asi que lo hacemos
+        // aca para que los POST se comporten igual en dev.
+        if (req.method === 'POST' || req.method === 'PUT') {
+          req.body = await new Promise(resolve => {
+            let crudo = ''
+            req.on('data', c => { crudo += c })
+            req.on('end', () => {
+              try { resolve(crudo ? JSON.parse(crudo) : {}) } catch { resolve(crudo) }
+            })
+          })
+        }
+
         try {
           const mod = await server.ssrLoadModule(`/api/${file}.js`)
           await mod.default(req, res)
@@ -67,7 +79,7 @@ export default defineConfig(({ mode }) => {
   // process.env para los handlers; no entran en `define`, así que no se
   // filtran al bundle del cliente.
   const env = loadEnv(mode, process.cwd(), '')
-  for (const key of ['SHEET_CSV_URL', 'SITE_URL']) {
+  for (const key of ['SHEET_CSV_URL', 'SITE_URL', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) {
     if (env[key]) process.env[key] = env[key]
   }
 

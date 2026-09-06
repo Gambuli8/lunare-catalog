@@ -27,6 +27,9 @@ const slugify = str =>
 const store = {
   products: [],
   categories: [ALL],
+  // Opciones de entrega y pago: llegan del servidor, que es quien las
+  // cobra. Hasta que llegan, el checkout se muestra apagado.
+  checkout: { activo: false, entregas: [], pagos: [], envioGratisDesde: 0 },
   loading: true,
   error: null,
   fetchedAt: 0,
@@ -63,9 +66,10 @@ function load(force = false) {
     try {
       const res = await fetch(ENDPOINT, { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const { products } = await res.json()
+      const { products, checkout } = await res.json()
       store.products = Array.isArray(products) ? products : []
       store.categories = buildCategories(store.products)
+      if (checkout) store.checkout = checkout
       store.fetchedAt = Date.now()
     } catch (err) {
       store.error = err.message || 'Error al cargar el catálogo'
@@ -91,6 +95,7 @@ export function useProducts() {
   return {
     products: store.products,
     categories: store.categories,
+    checkout: store.checkout,
     loading: store.loading,
     error: store.error,
     refetch: () => load(true),

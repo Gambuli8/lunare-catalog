@@ -178,6 +178,58 @@ Ahora la home es portada, categorías, destacados, confianza y un cierre hacia l
 tienda — 4.145 px, 5 pantallas. El catálogo vive en `/tienda` y cada sección
 larga tiene su propia dirección, que además es indexable por separado.
 
+## Pedidos y pagos
+
+Los pedidos se guardan en Supabase (proyecto `lunare-tienda`). Hasta ahora un
+pedido solo existía como un chat de WhatsApp; con pago online hace falta
+registro: qué se compró, a qué precio, en qué estado.
+
+```
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+**Sin esas variables el checkout no aparece** y el carrito sigue terminando en
+WhatsApp, igual que antes. `/api/pedido` devuelve 503 y nada más se rompe.
+
+⚠️ La *service role key* saltea RLS: va solo en Vercel, nunca en el repo, que es
+público.
+
+### Lo que protege
+
+**Los precios los pone el servidor.** El navegador manda únicamente qué piezas y
+cuántas. `api/pedido.js` busca cada pieza en el catálogo y usa *ese* precio y
+*ese* stock. Si no fuera así, alcanzaría con editar el JSON del pedido para
+comprarse una pieza a $1.
+
+**El stock se valida dentro de una transacción.** El stock real vive en la
+planilla, que no sabe de transacciones: dos personas podían comprar la última
+pieza al mismo tiempo y las dos recibían confirmación. La función
+`crear_pedido()` toma un lock, le resta a lo que dice la planilla las unidades
+ya comprometidas por pedidos vivos (`stock_comprometido`) y recién ahí inserta.
+Si falta algo, devuelve qué pieza y cuánto queda.
+
+**El precio queda congelado** en `pedido_items`: el del Sheet cambia y un pedido
+viejo tiene que seguir diciendo lo que se cobró ese día.
+
+**Las tablas no son accesibles desde el navegador.** RLS prendido sin políticas y
+permisos revocados de `anon`; solo las funciones del servidor entran, con la
+service role key.
+
+### Estados
+
+`pendiente` → `pagado` → `despachado` → `entregado`, más `cancelado`. Solo
+`pendiente` y `pagado` comprometen stock.
+
+### Pendiente
+
+- **Mercado Pago**: falta el access token. El checkout ya ofrece la opción y
+  registra el pedido; el cobro se coordina a mano hasta conectarlo.
+- **Tarifas de envío**: las de `api/_pedidos.js` son provisorias, a la espera de
+  la API del correo que las calcula por código postal y peso.
+- **Descuento de stock en la planilla**: sigue siendo manual. La base evita
+  vender de más, pero no edita el Sheet.
+
 ## Modo mantenimiento
 
 `middleware.js` puede poner una cortina sobre todo el sitio —páginas, assets
