@@ -4,4 +4,8 @@ Allow: /
 # El catalogo se sirve desde /api; no hay nada que indexar ahi.
 Disallow: /api/
 
+# El panel es interno. Igual pide clave y manda noindex por cabecera:
+# esto es para que no aparezca en resultados, no para protegerlo.
+Disallow: /panel
+
 Sitemap: https://www.lunareacc.com/sitemap.xml

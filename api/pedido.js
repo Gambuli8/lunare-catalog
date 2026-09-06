@@ -92,7 +92,9 @@ export default async function handler(req, res) {
     try {
       waitUntil(aviso)
     } catch {
-      // Fuera de Vercel (npm run dev) no hay contexto para diferirlo.
+      // Fuera de Vercel waitUntil no hace nada y el mail sale igual, porque
+      // el proceso de `npm run dev` sigue vivo. El await es por si algún día
+      // corre en un runtime que sí se congela después de responder.
       await aviso
     }
 
