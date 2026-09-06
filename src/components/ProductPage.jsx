@@ -3,6 +3,7 @@ import { useProducts, formatPrice } from '../hooks/useProducts'
 import { useCart } from '../context/CartContext'
 import CloudinaryImage from './CloudinaryImage'
 import ProductCard from './ProductCard'
+import { trackProductView } from '../lib/track'
 
 // El servidor inyecta la pieza en el HTML (ver api/page.js) para que la
 // ficha se pinte de una sin esperar al fetch del catálogo.
@@ -68,8 +69,10 @@ export default function ProductPage({ slug }) {
   useEffect(() => { setQty(1) }, [slug])
 
   useEffect(() => {
-    if (product) document.title = `${product.name} · ${product.subcategory || product.category} | Lunare Accesorios`
-  }, [product])
+    if (!product) return
+    document.title = `${product.name} · ${product.subcategory || product.category} | Lunare Accesorios`
+    trackProductView(product)
+  }, [product?.id])
 
   if (!product) {
     if (loading) {

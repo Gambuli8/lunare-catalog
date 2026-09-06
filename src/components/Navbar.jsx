@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 
 const NAV_LINKS = [
-  { href: '#inicio',    label: 'Inicio' },
-  { href: '#catalogo',  label: 'Tienda' },
-  { href: '#contacto',  label: 'Contacto' },
-  { href: '#cuidados',  label: 'Cuidados' },
-  { href: '#politicas', label: 'Políticas' },
+  { href: '/',          label: 'Inicio' },
+  { href: '/tienda',    label: 'Tienda' },
+  { href: '/contacto',  label: 'Contacto' },
+  { href: '/cuidados',  label: 'Cuidados' },
+  { href: '/cambios',   label: 'Políticas' },
 ]
 
 export default function Navbar() {
@@ -28,7 +28,7 @@ export default function Navbar() {
       <header className={`sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-[72px] bg-[#F9F5F2]/95 backdrop-blur-md border-b border-[#e8e2da] transition-shadow duration-300 ${scrolled ? 'shadow-md' : ''}`}>
         {/* ── LOGO "Dream Avenue" ── */}
         <a
-          href='#inicio'
+          href='/'
           className='flex flex-col leading-none group'
         >
           <span

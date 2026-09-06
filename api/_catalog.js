@@ -189,6 +189,25 @@ function ensureUniqueSlugs(products) {
   })
 }
 
+// ── Categorías ────────────────────────────────────────────────
+// Las categorías tienen su propia dirección (/tienda/argollas), así que
+// el slug de cada una también tiene que ser estable.
+export const CATEGORY_LABELS = {
+  Argolla: 'Argollas', Pasante: 'Pasantes', Cuff: 'Cuffs', Collar: 'Collares',
+  Dije: 'Dijes', Pulsera: 'Pulseras', Anillo: 'Anillos', Choker: 'Chokers',
+  Abridor: 'Abridores', Broche: 'Broches', Otros: 'Otros',
+}
+
+export const categoryLabel = c => CATEGORY_LABELS[c] || c + (c.endsWith('s') ? '' : 's')
+export const categorySlug = c => slugify(categoryLabel(c))
+
+// Devuelve la categoría canónica a partir de su slug, mirando las que
+// realmente tienen piezas con stock.
+export function categoryFromSlug(slug, products) {
+  const cats = [...new Set(products.map(p => p.category))]
+  return cats.find(c => categorySlug(c) === slug) || null
+}
+
 let cache = null
 const TTL = 60_000
 

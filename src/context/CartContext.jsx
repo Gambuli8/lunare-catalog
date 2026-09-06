@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { useProducts } from '../hooks/useProducts'
 import { showToast } from '../components/Toast'
+import { trackAddToCart } from '../lib/track'
 
 const CartContext = createContext(null)
 
@@ -92,6 +93,7 @@ export function CartProvider({ children }) {
       }
       return [...prev, { ...product, qty: 1 }]
     })
+    trackAddToCart(product)
     setIsOpen(true)
   }, [])
 

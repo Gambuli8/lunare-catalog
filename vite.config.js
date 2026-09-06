@@ -11,7 +11,9 @@ function apiDevServer() {
     configureServer(server) {
       // Mismas reescrituras que vercel.json
       const rewrites = [
-        { test: /^\/producto\/([^/?]+)/, file: 'page', param: 'slug' },
+        { test: /^\/producto\/([^/?]+)\/?$/, file: 'page', param: 'slug' },
+        { test: /^\/tienda\/([^/?]+)\/?$/, file: 'shop', param: 'cat' },
+        { test: /^\/tienda\/?$/, file: 'shop' },
         { test: /^\/sitemap\.xml$/, file: 'sitemap' },
       ]
 

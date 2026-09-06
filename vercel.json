@@ -2,6 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/producto/:slug", "destination": "/api/page?slug=:slug" },
+    { "source": "/tienda", "destination": "/api/shop" },
+    { "source": "/tienda/:cat", "destination": "/api/shop?cat=:cat" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],

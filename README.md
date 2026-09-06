@@ -20,8 +20,10 @@ lunare-catalog/
 │   └── robots.txt
 ├── api/
 │   ├── _catalog.js           ← lee el Sheet en el servidor y normaliza (no es endpoint)
+│   ├── _html.js              ← utilidades del prerender (no es endpoint)
 │   ├── products.js           ← el catálogo que consume el navegador
 │   ├── page.js               ← HTML de la ficha con meta y datos estructurados
+│   ├── shop.js               ← HTML de /tienda y /tienda/:categoria
 │   └── sitemap.js            ← sitemap.xml generado del catálogo
 └── src/
     ├── main.jsx
@@ -29,6 +31,8 @@ lunare-catalog/
     ├── index.css
     ├── context/
     │   └── CartContext.jsx   ← carrito global, persistido en localStorage
+    ├── lib/
+    │   └── track.js          ← eventos de analítica
     ├── hooks/
     │   ├── useProducts.js    ← store compartido; pide /api/products
     │   └── useRoute.js       ← router sobre la History API
@@ -123,10 +127,17 @@ toma el control en el navegador.
 | Dirección | Qué la sirve |
 |---|---|
 | `/producto/:slug` | `api/page.js` — meta propias + `Product` y `BreadcrumbList` |
-| `/sitemap.xml` | `api/sitemap.js` — una entrada por pieza con stock |
+| `/tienda` | `api/shop.js` — catálogo completo + `ItemList` |
+| `/tienda/:categoria` | `api/shop.js` — una página indexable por categoría |
+| `/sitemap.xml` | `api/sitemap.js` — piezas y categorías con stock |
 | `/robots.txt` | estático, en `public/` |
-| `/tienda`, `/cuidados`, `/cambios`, `/contacto` | la home, con scroll a la sección |
+| `/cuidados`, `/cambios`, `/contacto` | la home, con scroll a la sección |
 | todo lo demás | `index.html` (la SPA) |
+
+Los filtros de material, orden y búsqueda van en la query
+(`/tienda/argollas?material=Plata&orden=menor`): se pueden compartir y el botón
+atrás los recorre. La categoría va en la ruta porque es la que interesa indexar
+— "argollas de plata" es una búsqueda real.
 
 Las piezas sin stock desaparecen del catálogo, del sitemap y devuelven 404 con
 `noindex`.
@@ -136,7 +147,8 @@ Si el sitio cambia de dominio, actualizá la variable `SITE_URL` (por defecto
 
 ## Funcionalidades
 
-- ✅ **Una dirección por pieza**, indexable y compartible con vista previa
+- ✅ **Una dirección por pieza y por categoría**, indexable y compartible
+- ✅ **Filtros en la URL** — una vista filtrada se comparte y vuelve con el botón atrás
 - ✅ **Catálogo filtrable** por categoría y material, con búsqueda por nombre
 - ✅ **Carrito lateral** con control de cantidades y tope por stock
 - ✅ **Carrito persistente** — sobrevive al refresh 7 días (localStorage) y se
@@ -146,6 +158,14 @@ Si el sitio cambia de dominio, actualizá la variable `SITE_URL` (por defecto
 - ✅ **Solo productos en stock** — sin stock = no aparecen
 - ✅ **Responsive** — mobile, tablet, desktop
 - ✅ **Secciones**: Inicio, Tienda, Contacto, Cuidados, Políticas
+
+## Analítica
+
+Además de las visitas que ya medía Vercel, `src/lib/track.js` manda cuatro
+eventos de negocio: `producto_visto`, `agregar_al_carrito`, `busqueda` y
+`checkout_whatsapp`. Sin ellos no había forma de saber cuál de las 103 piezas
+vende ni en qué paso se cae la compra. No se manda ningún dato personal: solo
+código de pieza, nombre, categoría y monto.
 
 ## Checkout por WhatsApp
 

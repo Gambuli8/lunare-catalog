@@ -1,9 +1,9 @@
 const LINKS = [
-  { href: '#inicio',    label: 'Inicio' },
-  { href: '#catalogo',  label: 'Tienda' },
-  { href: '#contacto',  label: 'Contacto' },
-  { href: '#cuidados',  label: 'Cuidados' },
-  { href: '#politicas', label: 'Políticas' },
+  { href: '/',          label: 'Inicio' },
+  { href: '/tienda',    label: 'Tienda' },
+  { href: '/contacto',  label: 'Contacto' },
+  { href: '/cuidados',  label: 'Cuidados' },
+  { href: '/cambios',   label: 'Políticas' },
 ]
 
 export default function Footer() {

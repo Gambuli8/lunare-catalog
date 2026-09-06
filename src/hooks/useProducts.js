@@ -10,11 +10,19 @@ const ENDPOINT = '/api/products'
 const TTL = 60_000
 
 const CATEGORY_LABELS = {
-  Argolla: 'Argollas', Pasante: 'Pasantes', Cuff: 'Cuffs',
-  Collar: 'Collares', Dije: 'Dijes', Pulsera: 'Pulseras', Anillo: 'Anillos',
+  Argolla: 'Argollas', Pasante: 'Pasantes', Cuff: 'Cuffs', Collar: 'Collares',
+  Dije: 'Dijes', Pulsera: 'Pulseras', Anillo: 'Anillos', Choker: 'Chokers',
+  Abridor: 'Abridores', Broche: 'Broches', Otros: 'Otros',
 }
 
-const ALL = { key: 'all', label: 'Todos' }
+const ALL = { key: 'all', label: 'Todos', slug: null }
+
+// Mismo criterio que api/_catalog.js: la categoría es una dirección
+// (/tienda/argollas), así que su slug tiene que coincidir con el del
+// servidor o el link no lleva a ningún lado.
+const slugify = str =>
+  String(str).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
 const store = {
   products: [],
@@ -35,10 +43,8 @@ function buildCategories(products) {
   products.forEach(p => {
     if (seen.has(p.category)) return
     seen.add(p.category)
-    cats.push({
-      key: p.category,
-      label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's'),
-    })
+    const label = CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's')
+    cats.push({ key: p.category, label, slug: slugify(label) })
   })
   return cats
 }

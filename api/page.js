@@ -10,9 +10,7 @@
 // vercel.json manda /producto/:slug a esta función.
 
 import { getCatalog, SITE_URL, formatPrice, ogImage } from './_catalog.js'
-
-const esc = s => String(s).replace(/[&<>"']/g, c =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+import { esc, loadShell, inject, notFound } from './_html.js'
 
 const MATERIAL_COPY = {
   'Plata': 'Plata de ley 925, con 92,5 % de plata pura.',
@@ -70,30 +68,12 @@ function breadcrumbs(p, url) {
   }
 }
 
-// Saca las etiquetas genéricas del index.html para que no queden
-// duplicadas con las de la pieza.
-function stripHeadTags(html) {
-  return html
-    .replace(/<title>[\s\S]*?<\/title>/i, '')
-    .replace(/<meta\s+name="description"[^>]*>/gi, '')
-    .replace(/<meta\s+property="og:[^"]*"[^>]*>/gi, '')
-    .replace(/<meta\s+name="twitter:[^"]*"[^>]*>/gi, '')
-    .replace(/<link\s+rel="canonical"[^>]*>/gi, '')
-}
-
 export default async function handler(req, res) {
   const slug = String(req.query.slug || '').trim()
-  const host = req.headers['x-forwarded-host'] || req.headers.host
-  const local = /^(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(host || '')
-  const proto = req.headers['x-forwarded-proto'] || (local ? 'http' : 'https')
 
   let shell
   try {
-    // Pedimos el index.html del propio deploy para heredar los hashes de
-    // los assets del build actual.
-    shell = await fetch(`${proto}://${host}/index.html`, {
-      signal: AbortSignal.timeout(8000),
-    }).then(r => r.text())
+    shell = await loadShell(req)
   } catch (err) {
     console.error('[page] no se pudo leer el shell', err)
     return res.status(500).send('No pudimos cargar la página')
@@ -106,22 +86,16 @@ export default async function handler(req, res) {
     console.error('[page]', err)
   }
 
-  if (!product) {
-    // Sin stock o slug inexistente: que el cliente muestre su propio
-    // mensaje, pero sin que Google lo indexe.
-    const head = '<meta name="robots" content="noindex,follow">' +
-      '<title>Pieza no encontrada · Lunare Accesorios</title>'
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
-    return res.status(404).send(stripHeadTags(shell).replace('</head>', head + '</head>'))
-  }
+  // Sin stock o slug inexistente: que el cliente muestre su propio
+  // mensaje, pero sin que Google lo indexe.
+  if (!product) return notFound(res, shell, 'Pieza no encontrada · Lunare Accesorios')
 
   const url = `${SITE_URL}/producto/${product.slug}`
   const title = `${product.name} · ${product.subcategory || product.category} de ${product.material} | Lunare`
   const desc = description(product)
   const img = product.image ? ogImage(product.image) : `${SITE_URL}/og-default.jpg`
 
-  const head = [
+  const tags = [
     `<title>${esc(title)}</title>`,
     `<meta name="description" content="${esc(desc)}">`,
     `<link rel="canonical" href="${esc(url)}">`,
@@ -143,9 +117,9 @@ export default async function handler(req, res) {
     `<script type="application/ld+json">${JSON.stringify(breadcrumbs(product, url))}</script>`,
     // El cliente lee esto y pinta la ficha sin esperar al fetch del catálogo.
     `<script>window.__PRODUCT__=${JSON.stringify(product).replace(/</g, '\\u003c')}</script>`,
-  ].join('\n    ')
+  ]
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
   res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600')
-  return res.status(200).send(stripHeadTags(shell).replace('</head>', '    ' + head + '\n  </head>'))
+  return res.status(200).send(inject(shell, tags))
 }

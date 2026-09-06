@@ -6,21 +6,35 @@ import { useEffect, useState, useCallback } from 'react'
 // no llega al servidor: Google y WhatsApp nunca verían la pieza.
 // vercel.json se encarga de que cualquier ruta devuelva el index.
 
-export function parsePath(pathname = window.location.pathname) {
+export function parsePath(pathname = window.location.pathname, search = window.location.search) {
   const seg = pathname.split('/').filter(Boolean)
-  if (!seg.length) return { name: 'home' }
-  if (seg[0] === 'producto' && seg[1]) return { name: 'product', slug: decodeURIComponent(seg[1]) }
-  if (seg[0] === 'tienda') return { name: 'home', anchor: 'catalogo' }
-  if (seg[0] === 'cuidados') return { name: 'home', anchor: 'cuidados' }
-  if (seg[0] === 'cambios') return { name: 'home', anchor: 'politicas' }
-  if (seg[0] === 'contacto') return { name: 'home', anchor: 'contacto' }
-  return { name: 'notfound' }
+  const query = Object.fromEntries(new URLSearchParams(search))
+
+  if (!seg.length) return { name: 'home', query }
+  if (seg[0] === 'producto' && seg[1]) return { name: 'product', slug: decodeURIComponent(seg[1]), query }
+  if (seg[0] === 'tienda') return { name: 'shop', categorySlug: seg[1] ? decodeURIComponent(seg[1]) : null, query }
+  if (seg[0] === 'cuidados') return { name: 'home', anchor: 'cuidados', query }
+  if (seg[0] === 'cambios') return { name: 'home', anchor: 'politicas', query }
+  if (seg[0] === 'contacto') return { name: 'home', anchor: 'contacto', query }
+  return { name: 'notfound', query }
 }
 
 export function navigate(to, { replace = false } = {}) {
   if (replace) window.history.replaceState({}, '', to)
   else window.history.pushState({}, '', to)
   window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
+// Arma una dirección de tienda con los filtros puestos, para que una
+// vista filtrada se pueda compartir y volver a abrir igual.
+export function shopUrl({ categorySlug = null, material = '', orden = '', q = '' } = {}) {
+  const path = categorySlug ? `/tienda/${categorySlug}` : '/tienda'
+  const params = new URLSearchParams()
+  if (material) params.set('material', material)
+  if (orden && orden !== 'destacados') params.set('orden', orden)
+  if (q) params.set('q', q)
+  const qs = params.toString()
+  return qs ? `${path}?${qs}` : path
 }
 
 export function useRoute() {
@@ -46,7 +60,7 @@ export function useRoute() {
       if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) return
 
       e.preventDefault()
-      if (href !== window.location.pathname) navigate(href)
+      if (href !== window.location.pathname + window.location.search) navigate(href)
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)

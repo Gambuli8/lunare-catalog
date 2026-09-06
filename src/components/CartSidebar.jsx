@@ -1,6 +1,7 @@
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../hooks/useProducts'
 import CloudinaryImage from './CloudinaryImage'
+import { trackCheckout } from '../lib/track'
 
 export default function CartSidebar() {
   const { items, removeItem, changeQty, total, isOpen, setIsOpen } = useCart()
@@ -12,6 +13,7 @@ export default function CartSidebar() {
       msg += `• [Cód: ${i.id}] ${i.name} (${i.material}) — ${i.qty} x ${formatPrice(i.price)} = ${formatPrice(i.price * i.qty)}\n`
     })
     msg += `\n*Total: ${formatPrice(total)}*\n\n¿Podemos coordinar la compra? 😊`
+    trackCheckout(items, total)
     window.open(`https://wa.me/542954476558?text=${encodeURIComponent(msg)}`, '_blank')
   }
 

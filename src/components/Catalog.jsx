@@ -1,5 +1,7 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useProducts } from '../hooks/useProducts'
+import { navigate, shopUrl } from '../hooks/useRoute'
+import { trackSearch } from '../lib/track'
 import ProductCard from './ProductCard'
 
 const MATERIALS = [
@@ -251,58 +253,128 @@ function FilterSheet({ open, onClose, categories, activeCategory, activeMaterial
   )
 }
 
-export default function Catalog() {
+export default function Catalog({ route, standalone = false }) {
   const { products, categories, loading, error, refetch } = useProducts()
-  const [activeCategory, setActiveCategory] = useState('all')
-  const [activeMaterial, setActiveMaterial] = useState('all')
-  const [search, setSearch] = useState('')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const handleCategory = useCallback(key => {
-    setActiveCategory(key)
+  // Los filtros viven en la dirección, no en memoria: así una vista
+  // filtrada se puede compartir, volver con el botón atrás y —en el caso
+  // de la categoría— la indexa Google como página propia.
+  const catSlug = route?.categorySlug || null
+  const query = route?.query || {}
+  const activeMaterial = query.material || 'all'
+  const activeSort = query.orden || 'destacados'
+  const urlSearch = query.q || ''
+
+  const activeCategory = useMemo(() => {
+    if (!catSlug) return 'all'
+    return categories.find(c => c.slug === catSlug)?.key ?? 'all'
+  }, [catSlug, categories])
+
+  const activeCatDef = categories.find(c => c.key === activeCategory) || categories[0]
+
+  // El input se maneja local para que escribir no espere a la navegación,
+  // y se vuelca a la URL con un respiro.
+  const [search, setSearch] = useState(urlSearch)
+  const debounce = useRef()
+  useEffect(() => { setSearch(urlSearch) }, [urlSearch])
+
+  const pushUrl = useCallback(next => {
+    navigate(shopUrl({
+      categorySlug: next.categorySlug !== undefined ? next.categorySlug : catSlug,
+      material: next.material !== undefined ? next.material : (activeMaterial === 'all' ? '' : activeMaterial),
+      orden: next.orden !== undefined ? next.orden : activeSort,
+      q: next.q !== undefined ? next.q : urlSearch,
+    }), { replace: next.replace })
     setVisibleCount(PAGE_SIZE)
-  }, [])
-  const handleMaterial = useCallback(key => {
-    setActiveMaterial(key)
-    setVisibleCount(PAGE_SIZE)
-  }, [])
+  }, [catSlug, activeMaterial, activeSort, urlSearch])
+
   const handleSearch = useCallback(val => {
     setSearch(val)
-    setVisibleCount(PAGE_SIZE)
-  }, [])
-  const resetFilters = useCallback(() => {
-    setActiveCategory('all')
-    setActiveMaterial('all')
-    setSearch('')
-    setVisibleCount(PAGE_SIZE)
-  }, [])
+    clearTimeout(debounce.current)
+    debounce.current = setTimeout(() => {
+      pushUrl({ q: val, replace: true })
+      if (val.trim().length > 2) trackSearch(val.trim())
+    }, 300)
+  }, [pushUrl])
+
+  useEffect(() => () => clearTimeout(debounce.current), [])
+
+  const handleCategory = useCallback(key => {
+    const def = categories.find(c => c.key === key)
+    pushUrl({ categorySlug: key === 'all' ? null : def?.slug || null })
+  }, [categories, pushUrl])
+
+  const handleMaterial = useCallback(key => {
+    pushUrl({ material: key === 'all' ? '' : key })
+  }, [pushUrl])
+
+  const handleSort = useCallback(value => pushUrl({ orden: value }), [pushUrl])
+
+  const resetFilters = useCallback(() => navigate('/tienda'), [])
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return products.filter(p => (activeCategory === 'all' || p.category === activeCategory) && matchesMaterial(p, activeMaterial) && (!q || p.name.toLowerCase().includes(q) || p.subcategory.toLowerCase().includes(q)))
-  }, [products, activeCategory, activeMaterial, search])
+    const q = urlSearch.trim().toLowerCase()
+    const list = products.filter(p =>
+      (activeCategory === 'all' || p.category === activeCategory) &&
+      matchesMaterial(p, activeMaterial) &&
+      (!q || p.name.toLowerCase().includes(q) || p.subcategory.toLowerCase().includes(q))
+    )
+    if (activeSort === 'menor') return [...list].sort((a, b) => (a.pricePromo ?? a.price) - (b.pricePromo ?? b.price))
+    if (activeSort === 'mayor') return [...list].sort((a, b) => (b.pricePromo ?? b.price) - (a.pricePromo ?? a.price))
+    if (activeSort === 'nombre') return [...list].sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    return list
+  }, [products, activeCategory, activeMaterial, urlSearch, activeSort])
 
   const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
   const loadMore = useCallback(() => setVisibleCount(c => c + PAGE_SIZE), [])
-  const hasFilters = activeCategory !== 'all' || activeMaterial !== 'all' || search
+  const hasFilters = activeCategory !== 'all' || activeMaterial !== 'all' || !!urlSearch
   const activeFilterCount = (activeCategory !== 'all' ? 1 : 0) + (activeMaterial !== 'all' ? 1 : 0)
+
+  useEffect(() => {
+    if (!standalone) return
+    const label = activeCategory === 'all' ? 'Tienda' : activeCatDef?.label
+    document.title = `${label} | Lunare Accesorios`
+  }, [standalone, activeCategory, activeCatDef])
+
+  const heading = standalone
+    ? (activeCategory === 'all' ? 'Tienda' : activeCatDef?.label || 'Tienda')
+    : 'Productos'
 
   return (
     <section
       id='catalogo'
-      className='px-6 py-24 bg-white md:px-12'
+      className={`px-6 md:px-12 ${standalone ? 'pt-10 pb-24 bg-[#F9F5F2]' : 'py-24 bg-white'}`}
     >
-      <div className='mb-12 text-center'>
-        <p className='text-[11px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-2'>Nuestra colección</p>
-        <h2 className='font-serif text-[clamp(36px,5vw,52px)] font-light text-[#0e0d0c]'>Productos</h2>
+      {standalone && (
+        <nav aria-label='Ruta de navegación' className='flex items-center gap-2 mb-6 text-xs tracking-wide text-[#5f574e]'>
+          <a href='/' className='hover:text-[#8f7647] transition-colors'>Inicio</a>
+          <span className='text-[#8f877e]'>/</span>
+          {activeCategory === 'all'
+            ? <span className='text-[#0e0d0c]'>Tienda</span>
+            : <>
+                <a href='/tienda' className='hover:text-[#8f7647] transition-colors'>Tienda</a>
+                <span className='text-[#8f877e]'>/</span>
+                <span className='text-[#0e0d0c]'>{activeCatDef?.label}</span>
+              </>}
+        </nav>
+      )}
+
+      <div className={`mb-12 ${standalone ? '' : 'text-center'}`}>
+        <p className='text-[11px] tracking-[0.25em] uppercase text-[#8f7647] font-sans mb-2'>Nuestra colección</p>
+        {standalone
+          ? <h1 className='font-serif text-[clamp(36px,5vw,52px)] font-light text-[#0e0d0c]'>{heading}</h1>
+          : <h2 className='font-serif text-[clamp(36px,5vw,52px)] font-light text-[#0e0d0c]'>{heading}</h2>}
         {!loading && !error && (
-          <div className='flex items-center justify-center gap-2 mt-3'>
+          <div className={`flex items-center gap-2 mt-3 ${standalone ? '' : 'justify-center'}`}>
             <span className='relative flex w-2 h-2'>
-              <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b89a6a] opacity-75' />
-              <span className='relative inline-flex rounded-full h-2 w-2 bg-[#b89a6a]' />
+              <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8f7647] opacity-75' />
+              <span className='relative inline-flex rounded-full h-2 w-2 bg-[#8f7647]' />
             </span>
-            <span className='text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans'>{products.length} productos disponibles · actualizado en vivo</span>
+            <span className='text-[10px] tracking-[0.2em] uppercase text-[#5f574e] font-sans'>
+              {filtered.length} {filtered.length === 1 ? 'pieza disponible' : 'piezas disponibles'} · el stock se actualiza solo
+            </span>
           </div>
         )}
       </div>
@@ -310,78 +382,62 @@ export default function Catalog() {
       {!loading && !error && products.length > 0 && (
         <div className='flex flex-col gap-4 mb-12'>
           <div className='flex items-center gap-3'>
-            <SearchBar
-              value={search}
-              onChange={handleSearch}
-            />
+            <SearchBar value={search} onChange={handleSearch} />
 
             {/* Botón filtros — solo mobile */}
             <button
               onClick={() => setSheetOpen(true)}
-              className='md:hidden relative flex items-center gap-1.5 border border-[#e8e2da] text-[#7a7269] text-[11px] tracking-[0.1em] uppercase font-sans px-3 py-2 rounded-full hover:border-[#0e0d0c] hover:text-[#0e0d0c] transition-colors flex-shrink-0'
+              className='md:hidden relative flex items-center gap-1.5 border border-[#e8e2da] text-[#5f574e] text-[11px] tracking-[0.1em] uppercase px-3 py-2 rounded-full hover:border-[#0e0d0c] hover:text-[#0e0d0c] transition-colors flex-shrink-0'
             >
-              <svg
-                width='13'
-                height='13'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
-                viewBox='0 0 24 24'
-              >
+              <svg width='13' height='13' fill='none' stroke='currentColor' strokeWidth='2' viewBox='0 0 24 24'>
                 <path d='M4 6h16M7 12h10M10 18h4' />
               </svg>
               Filtros
-              {activeFilterCount > 0 && <span className='absolute -top-1.5 -right-1.5 bg-[#b89a6a] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-sans'>{activeFilterCount}</span>}
+              {activeFilterCount > 0 && <span className='absolute -top-1.5 -right-1.5 bg-[#8f7647] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-sans'>{activeFilterCount}</span>}
             </button>
 
-            {/* Botón actualizar — oculto en mobile */}
-            <button
-              onClick={refetch}
-              title='Actualizar catálogo'
-              className='ml-auto hidden sm:flex items-center gap-1.5 text-[10px] tracking-[0.15em] uppercase text-[#7a7269] font-sans hover:text-[#b89a6a] transition-colors duration-200 flex-shrink-0'
-            >
-              <svg
-                width='13'
-                height='13'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
-                viewBox='0 0 24 24'
+            <div className='items-center hidden gap-2 ml-auto sm:flex'>
+              <label htmlFor='orden' className='text-[10px] tracking-[0.15em] uppercase text-[#5f574e] font-sans'>Ordenar</label>
+              <select
+                id='orden'
+                value={activeSort}
+                onChange={e => handleSort(e.target.value)}
+                className='bg-white border border-[#e8e2da] text-[12px] font-sans text-[#0e0d0c] px-3 py-2 outline-none focus:border-[#8f7647] transition-colors'
               >
-                <path d='M23 4v6h-6' />
-                <path d='M1 20v-6h6' />
-                <path d='M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15' />
-              </svg>
-              Actualizar
-            </button>
+                <option value='destacados'>Destacados</option>
+                <option value='menor'>Menor precio</option>
+                <option value='mayor'>Mayor precio</option>
+                <option value='nombre'>Nombre A–Z</option>
+              </select>
+            </div>
           </div>
 
-          {/* Filtros desktop */}
+          {/* Filtros desktop — las categorías son links reales a /tienda/<categoria> */}
           <div className='flex-wrap items-center hidden gap-3 md:flex'>
-            <span className='text-[11px] tracking-[0.15em] uppercase text-[#7a7269] font-sans whitespace-nowrap'>Categoría</span>
+            <span className='text-[11px] tracking-[0.15em] uppercase text-[#5f574e] font-sans whitespace-nowrap'>Categoría</span>
             <div className='flex flex-wrap gap-2'>
               {categories.map(c => (
-                <button
+                <a
                   key={c.key}
-                  onClick={() => handleCategory(c.key)}
+                  href={c.key === 'all' ? '/tienda' : `/tienda/${c.slug}`}
                   className={`text-[11px] tracking-[0.1em] uppercase px-4 py-1.5 rounded-full border font-sans transition-all duration-200
-                    ${activeCategory === c.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-transparent text-[#7a7269] border-[#e8e2da] hover:border-[#0e0d0c] hover:text-[#0e0d0c]'}`}
+                    ${activeCategory === c.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-transparent text-[#5f574e] border-[#e8e2da] hover:border-[#0e0d0c] hover:text-[#0e0d0c]'}`}
                 >
                   {c.label}
-                </button>
+                </a>
               ))}
             </div>
           </div>
 
           <div className='flex-wrap items-center hidden gap-3 md:flex'>
-            <span className='text-[11px] tracking-[0.15em] uppercase text-[#7a7269] font-sans whitespace-nowrap'>Material</span>
+            <span className='text-[11px] tracking-[0.15em] uppercase text-[#5f574e] font-sans whitespace-nowrap'>Material</span>
             <div className='flex flex-wrap gap-2'>
               {MATERIALS.map(m => (
                 <button
                   key={m.key}
                   onClick={() => handleMaterial(m.key)}
                   className={`text-[11px] tracking-[0.1em] uppercase px-4 py-1.5 rounded-full border font-sans transition-all duration-200
-                    ${activeMaterial === m.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-transparent text-[#7a7269] border-[#e8e2da] hover:border-[#0e0d0c] hover:text-[#0e0d0c]'}`}
+                    ${activeMaterial === m.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-transparent text-[#5f574e] border-[#e8e2da] hover:border-[#0e0d0c] hover:text-[#0e0d0c]'}`}
                 >
                   {m.label}
                 </button>
@@ -391,12 +447,12 @@ export default function Catalog() {
 
           {hasFilters && (
             <div className='flex items-center gap-3'>
-              <span className='text-[11px] text-[#7a7269] font-sans'>
+              <span className='text-[11px] text-[#5f574e] font-sans'>
                 {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
               </span>
               <button
                 onClick={resetFilters}
-                className='text-[11px] tracking-[0.1em] uppercase text-[#b89a6a] font-sans hover:underline'
+                className='text-[11px] tracking-[0.1em] uppercase text-[#8f7647] font-sans hover:underline'
               >
                 Limpiar todo
               </button>
@@ -407,33 +463,13 @@ export default function Catalog() {
 
       <div className='grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4 md:gap-7'>
         {loading && Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-        {!loading && error && (
-          <ErrorState
-            message={error}
-            onRetry={refetch}
-          />
-        )}
+        {!loading && error && <ErrorState message={error} onRetry={refetch} />}
         {!loading && !error && filtered.length === 0 && products.length > 0 && (
-          <EmptyState
-            onReset={resetFilters}
-            hasSearch={!!search}
-          />
+          <EmptyState onReset={resetFilters} hasSearch={!!urlSearch} />
         )}
-        {!loading &&
-          !error &&
-          visible.map((p, i) => (
-            <ProductCard
-              key={p.id}
-              product={p}
-              index={i}
-            />
-          ))}
+        {!loading && !error && visible.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
         {!loading && !error && filtered.length > 0 && (
-          <LoadMoreButton
-            shown={visible.length}
-            total={filtered.length}
-            onLoadMore={loadMore}
-          />
+          <LoadMoreButton shown={visible.length} total={filtered.length} onLoadMore={loadMore} />
         )}
       </div>
 
@@ -443,12 +479,8 @@ export default function Catalog() {
         categories={categories}
         activeCategory={activeCategory}
         activeMaterial={activeMaterial}
-        onCategory={k => {
-          handleCategory(k)
-        }}
-        onMaterial={k => {
-          handleMaterial(k)
-        }}
+        onCategory={handleCategory}
+        onMaterial={handleMaterial}
         onReset={resetFilters}
         hasFilters={hasFilters}
         filteredCount={filtered.length}

@@ -3,7 +3,7 @@
 // stock. Cuando una pieza se agota sale del CSV y sale del sitemap.
 // vercel.json manda /sitemap.xml acá.
 
-import { getCatalog, SITE_URL } from './_catalog.js'
+import { getCatalog, categorySlug, SITE_URL } from './_catalog.js'
 
 const esc = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]))
@@ -21,9 +21,13 @@ export default async function handler(req, res) {
     console.error('[sitemap]', err)
   }
 
+  // Cada categoria con stock es una pagina indexable propia.
+  const categories = [...new Set(products.map(p => p.category))].sort()
+
   const entries = [
     url(`${SITE_URL}/`, '1.0', 'weekly'),
     url(`${SITE_URL}/tienda`, '0.9', 'daily'),
+    ...categories.map(c => url(`${SITE_URL}/tienda/${categorySlug(c)}`, '0.8', 'weekly')),
     url(`${SITE_URL}/cuidados`, '0.4', 'monthly'),
     url(`${SITE_URL}/cambios`, '0.4', 'monthly'),
     url(`${SITE_URL}/contacto`, '0.5', 'monthly'),

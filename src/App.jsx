@@ -16,7 +16,7 @@ import { Analytics } from '@vercel/analytics/react'
 
 const HOME_TITLE = 'Lunare Accesorios | Accesorios de Plata y Acero Blanco'
 
-function Home({ anchor }) {
+function Home({ anchor, route }) {
   // /tienda, /cuidados y /cambios son direcciones reales que llevan a su
   // sección: sirven para compartir y para que Google las indexe por
   // separado, sin partir la home en varias páginas.
@@ -38,7 +38,7 @@ function Home({ anchor }) {
     <>
       <Hero />
       <FeaturedProducts />
-      <Catalog />
+      <Catalog route={route} />
       <Contact />
       <Cuidados />
       <Politicas />
@@ -67,8 +67,10 @@ export default function App() {
   const route = useRoute()
 
   useEffect(() => {
-    if (route.name !== 'product') document.title = HOME_TITLE
-    if (route.name === 'product' || !route.anchor) window.scrollTo(0, 0)
+    if (route.name === 'home') document.title = HOME_TITLE
+    // Al filtrar dentro de la tienda no conviene saltar arriba: la persona
+    // está mirando la grilla.
+    if (route.name !== 'shop' && !route.anchor) window.scrollTo(0, 0)
   }, [route.name, route.slug, route.anchor])
 
   return (
@@ -78,9 +80,11 @@ export default function App() {
         <main>
           {route.name === 'product'
             ? <ProductPage slug={route.slug} />
-            : route.name === 'notfound'
-              ? <NotFound />
-              : <Home anchor={route.anchor} />}
+            : route.name === 'shop'
+              ? <Catalog route={route} standalone />
+              : route.name === 'notfound'
+                ? <NotFound />
+                : <Home anchor={route.anchor} route={route} />}
         </main>
         <Footer />
         <CartSidebar />
