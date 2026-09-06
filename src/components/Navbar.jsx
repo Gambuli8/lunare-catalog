@@ -61,8 +61,8 @@ export default function Navbar() {
         <div className='flex items-center gap-4'>
           <button
             onClick={() => setIsOpen(true)}
-            aria-label='Carrito'
-            className='relative text-dark hover:text-gold transition-colors duration-300'
+            aria-label='Ver el pedido'
+            className='relative flex items-center justify-center w-11 h-11 -mr-2 transition-colors duration-300 text-dark hover:text-gold'
           >
             <svg
               width='22'
@@ -87,8 +87,9 @@ export default function Navbar() {
           {/* Hamburger */}
           <button
             onClick={() => setMenuOpen(o => !o)}
-            className='md:hidden flex flex-col gap-1.5 p-1'
-            aria-label='Menú'
+            className='md:hidden flex flex-col items-center justify-center gap-1.5 w-11 h-11 -mr-2'
+            aria-label='Abrir menú'
+            aria-expanded={menuOpen}
           >
             <span className={`block w-5 h-px bg-dark transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
             <span className={`block w-5 h-px bg-dark transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />

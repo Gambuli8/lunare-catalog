@@ -1,6 +1,7 @@
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../hooks/useProducts'
 import CloudinaryImage from './CloudinaryImage'
+import Icon from './Icon'
 import { trackCheckout } from '../lib/track'
 
 export default function CartSidebar() {
@@ -32,9 +33,10 @@ export default function CartSidebar() {
           <h3 className='font-serif text-2xl font-light'>Tu Carrito</h3>
           <button
             onClick={() => setIsOpen(false)}
-            className='text-lg transition-colors text-muted hover:text-dark'
+            aria-label='Cerrar el pedido'
+            className='flex items-center justify-center transition-colors w-11 h-11 -mr-3 text-muted hover:text-dark'
           >
-            ✕
+            <Icon name='cerrar' size={18} strokeWidth={1.8} />
           </button>
         </div>
 
@@ -74,16 +76,17 @@ export default function CartSidebar() {
                       {item.material} · {item.subcategory}
                     </p>
 
-                    <div className='flex items-center justify-between mt-2.5'>
-                      <span className='font-sans text-sm font-medium'>{formatPrice(item.price * item.qty)}</span>
+                    <div className='flex flex-col items-start gap-2.5 mt-2.5 sm:flex-row sm:items-center sm:justify-between'>
+                      <span className='text-[15px] font-medium'>{formatPrice(item.price * item.qty)}</span>
 
                       <div className='flex items-center gap-2.5'>
                         {/* Botón − */}
                         <button
                           onClick={() => changeQty(item.id, -1)}
-                          className='flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full border-border hover:bg-dark hover:text-white hover:border-dark'
+                          aria-label={`Quitar una unidad de ${item.name}`}
+                          className='flex items-center justify-center transition-all duration-200 border rounded-full w-11 h-11 md:w-9 md:h-9 border-border hover:bg-dark hover:text-white hover:border-dark'
                         >
-                          −
+                          <Icon name='menos' size={13} strokeWidth={2.2} />
                         </button>
 
                         <span className='text-sm min-w-[16px] text-center font-sans'>{item.qty}</span>
@@ -93,17 +96,19 @@ export default function CartSidebar() {
                           onClick={() => changeQty(item.id, 1)}
                           disabled={atMax}
                           title={atMax ? 'Stock máximo alcanzado' : undefined}
-                          className={`flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full
+                          aria-label={`Agregar una unidad de ${item.name}`}
+                          className={`flex items-center justify-center transition-all duration-200 border rounded-full w-11 h-11 md:w-9 md:h-9
                             ${atMax ? 'border-border text-[#c8c0b8] cursor-not-allowed' : 'border-border hover:bg-dark hover:text-white hover:border-dark'}`}
                         >
-                          +
+                          <Icon name='mas' size={13} strokeWidth={2.2} />
                         </button>
 
                         <button
                           onClick={() => removeItem(item.id)}
-                          className='ml-1 text-xs transition-colors duration-200 text-muted hover:text-red-500'
+                          aria-label={`Quitar ${item.name} del pedido`}
+                          className='flex items-center justify-center transition-colors duration-200 w-11 h-11 md:w-9 md:h-9 text-muted hover:text-sale'
                         >
-                          ✕
+                          <Icon name='cerrar' size={14} strokeWidth={2} />
                         </button>
                       </div>
                     </div>
@@ -126,7 +131,7 @@ export default function CartSidebar() {
             </div>
             <button
               onClick={checkout}
-              className='w-full flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#1ebe59] text-white text-xs tracking-[0.15em] uppercase font-sans py-3.5 transition-colors duration-200'
+              className='w-full flex items-center justify-center gap-2.5 bg-wa hover:bg-wa-dark text-white text-xs tracking-[0.15em] uppercase font-sans min-h-[56px] py-4 transition-colors duration-200'
             >
               <svg
                 width='18'

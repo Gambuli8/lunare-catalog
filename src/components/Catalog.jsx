@@ -98,7 +98,7 @@ function SearchBar({ value, onChange }) {
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder='Buscar por nombre...'
-        className='w-full pl-9 pr-9 py-2 bg-white border border-[#e8e2da] rounded-full text-sm font-sans text-[#0e0d0c] placeholder-[#b8b0a8] outline-none focus:border-[#b89a6a] transition-colors duration-200'
+        className='w-full h-11 pl-10 pr-10 bg-paper border border-border rounded-full text-sm text-dark placeholder-[#a89f95] outline-none focus:border-gold transition-colors duration-200'
       />
       {value && (
         <button
@@ -372,8 +372,11 @@ export default function Catalog({ route, standalone = false }) {
               <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8f7647] opacity-75' />
               <span className='relative inline-flex rounded-full h-2 w-2 bg-[#8f7647]' />
             </span>
-            <span className='text-[10px] tracking-[0.2em] uppercase text-[#5f574e] font-sans'>
-              {filtered.length} {filtered.length === 1 ? 'pieza disponible' : 'piezas disponibles'} · el stock se actualiza solo
+            <span className='text-[10px] tracking-[0.16em] uppercase text-muted'>
+              {filtered.length} {filtered.length === 1 ? 'pieza' : 'piezas'}
+              {/* La coletilla ocupaba una segunda línea en mobile y dejaba el
+                  puntito colgado arriba; desde sm hay lugar de sobra. */}
+              <span className='hidden sm:inline'> disponibles · el stock se actualiza solo</span>
             </span>
           </div>
         )}
@@ -387,7 +390,7 @@ export default function Catalog({ route, standalone = false }) {
             {/* Botón filtros — solo mobile */}
             <button
               onClick={() => setSheetOpen(true)}
-              className='md:hidden relative flex items-center gap-1.5 border border-[#e8e2da] text-[#5f574e] text-[11px] tracking-[0.1em] uppercase px-3 py-2 rounded-full hover:border-[#0e0d0c] hover:text-[#0e0d0c] transition-colors flex-shrink-0'
+              className='md:hidden relative flex items-center gap-2 h-11 px-4 border rounded-full border-border text-muted text-[11px] tracking-[0.1em] uppercase hover:border-dark hover:text-dark transition-colors flex-shrink-0'
             >
               <svg width='13' height='13' fill='none' stroke='currentColor' strokeWidth='2' viewBox='0 0 24 24'>
                 <path d='M4 6h16M7 12h10M10 18h4' />

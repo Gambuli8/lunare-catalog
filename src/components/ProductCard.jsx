@@ -118,7 +118,7 @@ export default function ProductCard({ product, index }) {
           aria-label={`Agregar ${product.name} al pedido`}
           disabled={atMax && !added}
           title={atMax ? 'Stock máximo en el pedido' : undefined}
-          className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0
+          className={`w-11 h-11 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0
             ${added ? 'bg-[#0f7a41] scale-110' : atMax ? 'bg-[#c8c0b8] cursor-not-allowed' : 'bg-[#0e0d0c] hover:bg-[#8f7647] hover:scale-110'}`}
         >
           {added
