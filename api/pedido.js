@@ -5,7 +5,9 @@
 // Antes un pedido solo existía como un chat de WhatsApp. Ahora queda
 // registrado con número, estado y el precio congelado del día.
 
+import { waitUntil } from '@vercel/functions'
 import { getCatalog } from './_catalog.js'
+import { avisarPedido } from './_aviso.js'
 import {
   ENTREGAS, PAGOS, costoEnvio, validarItems, crearPedido, pedidosConfigurados,
 } from './_pedidos.js'
@@ -82,6 +84,17 @@ export default async function handler(req, res) {
     // La base rechaza el pedido si otra persona se llevó la última pieza
     // entre que se armó el carrito y se confirmó.
     if (!r?.ok) return res.status(409).json(r ?? { ok: false, error: 'NO_SE_PUDO_CREAR' })
+
+    // A partir de acá el pedido ya está guardado. El aviso sale después de
+    // responder —la clienta no espera al servidor de mail— y si falla, se
+    // queda en los logs sin romper la compra.
+    const aviso = avisarPedido({ pedido: r.pedido, datos, items })
+    try {
+      waitUntil(aviso)
+    } catch {
+      // Fuera de Vercel (npm run dev) no hay contexto para diferirlo.
+      await aviso
+    }
 
     res.setHeader('Cache-Control', 'no-store')
     return res.status(201).json({
