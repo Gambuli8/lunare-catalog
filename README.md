@@ -16,6 +16,7 @@ lunare-catalog/
 ├── postcss.config.js
 ├── .env.example
 ├── vercel.json               ← reescrituras: /producto/:slug y /sitemap.xml
+├── middleware.js             ← modo mantenimiento (corre antes que todo)
 ├── public/
 │   └── robots.txt
 ├── api/
@@ -158,6 +159,33 @@ Si el sitio cambia de dominio, actualizá la variable `SITE_URL` (por defecto
 - ✅ **Solo productos en stock** — sin stock = no aparecen
 - ✅ **Responsive** — mobile, tablet, desktop
 - ✅ **Secciones**: Inicio, Tienda, Contacto, Cuidados, Políticas
+
+## Modo mantenimiento
+
+`middleware.js` puede poner una cortina sobre todo el sitio —páginas, assets
+y `/api`— para que una clienta no vea la tienda a medio hacer. Se prende y se
+apaga desde Vercel, sin tocar código ni desplegar:
+
+| Variable | Efecto |
+|---|---|
+| `MANTENIMIENTO=1` | Cortina puesta |
+| `MANTENIMIENTO=0` o sin definir | Tienda abierta (por defecto) |
+| `MANTENIMIENTO_PASSWORD` | La clave para entrar igual |
+
+Para entrar mientras está puesta: `https://www.lunareacc.com/?clave=LA_CLAVE`.
+Queda una cookie de 7 días y se navega normal. La clave se guarda hasheada, no
+en texto plano.
+
+La cortina devuelve **503** y no 404, que es lo que le dice a Google que es algo
+temporal y que no desindexe las páginas.
+
+> ⚠️ **Es una cortina, no seguridad.** Sirve para que no entre una clienta, no
+> para proteger nada sensible. Quien tenga la clave entra, y la primera vez
+> viaja en la URL, así que queda en el historial del navegador y en los logs.
+> La clave va en una variable de entorno: **nunca en el repo**, que es público.
+
+Si `MANTENIMIENTO=1` está puesto pero falta la clave, la cortina se pone igual.
+Es preferible a dejar la tienda abierta por un descuido de configuración.
 
 ## Analítica
 
