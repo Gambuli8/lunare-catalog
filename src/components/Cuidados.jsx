@@ -1,10 +1,23 @@
-const CARE_ITEMS = [
-  { title: 'Almacenamiento', text: 'Guardá tu joya en un lugar fresco, seco y preferiblemente hermético para evitar el ennegrecimiento u oxidación.' },
-  { title: 'Individual', text: 'Almacená cada una de las piezas de forma individual para evitar que se rayen las unas con las otras.' },
-  { title: 'Evitá la madera', text: 'No guardes tu joya directamente en contacto con la madera, ésta a menudo contiene ácidos que pueden afectar la superficie de la plata.' },
-  { title: 'Químicos', text: 'No expongas la pieza a agentes corrosivos como el cloro, grasa, sudor, perfume, agentes alcalinos ni a la salinidad por largos períodos.' },
-  { title: 'Al dormir y bañarse', text: 'No dejes puesta tu joya al momento de dormir ni de bañarte, ya que en esta última puede exponerse al azufre.' },
-  { title: 'Limpieza', text: 'Limpiá tu joya con un paño suave y seco. Para una limpieza más profunda usá un paño de microfibra sin productos abrasivos.' }
+import Icon from './Icon'
+
+const MATERIALES = [
+  {
+    titulo: 'Plata de ley 925',
+    texto: 'Una aleación con 92,5 % de plata pura y 7,5 % de otros metales, generalmente cobre.',
+  },
+  {
+    titulo: 'Acero blanco',
+    texto: 'Tiene un baño que le da su brillo característico. Cuanto más lo cuides, más dura ese color: evitá mojarlo y los abrasivos.',
+  },
+]
+
+const CUIDADOS = [
+  { icono: 'caja', titulo: 'Almacenamiento', texto: 'Guardá tu joya en un lugar fresco, seco y preferiblemente hermético, para evitar el ennegrecimiento u oxidación.' },
+  { icono: 'chispa', titulo: 'Cada una aparte', texto: 'Almacená las piezas por separado, para evitar que se rayen entre sí.' },
+  { icono: 'alerta', titulo: 'Evitá la madera', texto: 'No la guardes en contacto directo con madera: suele contener ácidos que afectan la superficie de la plata.' },
+  { icono: 'gota', titulo: 'Químicos', texto: 'No la expongas a cloro, grasa, sudor, perfume, agentes alcalinos ni a la salinidad por períodos largos.' },
+  { icono: 'luna', titulo: 'Al dormir y bañarte', texto: 'Sacate la joya para dormir y para bañarte: en la ducha puede exponerse al azufre.' },
+  { icono: 'paño', titulo: 'Limpieza', texto: 'Limpiala con un paño suave y seco. Para una limpieza más profunda, un paño de microfibra sin productos abrasivos.' },
 ]
 
 export default function Cuidados() {
@@ -13,33 +26,35 @@ export default function Cuidados() {
       id='cuidados'
       className='px-6 py-24 md:px-12 bg-cream'
     >
-      <div className='max-w-4xl mx-auto'>
-        <p className='text-[11px] tracking-[0.25em] uppercase text-gold font-sans mb-2'>Guía de cuidado</p>
-        <h2 className='font-serif text-[clamp(36px,5vw,52px)] font-light text-dark mb-6'>Cuidados de tus joyas</h2>
+      <div className='max-w-5xl mx-auto'>
+        <p className='text-[11px] tracking-[0.2em] uppercase text-gold font-medium mb-2'>Guía de cuidado</p>
+        <h2 className='font-serif text-[clamp(34px,5vw,52px)] font-light text-dark mb-10'>Cuidados de tus joyas</h2>
 
-        {/* Contenedor de los banners principales */}
-        <div className='flex flex-col gap-4 mb-8'>
-          <div className='bg-gradient-to-br from-taupe to-[#5c4d43] text-white px-8 py-6 rounded-sm text-[15px] leading-relaxed'>
-            La <strong>Plata de ley 925</strong> es una aleación que contiene <strong>92.5%</strong> de plata pura y <strong>7.5%</strong> de otros metales, generalmente cobre.
-          </div>
-
-          <div className='bg-gradient-to-br from-taupe to-[#5c4d43] text-white px-8 py-6 rounded-sm text-[15px] leading-relaxed'>
-            El <strong>Acero Blanco</strong> posee un baño de otros metales que le da ese brillo característico. Cuanto más lo cuides, más duración tendrá dicho color. Evita mojarlo, no expongas a abrasivos (cremas y perfumes), intenta no dormir con
-            los accesorios puestos y podes limpiarlos con un paño seco.
-          </div>
-        </div>
-
-        {/* Grilla de tarjetas restantes */}
-        <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
-          {CARE_ITEMS.map((item, i) => (
+        <div className='grid gap-5 mb-14 sm:grid-cols-2'>
+          {MATERIALES.map((m, i) => (
             <div
-              key={i}
-              className='transition-all duration-300 bg-white border rounded-sm border-border p-7 hover:-translate-y-1 hover:shadow-lg animate-fade-up'
+              key={m.titulo}
+              className='p-7 border bg-paper border-border animate-fade-up'
               style={{ animationDelay: `${i * 0.08}s` }}
             >
-              <span className='block mb-3 text-lg'>🌙</span>
-              <h3 className='mb-2 font-serif text-xl font-light text-dark'>{item.title}</h3>
-              <p className='text-sm leading-relaxed text-muted'>{item.text}</p>
+              <h3 className='mb-2 font-serif text-[22px] font-light text-dark'>{m.titulo}</h3>
+              <p className='text-[15px] leading-relaxed text-muted'>{m.texto}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className='grid gap-x-10 gap-y-9 sm:grid-cols-2 lg:grid-cols-3'>
+          {CUIDADOS.map((c, i) => (
+            <div
+              key={c.titulo}
+              className='flex items-start gap-4 animate-fade-up'
+              style={{ animationDelay: `${i * 0.06}s` }}
+            >
+              <Icon name={c.icono} size={22} strokeWidth={1.3} className='flex-shrink-0 mt-1 text-gold' />
+              <div>
+                <h3 className='mb-1.5 font-serif text-xl font-light text-dark'>{c.titulo}</h3>
+                <p className='text-sm leading-relaxed text-muted'>{c.texto}</p>
+              </div>
             </div>
           ))}
         </div>

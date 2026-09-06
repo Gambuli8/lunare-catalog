@@ -8,7 +8,7 @@ const LINKS = [
 
 export default function Footer() {
   return (
-    <footer className='px-6 text-center bg-dark text-white/70 py-14'>
+    <footer className='px-6 text-center bg-dark text-white/70 py-16'>
       <div className='flex flex-col items-center max-w-lg mx-auto'>
         <span className='font-serif text-2xl tracking-[0.25em] text-white'>LUNARE</span>
         <span className='text-[8px] tracking-[0.35em] uppercase text-gold-lt font-sans mt-1 mb-4'>Accesorios</span>

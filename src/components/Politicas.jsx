@@ -1,3 +1,5 @@
+import Icon from './Icon'
+
 const POLICIES = [
   {
     title: 'Cambios',
@@ -22,11 +24,11 @@ export default function Politicas() {
   return (
     <section
       id='politicas'
-      className='px-6 py-24 bg-white md:px-12'
+      className='px-6 py-24 md:px-12 bg-paper'
     >
       <div className='max-w-3xl mx-auto'>
-        <p className='text-[11px] tracking-[0.25em] uppercase text-gold font-sans mb-2'>Términos y condiciones</p>
-        <h2 className='font-serif text-[clamp(36px,5vw,52px)] font-light text-dark mb-12'>Políticas de Cambio</h2>
+        <p className='text-[11px] tracking-[0.2em] uppercase text-gold font-medium mb-2'>Términos y condiciones</p>
+        <h2 className='font-serif text-[clamp(34px,5vw,52px)] font-light text-dark mb-12'>Cambios y devoluciones</h2>
 
         <div className='flex flex-col gap-12'>
           {POLICIES.map(block => (
@@ -36,10 +38,10 @@ export default function Politicas() {
                 {block.items.map((item, i) => (
                   <li
                     key={i}
-                    className='flex items-start gap-4'
+                    className='flex items-start gap-3.5'
                   >
-                    <span className='text-base flex-shrink-0 mt-0.5'>🌙</span>
-                    <p className='font-sans text-sm leading-relaxed text-muted'>{item}</p>
+                    <Icon name='check' size={16} strokeWidth={1.8} className='flex-shrink-0 mt-1 text-gold' />
+                    <p className='text-[15px] leading-relaxed text-muted'>{item}</p>
                   </li>
                 ))}
               </ul>

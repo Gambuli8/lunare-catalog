@@ -4,6 +4,8 @@ import { useRoute }      from './hooks/useRoute'
 import Navbar            from './components/Navbar'
 import Hero              from './components/Hero'
 import FeaturedProducts  from './components/FeaturedProducts'
+import Categories        from './components/Categories'
+import Trust             from './components/Trust'
 import Catalog           from './components/Catalog'
 import Contact           from './components/Contact'
 import Cuidados          from './components/Cuidados'
@@ -37,7 +39,9 @@ function Home({ anchor, route }) {
   return (
     <>
       <Hero />
+      <Categories />
       <FeaturedProducts />
+      <Trust />
       <Catalog route={route} />
       <Contact />
       <Cuidados />
