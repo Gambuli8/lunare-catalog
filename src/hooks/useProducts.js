@@ -1,202 +1,100 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useReducer } from 'react'
 
-export const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6xogLCXqLvMy3wyrqgL_XqvcXG_PN3JuiqZCy6jYCWnTYwkDxkHYd3r40Df8G3dPk-lIg4kIXaBCX/pub?gid=0&single=true&output=csv'
+// El catálogo se pide a /api/products, que lee el Google Sheet del lado
+// del servidor y devuelve los productos ya normalizados y sin la columna
+// "Precio costo". La URL del Sheet nunca llega al navegador.
+const ENDPOINT = '/api/products'
 
-// Columnas esperadas en el CSV:
-// Id | Nombre | Categoría | Material | Precio costo | Precio individual | Precio Par | Stock | Imagen (URL Cloudinary) | Destacado | Precio promo
-
-const CATEGORY_EMOJI = {
-  Argolla: '💍', Pasante: '✨', Cuff: '⛓️',
-  Collar: '🔗', Dije: '⭐', Pulsera: '💎', Anillo: '💍',
-}
-
-const NAME_CORRECTIONS = {
-  'basic gold':'Basic Gold','basic silver':'Basic Silver','mini silver':'Mini Silver',
-  'mini gold':'Mini Gold','curly white':'Curly White','cubic':'Cubic','star cubic':'Star Cubic',
-  'colorful rainbow':'Colorful Rainbow','pop love violeta':'Pop Love Violeta','argolla love':'Argolla Love',
-  'spark white':'Spark White','aubrey':'Aubrey','white cori':'White Cori','nudo malik':'Nudo Malik',
-  'phoebe':'Phoebe','colorful alena':'Colorful Alena','colorful tabita':'Colorful Tabita',
-  'shiny storm':'Shiny Storm','lita':'Lita','baris':'Baris','kylie shiny':'Kylie Shiny',
-  'drop silver':'Drop Silver','dots gold':'Dots Gold','chain silver':'Chain Silver',
-  'tourbillon':'Tourbillón','tourbillón':'Tourbillón','veneciana':'Veneciana',
-  'susano cubic':'Susano Cubic','susano ambar':'Susano Ámbar','susano ámbar':'Susano Ámbar',
-  'gummy bear':'Gummy Bear','stella':'Stella','baly red':'Baly Red','baly aqua':'Baly Aqua',
-  'verai lila':'Verai Lila','verai celeste':'Verai Celeste','laila green':'Laila Green',
-  'laila blue':'Laila Blue','tennis white':'Tennis White','tennis knot':'Tennis Knot',
-  'tennis doble':'Tennis Doble','tennis dark':'Tennis Dark','tennis heart':'Tennis Heart',
-  'cristal eye':'Cristal Eye','malaquita verde':'Malaquita Verde','malaquita negra':'Malaquita Negra',
-  'sia':'Sia','lina':'Lina','heart':'Heart','conjunto love':'Conjunto Love',
-  'eclectic moon':'Eclectic Moon','shiny heart silver':'Shiny Heart Silver',
-}
-
-function correctName(raw = '') {
-  const key = raw.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ')
-  return NAME_CORRECTIONS[key] || toTitleCase(raw.trim())
-}
-
-function toTitleCase(str) {
-  return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-}
-
-const CATEGORY_MAP = [
-  { keys: ['argolla'],                                   canonical: 'Argolla' },
-  { keys: ['pasante'],                                   canonical: 'Pasante' },
-  { keys: ['cuff', 'cuffs'],                             canonical: 'Cuff'    },
-  { keys: ['cadena', 'collar', 'conjunto', 'corbatero'], canonical: 'Collar'  },
-  { keys: ['choker', 'chokers'],                         canonical: 'Choker'  },
-  { keys: ['dije'],                                      canonical: 'Dije'    },
-  { keys: ['ajustable', 'pulsera', 'tennis'],            canonical: 'Pulsera' },
-  { keys: ['anillo'],                                    canonical: 'Anillo'  },
-  { keys: ['broche'],                                    canonical: 'Broche'  },
-]
-
-function normalizeCategory(raw = '') {
-  const s = raw.trim().toLowerCase()
-  if (!s) return 'Otros'
-  for (const { keys, canonical } of CATEGORY_MAP) {
-    if (keys.some(k => s.includes(k))) return canonical
-  }
-  return toTitleCase(raw.trim())
-}
-
-export const KNOWN_MATERIALS = ['Plata', 'Plata Dorada', 'Acero Blanco']
-
-function normalizeMaterial(raw = '') {
-  const s = raw.trim().toLowerCase()
-  if (s === 'plata')                         return 'Plata'
-  if (s === 'plata dorada' || s === 'oro')   return 'Plata Dorada'
-  if (s === 'acero' || s === 'acero blanco') return 'Acero Blanco'
-  return 'Bijou'
-}
+// Un solo store para toda la app: Catalog y FeaturedProducts montan el
+// hook por separado y antes cada uno disparaba su propio fetch del CSV.
+const TTL = 60_000
 
 const CATEGORY_LABELS = {
-  Argolla:'Argollas', Pasante:'Pasantes', Cuff:'Cuffs',
-  Collar:'Collares', Dije:'Dijes', Pulsera:'Pulseras', Anillo:'Anillos',
+  Argolla: 'Argollas', Pasante: 'Pasantes', Cuff: 'Cuffs', Collar: 'Collares',
+  Dije: 'Dijes', Pulsera: 'Pulseras', Anillo: 'Anillos', Choker: 'Chokers',
+  Abridor: 'Abridores', Broche: 'Broches', Otros: 'Otros',
 }
 
-// Normaliza la URL de imagen:
-// - Cloudinary: la devuelve limpia, sin transformaciones (las aplica CloudinaryImage)
-// - Dropbox (legacy): convierte a formato raw por si quedan URLs viejas en el Sheet
-// - Vacía: devuelve ''
-function toImageUrl(url = '') {
-  if (!url) return ''
-  const s = url.trim()
-  if (s.includes('cloudinary.com')) return s
-  // fallback Dropbox legacy
-  return s
-    .replace(/[?&]dl=0/, '?raw=1')
-    .replace(/[?&]dl=1/, '?raw=1')
-    .replace(/\?raw=1.*$/, '?raw=1')
-    .replace(/^(https?:\/\/)www\./, '$1dl.')
+const ALL = { key: 'all', label: 'Todos', slug: null }
+
+// Mismo criterio que api/_catalog.js: la categoría es una dirección
+// (/tienda/argollas), así que su slug tiene que coincidir con el del
+// servidor o el link no lleva a ningún lado.
+const slugify = str =>
+  String(str).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+const store = {
+  products: [],
+  categories: [ALL],
+  loading: true,
+  error: null,
+  fetchedAt: 0,
 }
 
-function parseCSV(text) {
-  const lines = text.trim().split('\n')
-  if (lines.length < 2) return []
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
-  return lines.slice(1).map(line => {
-    const values = []
-    let cur = '', inQuotes = false
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i]
-      if (ch === '"') { inQuotes = !inQuotes }
-      else if (ch === ',' && !inQuotes) { values.push(cur.trim()); cur = '' }
-      else { cur += ch }
-    }
-    values.push(cur.trim())
-    const row = {}
-    headers.forEach((h, i) => { row[h] = (values[i] || '').replace(/^"|"$/g, '').trim() })
-    return row
+const listeners = new Set()
+let inflight = null
+
+const emit = () => listeners.forEach(notify => notify())
+
+function buildCategories(products) {
+  const seen = new Set()
+  const cats = [ALL]
+  products.forEach(p => {
+    if (seen.has(p.category)) return
+    seen.add(p.category)
+    const label = CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's')
+    cats.push({ key: p.category, label, slug: slugify(label) })
   })
+  return cats
 }
 
-// ⚠️ "Precio costo" se lee pero NUNCA se incluye en el objeto retornado
-function rowToProduct(row) {
-  const stock = parseFloat(row['Stock']) || 0
-  if (stock <= 0) return null
-
-  const rawCategory = row['Categoría'] || row['Categoria'] || ''
-  const category    = normalizeCategory(rawCategory)
-
-  const pricePar = parseFloat((row['Precio Par']        || '').replace(/[^0-9.]/g, ''))
-  const priceInd = parseFloat((row['Precio individual'] || '').replace(/[^0-9.]/g, ''))
-  const price    = (!isNaN(pricePar) && pricePar > 0) ? pricePar
-                 : (!isNaN(priceInd) && priceInd > 0) ? priceInd
-                 : null
-  if (!price) return null
-
-  const material  = normalizeMaterial(row['Material'])
-  const priceNote = (!isNaN(pricePar) && pricePar > 0) ? 'par' : 'und'
-  const image     = toImageUrl(row['Imagen'] || row['imagen'] || row['Image'] || '')
-
-  // ── Destacado ─────────────────────────────────────────────
-  const destRaw  = (row['Destacado'] || row['destacado'] || '').trim().toLowerCase()
-  const featured = ['si', 'sí', 'yes', '1', 'true'].includes(destRaw)
-
-  // ── Precio promo ──────────────────────────────────────────
-  // Solo se usa si es un número válido Y menor al precio normal.
-  // El carrito usará pricePromo cuando exista.
-  // ⚠️ "Precio costo" sigue sin incluirse nunca.
-  const promoRaw   = (row['Precio promo'] || row['precio promo'] || row['Promo'] || '').replace(/[^0-9.]/g, '')
-  const promoValue = promoRaw ? parseFloat(promoRaw) : null
-  const pricePromo = (promoValue && promoValue > 0 && promoValue < price) ? promoValue : null
-
-  return {
-    id: (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
-    name: correctName(row['Nombre'] || ''),
-    category,
-    subcategory: rawCategory.trim(),
-    material,
-    price, // precio normal — siempre presente
-    pricePromo, // precio de oferta — null si no hay promo
-    priceNote,
-    stock, // stock disponible — usado para limitar qty en el carrito
-    image,
-    featured,
-    emoji: CATEGORY_EMOJI[category] || '✦'
-    // ⚠️ "Precio costo" NO está en este objeto
+function load(force = false) {
+  if (inflight) return inflight
+  if (!force && store.products.length && Date.now() - store.fetchedAt < TTL) {
+    return Promise.resolve()
   }
+
+  store.loading = true
+  store.error = null
+  emit()
+
+  inflight = (async () => {
+    try {
+      const res = await fetch(ENDPOINT, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const { products } = await res.json()
+      store.products = Array.isArray(products) ? products : []
+      store.categories = buildCategories(store.products)
+      store.fetchedAt = Date.now()
+    } catch (err) {
+      store.error = err.message || 'Error al cargar el catálogo'
+    } finally {
+      store.loading = false
+      inflight = null
+      emit()
+    }
+  })()
+
+  return inflight
 }
 
 export function useProducts() {
-  const [products,   setProducts]   = useState([])
-  const [categories, setCategories] = useState([{ key: 'all', label: 'Todos' }])
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
+  const [, rerender] = useReducer(n => n + 1, 0)
 
-  const fetchProducts = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const text = await res.text()
-      const rows  = parseCSV(text)
-      const items = rows.map(rowToProduct).filter(Boolean)
+  useEffect(() => {
+    listeners.add(rerender)
+    load()
+    return () => listeners.delete(rerender)
+  }, [rerender])
 
-      const seenCats = new Set()
-      const cats = [{ key: 'all', label: 'Todos' }]
-      items.forEach(p => {
-        if (!seenCats.has(p.category)) {
-          seenCats.add(p.category)
-          cats.push({
-            key:   p.category,
-            label: CATEGORY_LABELS[p.category] || p.category + (p.category.endsWith('s') ? '' : 's'),
-          })
-        }
-      })
-
-      setProducts(items)
-      setCategories(cats)
-    } catch (err) {
-      setError(err.message || 'Error al cargar el catálogo')
-    } finally {
-      setLoading(false)
-    }
+  return {
+    products: store.products,
+    categories: store.categories,
+    loading: store.loading,
+    error: store.error,
+    refetch: () => load(true),
   }
-
-  useEffect(() => { fetchProducts() }, [])
-  return { products, categories, loading, error, refetch: fetchProducts }
 }
 
-export const formatPrice = (n) => '$' + Number(n).toLocaleString('es-AR')
+export const formatPrice = n => '$' + Number(n).toLocaleString('es-AR')

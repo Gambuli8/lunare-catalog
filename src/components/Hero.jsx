@@ -26,7 +26,7 @@ export default function Hero() {
         </p>
         <div className='flex flex-wrap items-center gap-4'>
           <a
-            href='#catalogo'
+            href='/tienda'
             className='inline-flex items-center gap-2 bg-[#0e0d0c] text-white border border-[#0e0d0c] px-8 py-3.5 text-xs tracking-[0.15em] uppercase font-sans hover:bg-transparent hover:text-[#0e0d0c] transition-colors duration-300'
           >
             Explorar Tienda
