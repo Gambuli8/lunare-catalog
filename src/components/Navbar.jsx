@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
+import Icon from './Icon'
 
 const NAV_LINKS = [
   { href: '/',          label: 'Inicio' },
@@ -23,21 +24,24 @@ export default function Navbar() {
   return (
     <>
       {/* Announcement bar */}
-      <div className='bg-[#7d6b5e] text-white text-center py-2 text-xs tracking-widest uppercase font-sans'> La Pampa - Córdoba </div>
+      <div className='flex items-center justify-center gap-2.5 h-11 bg-dark text-[#eae4dc] text-xs tracking-wide'>
+        <Icon name='pin' size={14} strokeWidth={1.6} className='flex-shrink-0 text-gold-lt' />
+        <span>Retiro coordinado en Santa Rosa, La Pampa y Nueva Córdoba</span>
+      </div>
 
-      <header className={`sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-[72px] bg-[#F9F5F2]/95 backdrop-blur-md border-b border-[#e8e2da] transition-shadow duration-300 ${scrolled ? 'shadow-md' : ''}`}>
+      <header className={`sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-[72px] bg-cream/90 backdrop-blur-md border-b border-border transition-shadow duration-300 ${scrolled ? 'shadow-md' : ''}`}>
         {/* ── LOGO "Dream Avenue" ── */}
         <a
           href='/'
           className='flex flex-col leading-none group'
         >
           <span
-            className='text-[#0e0d0c] group-hover:text-[#b89a6a] transition-colors duration-300'
+            className='text-dark group-hover:text-gold transition-colors duration-300'
             style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: '22px', fontWeight: 400, letterSpacing: '0.08em' }}
           >
             Lunare
           </span>
-          <span className='text-[8px] tracking-[0.35em] uppercase text-[#b89a6a] font-sans mt-0.5'>Accesorios</span>
+          <span className='text-[8px] tracking-[0.35em] uppercase text-gold font-sans mt-0.5'>Accesorios</span>
         </a>
 
         {/* Desktop Nav */}
@@ -46,7 +50,7 @@ export default function Navbar() {
             <a
               key={l.href}
               href={l.href}
-              className='nav-underline text-xs tracking-widest uppercase text-[#0e0d0c] hover:text-[#b89a6a] transition-colors duration-300 font-sans'
+              className='nav-underline text-xs tracking-widest uppercase text-dark hover:text-gold transition-colors duration-300 font-sans'
             >
               {l.label}
             </a>
@@ -58,7 +62,7 @@ export default function Navbar() {
           <button
             onClick={() => setIsOpen(true)}
             aria-label='Carrito'
-            className='relative text-[#0e0d0c] hover:text-[#b89a6a] transition-colors duration-300'
+            className='relative text-dark hover:text-gold transition-colors duration-300'
           >
             <svg
               width='22'
@@ -77,7 +81,7 @@ export default function Navbar() {
               />
               <path d='M16 10a4 4 0 01-8 0' />
             </svg>
-            {count > 0 && <span className='absolute -top-2 -right-2 bg-[#b89a6a] text-white text-[10px] w-[18px] h-[18px] rounded-full flex items-center justify-center font-sans font-medium'>{count > 9 ? '9+' : count}</span>}
+            {count > 0 && <span className='absolute -top-2 -right-2 bg-gold text-white text-[10px] w-[18px] h-[18px] rounded-full flex items-center justify-center font-sans font-medium'>{count > 9 ? '9+' : count}</span>}
           </button>
 
           {/* Hamburger */}
@@ -86,22 +90,22 @@ export default function Navbar() {
             className='md:hidden flex flex-col gap-1.5 p-1'
             aria-label='Menú'
           >
-            <span className={`block w-5 h-px bg-[#0e0d0c] transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-            <span className={`block w-5 h-px bg-[#0e0d0c] transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
-            <span className={`block w-5 h-px bg-[#0e0d0c] transition-all duration-300 ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            <span className={`block w-5 h-px bg-dark transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+            <span className={`block w-5 h-px bg-dark transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
+            <span className={`block w-5 h-px bg-dark transition-all duration-300 ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
           </button>
         </div>
       </header>
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className='md:hidden fixed top-[108px] left-0 right-0 z-40 bg-[#F9F5F2]/98 backdrop-blur-md border-b border-[#e8e2da] py-4'>
+        <div className='md:hidden fixed top-[124px] left-0 right-0 z-40 bg-cream/95 backdrop-blur-md border-b border-border py-4'>
           {NAV_LINKS.map(l => (
             <a
               key={l.href}
               href={l.href}
               onClick={() => setMenuOpen(false)}
-              className='block px-8 py-3.5 text-xs tracking-widest uppercase text-[#0e0d0c] hover:text-[#b89a6a] transition-colors duration-300 font-sans'
+              className='block px-8 py-3.5 text-xs tracking-widest uppercase text-dark hover:text-gold transition-colors duration-300 font-sans'
             >
               {l.label}
             </a>

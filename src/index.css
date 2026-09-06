@@ -7,7 +7,8 @@
   body { font-family: 'Jost', sans-serif; background: #F9F5F2; color: #0e0d0c; }
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: #F9F5F2; }
-  ::-webkit-scrollbar-thumb { background: #b89a6a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: #d6cec4; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #b89a6a; }
 }
 
 @layer utilities {
@@ -21,12 +22,8 @@
     position: absolute;
     bottom: 0; left: 0;
     width: 0; height: 1px;
-    background: #b89a6a;
+    background: #8f7647;
     transition: width 0.3s ease;
   }
   .nav-underline:hover::after { width: 100%; }
-  .ring-spin-cw  { animation: spin 20s linear infinite; }
-  .ring-spin-ccw { animation: spin 15s linear infinite reverse; }
 }
-
-@keyframes spin { to { transform: rotate(360deg); } }
