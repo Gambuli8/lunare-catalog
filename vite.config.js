@@ -14,7 +14,7 @@ function apiDevServer() {
         { test: /^\/producto\/([^/?]+)\/?$/, file: 'page', param: 'slug' },
         { test: /^\/tienda\/([^/?]+)\/?$/, file: 'shop', param: 'cat' },
         { test: /^\/tienda\/?$/, file: 'shop' },
-        { test: /^\/(cuidados|cambios|contacto)\/?$/, file: 'pagina', param: 'pagina' },
+        { test: /^\/(cuidados|cambios|contacto|arrepentimiento)\/?$/, file: 'pagina', param: 'pagina' },
         { test: /^\/sitemap\.xml$/, file: 'sitemap' },
       ]
 
@@ -79,7 +79,12 @@ export default defineConfig(({ mode }) => {
   // process.env para los handlers; no entran en `define`, así que no se
   // filtran al bundle del cliente.
   const env = loadEnv(mode, process.cwd(), '')
-  for (const key of ['SHEET_CSV_URL', 'SITE_URL', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) {
+  for (const key of [
+    'SHEET_CSV_URL', 'SITE_URL',
+    'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
+    'RESEND_API_KEY', 'AVISO_EMAIL_DESTINO', 'AVISO_EMAIL_FROM',
+    'PANEL_PASSWORD',
+  ]) {
     if (env[key]) process.env[key] = env[key]
   }
 

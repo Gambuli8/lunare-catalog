@@ -34,7 +34,7 @@ export default function Categories() {
           <h2 className='font-serif text-[clamp(30px,4vw,42px)] font-light text-dark'>Comprá por categoría</h2>
           <a
             href='/tienda'
-            className='inline-flex items-center gap-2 text-xs tracking-[0.12em] uppercase text-muted hover:text-gold transition-colors group'
+            className='inline-flex items-center gap-2 py-2 text-xs tracking-[0.12em] uppercase text-muted hover:text-gold transition-colors group'
           >
             Ver las {products.length} piezas
             <Icon name='flecha' size={13} className='transition-transform duration-300 group-hover:translate-x-1' />

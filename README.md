@@ -249,6 +249,83 @@ Sin `RESEND_API_KEY` no se manda nada y el checkout funciona como siempre.
 ⚠️ El dominio del remitente tiene que estar verificado en Resend (registros DNS)
 o los mails se van a spam.
 
+## Panel de pedidos
+
+`/panel` es la pantalla para mirar los pedidos y moverlos de estado. Antes solo
+se veían consultando la base.
+
+```
+PANEL_PASSWORD=una-clave-larga-de-verdad
+```
+
+Muestra los pedidos con sus piezas, el teléfono ya armado como link de WhatsApp,
+la dirección cuando es envío y las notas de la clienta; se filtra por estado y
+tiene una segunda pestaña con los arrepentimientos. Arriba, cuántos hay
+pendientes y pagados y cuánto se cobró.
+
+Cambiar un estado tiene efecto real sobre el stock: solo `pendiente` y `pagado`
+lo comprometen, así que cancelar un pedido libera las piezas para que se puedan
+volver a vender.
+
+### Cómo se protege
+
+Una sola clave compartida, sin usuarios: del otro lado hay una persona.
+
+- **La clave nunca viaja en la URL**, solo por POST. La cortina de mantenimiento
+  sí la acepta por query string, y por eso está documentada como cortina y no
+  como seguridad; acá hay nombres, teléfonos y direcciones de las clientas.
+- **La cookie no guarda la clave** sino su hash, es `HttpOnly` y `SameSite=Strict`,
+  y dura 12 horas.
+- **Mínimo 16 caracteres**, y el panel se niega a arrancar con menos. Contra un
+  endpoint serverless no hay mucho más que se pueda hacer sin agregar estado;
+  que adivinarla sea inviable es la defensa.
+- **Comparación de tiempo constante** y una espera de 700 ms antes de contestar
+  que la clave está mal.
+- `noindex` por cabecera, `Disallow` en `robots.txt` y sin analítica.
+
+⚠️ Que no sea la misma clave que `MANTENIMIENTO_PASSWORD`.
+
+## Botón de arrepentimiento
+
+Vender online en Argentina obliga a tener publicado un link llamado
+**BOTÓN DE ARREPENTIMIENTO**, de acceso fácil y directo desde la home y en un
+lugar destacado (Resolución 424/2020 de la Secretaría de Comercio Interior). Va
+en el footer, aparte de la fila de links y con borde, para que se vea.
+
+La norma prohíbe pedir registración previa o cualquier trámite extra, así que
+`/arrepentimiento` no tiene login y el número de pedido es opcional: alcanza con
+nombre y correo.
+
+### El código sale en el acto
+
+La norma da 24 horas para entregarle a la clienta un código de identificación del
+trámite. Como lo genera la base en el insert (`ARR-1000`, `ARR-1001`…), se lo
+mostramos en pantalla al enviar el formulario y se lo mandamos por mail. El plazo
+deja de depender de que alguien conteste a tiempo.
+
+`crear_arrepentimiento()` engancha el pedido si el número existe —normalizando
+mayúsculas y espacios— y lo guarda igual si no, porque no es un requisito. La
+tabla usa el mismo criterio que `pedidos`: RLS prendido sin políticas y `EXECUTE`
+revocado, incluido el que Postgres le da a `PUBLIC` por defecto.
+
+### Datos fiscales
+
+Van en `src/lib/fiscal.js`, que es lo único que hay que tocar:
+
+| Constante | Qué es |
+|---|---|
+| `RAZON_SOCIAL` | El nombre con el que factura |
+| `CUIT` | El CUIT |
+| `DOMICILIO` | Domicilio fiscal |
+| `DATA_FISCAL_URL` | El link de `qr.afip.gob.ar` que da el Formulario 960/D en ARCA |
+
+⚠️ **Están vacíos.** Mientras lo estén el footer no muestra el bloque —es
+preferible a publicar un CUIT equivocado— pero el sitio no debería salir de la
+cortina así. Los valores los confirma el contador.
+
+⚠️ Esto implementa el mecanismo, no reemplaza asesoramiento legal. Ver también
+"Pendiente": el texto de `/cambios` hoy contradice esta página.
+
 ### Pendiente
 
 - **Mercado Pago**: falta el access token. El checkout ya ofrece la opción y
@@ -257,6 +334,19 @@ o los mails se van a spam.
   la API del correo que las calcula por código postal y peso.
 - **Descuento de stock en la planilla**: sigue siendo manual. La base evita
   vender de más, pero no edita el Sheet.
+- **El texto de `/cambios` contradice a `/arrepentimiento`**: dice "no
+  realizamos devoluciones" y "los productos NO tienen garantía". Para una compra
+  online las dos cosas van contra la Ley 24.240 —el derecho a arrepentirse no se
+  puede renunciar (art. 34) y la garantía legal es de 6 meses (arts. 11 a 18)—,
+  así que esas cláusulas no se sostienen. Hay que reescribir la página; el texto
+  lo tiene que aprobar quien los asesore.
+- **Datos fiscales**: `src/lib/fiscal.js` está vacío. Ver "Botón de
+  arrepentimiento".
+- **El panel no pagina**: trae los últimos 60 pedidos y listo. Sobra por ahora;
+  cuando no alcance, `listar_pedidos()` ya acepta un límite.
+- **El botón de agregar de la ficha cae en y=926**, con el fold del celular en
+  812: hay que scrollear para comprar. Lo normal en e-commerce es una barra fija
+  abajo con el precio y el botón. Sin resolver.
 
 ## Modo mantenimiento
 
