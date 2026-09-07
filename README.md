@@ -249,6 +249,42 @@ Sin `RESEND_API_KEY` no se manda nada y el checkout funciona como siempre.
 ⚠️ El dominio del remitente tiene que estar verificado en Resend (registros DNS)
 o los mails se van a spam.
 
+## Panel de pedidos
+
+`/panel` es la pantalla para mirar los pedidos y moverlos de estado. Antes solo
+se veían consultando la base.
+
+```
+PANEL_PASSWORD=una-clave-larga-de-verdad
+```
+
+Muestra los pedidos con sus piezas, el teléfono ya armado como link de WhatsApp,
+la dirección cuando es envío y las notas de la clienta; se filtra por estado y
+tiene una segunda pestaña con los arrepentimientos. Arriba, cuántos hay
+pendientes y pagados y cuánto se cobró.
+
+Cambiar un estado tiene efecto real sobre el stock: solo `pendiente` y `pagado`
+lo comprometen, así que cancelar un pedido libera las piezas para que se puedan
+volver a vender.
+
+### Cómo se protege
+
+Una sola clave compartida, sin usuarios: del otro lado hay una persona.
+
+- **La clave nunca viaja en la URL**, solo por POST. La cortina de mantenimiento
+  sí la acepta por query string, y por eso está documentada como cortina y no
+  como seguridad; acá hay nombres, teléfonos y direcciones de las clientas.
+- **La cookie no guarda la clave** sino su hash, es `HttpOnly` y `SameSite=Strict`,
+  y dura 12 horas.
+- **Mínimo 16 caracteres**, y el panel se niega a arrancar con menos. Contra un
+  endpoint serverless no hay mucho más que se pueda hacer sin agregar estado;
+  que adivinarla sea inviable es la defensa.
+- **Comparación de tiempo constante** y una espera de 700 ms antes de contestar
+  que la clave está mal.
+- `noindex` por cabecera, `Disallow` en `robots.txt` y sin analítica.
+
+⚠️ Que no sea la misma clave que `MANTENIMIENTO_PASSWORD`.
+
 ## Botón de arrepentimiento
 
 Vender online en Argentina obliga a tener publicado un link llamado
@@ -306,6 +342,8 @@ cortina así. Los valores los confirma el contador.
   lo tiene que aprobar quien los asesore.
 - **Datos fiscales**: `src/lib/fiscal.js` está vacío. Ver "Botón de
   arrepentimiento".
+- **El panel no pagina**: trae los últimos 60 pedidos y listo. Sobra por ahora;
+  cuando no alcance, `listar_pedidos()` ya acepta un límite.
 
 ## Modo mantenimiento
 

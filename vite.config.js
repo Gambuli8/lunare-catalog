@@ -83,6 +83,7 @@ export default defineConfig(({ mode }) => {
     'SHEET_CSV_URL', 'SITE_URL',
     'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
     'RESEND_API_KEY', 'AVISO_EMAIL_DESTINO', 'AVISO_EMAIL_FROM',
+    'PANEL_PASSWORD',
   ]) {
     if (env[key]) process.env[key] = env[key]
   }

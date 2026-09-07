@@ -20,6 +20,8 @@ export function parsePath(pathname = window.location.pathname, search = window.l
   if (seg[0] === 'cambios') return { name: 'policy', query }
   if (seg[0] === 'contacto') return { name: 'contact', query }
   if (seg[0] === 'arrepentimiento') return { name: 'regret', query }
+  // El panel no es parte de la tienda: no lleva navbar, footer ni carrito.
+  if (seg[0] === 'panel') return { name: 'panel', query }
   return { name: 'notfound', query }
 }
 
