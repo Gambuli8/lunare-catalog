@@ -166,12 +166,39 @@ export default function CartSidebar() {
     }
   }
 
+  // Trae un campo a la vista. Si la persona pidió menos movimiento, va
+  // instantáneo en vez de animado.
+  const traerALaVista = (selector, enfocar = false) => {
+    const el = document.querySelector(selector)
+    if (!el) return
+    const quieta = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ block: 'center', behavior: quieta ? 'auto' : 'smooth' })
+    // El foco abre el teclado justo sobre el campo correcto; el scroll ya
+    // lo hicimos nosotros y centrado, así que no dejamos que lo rehaga.
+    if (enfocar) el.focus({ preventScroll: true })
+  }
+
+  // Al elegir envío aparecen dos campos nuevos abajo del área visible.
+  // Sin traerlos a la vista, no hay ninguna señal de que existen.
+  useEffect(() => {
+    if (paso !== 2 || !esEnvio) return
+    const t = setTimeout(() => traerALaVista('#campo-cp'), 80)
+    return () => clearTimeout(t)
+  }, [paso, esEnvio])
+
   const siguiente = () => {
     if (paso === 2 && esEnvio) {
       const fallos = []
       if (!/^\d{4}$/.test(datos.cp)) fallos.push(MENSAJES.CP_REQUERIDO)
       if (datos.direccion.trim().length < 5) fallos.push(MENSAJES.DIRECCION_REQUERIDA)
-      if (fallos.length) { setErrores(fallos); return }
+      if (fallos.length) {
+        setErrores(fallos)
+        // El error solo se lee arriba de todo, y el campo del que habla
+        // queda abajo del área visible: sin esto te dice que algo está mal
+        // y no te muestra dónde.
+        traerALaVista(!/^\d{4}$/.test(datos.cp) ? '#campo-cp' : '#campo-direccion', true)
+        return
+      }
     }
     setErrores([])
     setPaso(p => p + 1)
@@ -267,7 +294,7 @@ export default function CartSidebar() {
                         <button
                           onClick={() => removeItem(item.id)}
                           aria-label={`Quitar ${item.name} del pedido`}
-                          className='flex items-center justify-center flex-shrink-0 transition-colors w-9 h-9 -mt-1.5 -mr-1.5 text-soft hover:text-sale'
+                          className='flex items-center justify-center flex-shrink-0 transition-colors w-11 h-11 -mt-2.5 -mr-2.5 sm:w-9 sm:h-9 sm:-mt-1.5 sm:-mr-1.5 text-soft hover:text-sale'
                         >
                           <Icon name='cerrar' size={14} strokeWidth={2} />
                         </button>
@@ -275,20 +302,20 @@ export default function CartSidebar() {
                       <span className='text-[12px] text-muted'>{item.material} · {item.subcategory}</span>
                       <div className='flex flex-col items-start gap-2.5 mt-2 sm:flex-row sm:items-center sm:justify-between'>
                         <span className='text-[15px] font-medium'>{formatPrice(item.price * item.qty)}</span>
-                        <div className='flex items-center h-9 border border-border bg-paper'>
+                        <div className='flex items-stretch border border-border bg-paper sm:h-9'>
                           <button
                             onClick={() => changeQty(item.id, -1)}
                             aria-label={`Quitar una unidad de ${item.name}`}
-                            className='grid w-11 h-full transition-colors sm:w-9 place-items-center hover:bg-line'
+                            className='grid w-11 min-h-[44px] transition-colors sm:w-9 sm:min-h-0 place-items-center hover:bg-line'
                           >
                             <Icon name='menos' size={13} strokeWidth={2.2} />
                           </button>
-                          <span className='w-8 text-sm text-center'>{item.qty}</span>
+                          <span className='grid w-8 text-sm place-items-center'>{item.qty}</span>
                           <button
                             onClick={() => changeQty(item.id, 1)}
                             disabled={tope}
                             aria-label={`Agregar una unidad de ${item.name}`}
-                            className='grid w-11 h-full transition-colors sm:w-9 place-items-center hover:bg-line disabled:text-[#c4bcb2] disabled:hover:bg-transparent'
+                            className='grid w-11 min-h-[44px] transition-colors sm:w-9 sm:min-h-0 place-items-center hover:bg-line disabled:text-[#c4bcb2] disabled:hover:bg-transparent'
                           >
                             <Icon name='mas' size={13} strokeWidth={2.2} />
                           </button>
@@ -326,6 +353,7 @@ export default function CartSidebar() {
                   {esEnvio && (
                     <div className='flex flex-col gap-3 mt-1'>
                       <Campo
+                        id='campo-cp'
                         label='Código postal'
                         inputMode='numeric'
                         maxLength={4}
@@ -334,6 +362,7 @@ export default function CartSidebar() {
                         onChange={e => setDatos({ ...datos, cp: e.target.value.replace(/\D/g, '').slice(0, 4) })}
                       />
                       <Campo
+                        id='campo-direccion'
                         label='Dirección de entrega'
                         placeholder='Calle, número, piso'
                         value={datos.direccion}
@@ -433,13 +462,13 @@ export default function CartSidebar() {
               {checkout.activo && (
                 <button
                   onClick={irAWhatsApp}
-                  className='text-[12.5px] text-muted hover:text-gold transition-colors'
+                  className='min-h-[44px] text-[12.5px] text-muted hover:text-gold transition-colors [@media(max-height:620px)]:hidden'
                 >
                   ¿Preferís coordinarlo por WhatsApp?
                 </button>
               )}
 
-              <p className='text-[12px] text-center text-muted'>
+              <p className='text-[12px] text-center text-muted [@media(max-height:620px)]:hidden'>
                 Guardamos tu pedido por 7 días, aunque cierres la página.
               </p>
             </div>

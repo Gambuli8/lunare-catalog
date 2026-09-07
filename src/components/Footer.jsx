@@ -18,12 +18,16 @@ export default function Footer() {
         <span className='font-serif text-2xl tracking-[0.25em] text-white'>LUNARE</span>
         <span className='text-[8px] tracking-[0.35em] uppercase text-gold-lt font-sans mt-1 mb-4'>Accesorios</span>
         <p className='font-serif italic text-[15px] text-white/40 mb-7'>Cada joya, una expresión de tu estilo.</p>
-        <div className='flex flex-wrap justify-center gap-6 mb-8'>
+        {/* El py-2 no es estético: sin él estos links miden 17px de alto y
+            no llegan ni al mínimo de 24 de WCAG. Acá alcanza con eso —los
+            44 completos quedan para los controles del carrito, que son los
+            que se tocan de verdad y a los que sí se los di. */}
+        <div className='flex flex-wrap justify-center gap-x-6 gap-y-1 mb-7'>
           {LINKS.map(l => (
             <a
               key={l.href}
               href={l.href}
-              className='text-[11px] tracking-[0.15em] uppercase text-white/50 hover:text-gold-lt transition-colors duration-200 font-sans'
+              className='py-2 text-[11px] tracking-[0.15em] uppercase text-white/50 hover:text-gold-lt transition-colors duration-200 font-sans'
             >
               {l.label}
             </a>

@@ -73,7 +73,7 @@ export default function Arrepentimiento() {
     <section className='px-6 pt-8 pb-24 md:px-12 bg-paper'>
       <div className='max-w-2xl mx-auto'>
         <nav aria-label='Ruta de navegación' className='flex items-center gap-2 mb-6 text-xs tracking-wide text-muted'>
-          <a href='/' className='transition-colors hover:text-gold'>Inicio</a>
+          <a href='/' className='inline-block py-1.5 transition-colors hover:text-gold'>Inicio</a>
           <span className='text-[#8f877e]'>/</span>
           <span className='text-dark'>Botón de arrepentimiento</span>
         </nav>

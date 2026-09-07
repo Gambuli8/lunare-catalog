@@ -118,7 +118,7 @@ export default function Hero() {
           {pieza && (
             <a
               href={`/producto/${pieza.slug}`}
-              className='inline-flex items-center gap-2 text-[12px] text-cream/70 md:hidden animate-fade-up'
+              className='inline-flex items-center gap-2 py-2 text-[12px] text-cream/70 md:hidden animate-fade-up'
               style={{ animationDelay: '.5s' }}
             >
               En la foto: {pieza.name} · {formatPrice(pieza.pricePromo ?? pieza.price)}

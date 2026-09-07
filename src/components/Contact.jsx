@@ -54,7 +54,7 @@ function FAQItem({ q, a, link, open, onToggle }) {
             {link && (
               <>
                 {' '}
-                <a href={link.href} className='inline-flex items-center gap-1 text-gold hover:underline'>
+                <a href={link.href} className='inline-flex items-center gap-1 py-2 text-gold hover:underline'>
                   {link.text}
                   <Icon name='flecha' size={12} strokeWidth={2} />
                 </a>
@@ -78,7 +78,7 @@ export default function Contact() {
       <div className='max-w-5xl mx-auto'>
 
       <nav aria-label='Ruta de navegación' className='flex items-center gap-2 mb-6 text-xs tracking-wide text-muted'>
-        <a href='/' className='transition-colors hover:text-gold'>Inicio</a>
+        <a href='/' className='inline-block py-1.5 transition-colors hover:text-gold'>Inicio</a>
         <span className='text-[#8f877e]'>/</span>
         <span className='text-dark'>Contacto</span>
       </nav>
@@ -140,7 +140,7 @@ export default function Contact() {
             href={WHATSAPP}
             target='_blank'
             rel='noopener noreferrer'
-            className='inline-flex items-center gap-1 text-gold hover:underline'
+            className='inline-flex items-center gap-1 py-2 text-gold hover:underline'
           >
             Escribinos por WhatsApp
             <Icon name='flecha' size={12} strokeWidth={2} />
