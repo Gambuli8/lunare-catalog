@@ -145,8 +145,18 @@ export default function CartSidebar() {
 
       if (res.ok && data?.ok) {
         trackCheckout(items, totalFinal)
-        setConfirmado(data.pedido)
         clear()
+
+        // Con Mercado Pago el pedido ya quedó guardado como pendiente y
+        // ahora se va a pagar. Si la preferencia no se pudo crear, el
+        // servidor manda pago_url en null y cae en la pantalla de
+        // siempre: se coordina por WhatsApp.
+        if (data.pago_url) {
+          window.location.href = data.pago_url
+          return
+        }
+
+        setConfirmado(data.pedido)
         return
       }
       if (data?.error === 'SIN_STOCK' && data.faltantes?.length) {

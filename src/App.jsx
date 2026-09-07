@@ -12,6 +12,7 @@ import Cuidados          from './components/Cuidados'
 import Politicas         from './components/Politicas'
 import Arrepentimiento   from './components/Arrepentimiento'
 import Panel             from './components/Panel'
+import Pago              from './components/Pago'
 import CartSidebar       from './components/CartSidebar'
 import ProductPage       from './components/ProductPage'
 import Footer            from './components/Footer'
@@ -29,6 +30,7 @@ const TITULOS = {
   contact: 'Contacto | Lunare Accesorios',
   regret: 'Botón de arrepentimiento | Lunare Accesorios',
   panel: 'Panel | Lunare Accesorios',
+  pago: 'Tu pago | Lunare Accesorios',
   notfound: 'Página no encontrada | Lunare Accesorios',
 }
 
@@ -97,6 +99,7 @@ function Vista({ route }) {
     case 'policy':   return <Politicas />
     case 'contact':  return <Contact />
     case 'regret':   return <Arrepentimiento />
+    case 'pago':     return <Pago route={route} />
     case 'notfound': return <NotFound />
     default:         return <Home />
   }

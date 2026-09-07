@@ -109,11 +109,24 @@ function paginaMantenimiento() {
 </html>`
 }
 
+// Rutas que la cortina no puede tapar: no las pide una persona, las
+// llama un servicio que no tiene cómo mandar la clave.
+//
+// Mercado Pago avisa acá que un pago se aprobó. Con la cortina puesta le
+// devolvíamos 503, reintentaba un rato y se rendía: el pedido se quedaba
+// en "pendiente" para siempre aunque la clienta hubiera pagado.
+//
+// El endpoint no es una puerta abierta: verifica la firma HMAC de cada
+// notificación y sin ella no toca nada.
+const SIEMPRE_ABIERTAS = ['/api/mp-webhook']
+
 export default async function middleware(request) {
   if (!activo()) return next()
 
   const pass = clave()
   const url = new URL(request.url)
+
+  if (SIEMPRE_ABIERTAS.includes(url.pathname)) return next()
 
   // Sin clave configurada la cortina igual se pone: es preferible a dejar
   // la tienda abierta por un descuido de configuración.
