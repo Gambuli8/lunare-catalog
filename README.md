@@ -221,6 +221,34 @@ service role key.
 `pendiente` → `pagado` → `despachado` → `entregado`, más `cancelado`. Solo
 `pendiente` y `pagado` comprometen stock.
 
+## Avisos de pedidos
+
+Guardar el pedido no alcanza: si nadie mira la base, la venta se pierde igual.
+`api/_aviso.js` manda dos mails por [Resend](https://resend.com) apenas se crea
+el pedido.
+
+```
+RESEND_API_KEY=...
+AVISO_EMAIL_DESTINO=hola@lunareacc.com        # o varias, separadas por coma
+AVISO_EMAIL_FROM=Lunare Accesorios <pedidos@lunareacc.com>   # opcional
+```
+
+**A Lunare**: número, total, teléfono con botón de WhatsApp ya armado, forma de
+entrega y de pago, notas, y las piezas con miniatura y código para encontrarlas
+en la planilla. El *reply-to* es el mail de la clienta, así responder el aviso
+le escribe a ella. Cierra recordando que el stock del Sheet se descuenta a mano.
+
+**A la clienta**, solo si dejó correo —el campo es opcional—: su número de
+pedido, qué compró, el total y qué sigue según cómo eligió pagar.
+
+**Nunca rompen la compra.** Para cuando se manda el mail el pedido ya está en la
+base. Sale con `waitUntil()`, después de responderle al navegador, y cada mail va
+por separado: si uno falla queda en los logs de Vercel y el otro se manda igual.
+Sin `RESEND_API_KEY` no se manda nada y el checkout funciona como siempre.
+
+⚠️ El dominio del remitente tiene que estar verificado en Resend (registros DNS)
+o los mails se van a spam.
+
 ### Pendiente
 
 - **Mercado Pago**: falta el access token. El checkout ya ofrece la opción y
