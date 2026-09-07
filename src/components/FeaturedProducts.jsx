@@ -30,7 +30,7 @@ export default function FeaturedProducts() {
           </div>
           <a
             href='/tienda'
-            className='inline-flex items-center gap-2 text-xs tracking-[0.12em] uppercase text-muted hover:text-gold transition-colors group'
+            className='inline-flex items-center gap-2 py-2 text-xs tracking-[0.12em] uppercase text-muted hover:text-gold transition-colors group'
           >
             Ver toda la tienda
             <Icon name='flecha' size={13} className='transition-transform duration-300 group-hover:translate-x-1' />

@@ -132,9 +132,9 @@ export default function ProductPage({ slug }) {
         aria-label='Ruta de navegación'
         className='flex items-center gap-2 pt-6 text-xs tracking-wide text-[#5f574e]'
       >
-        <a href='/' className='hover:text-[#8f7647] transition-colors'>Inicio</a>
+        <a href='/' className='inline-block py-1.5 hover:text-[#8f7647] transition-colors'>Inicio</a>
         <span className='text-[#8f877e]'>/</span>
-        <a href='/tienda' className='hover:text-[#8f7647] transition-colors'>Tienda</a>
+        <a href='/tienda' className='inline-block py-1.5 hover:text-[#8f7647] transition-colors'>Tienda</a>
         <span className='text-[#8f877e]'>/</span>
         <span className='text-[#0e0d0c]'>{product.name}</span>
       </nav>

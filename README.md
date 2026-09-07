@@ -344,6 +344,9 @@ cortina así. Los valores los confirma el contador.
   arrepentimiento".
 - **El panel no pagina**: trae los últimos 60 pedidos y listo. Sobra por ahora;
   cuando no alcance, `listar_pedidos()` ya acepta un límite.
+- **El botón de agregar de la ficha cae en y=926**, con el fold del celular en
+  812: hay que scrollear para comprar. Lo normal en e-commerce es una barra fija
+  abajo con el precio y el botón. Sin resolver.
 
 ## Modo mantenimiento
 
