@@ -249,6 +249,67 @@ Sin `RESEND_API_KEY` no se manda nada y el checkout funciona como siempre.
 ⚠️ El dominio del remitente tiene que estar verificado en Resend (registros DNS)
 o los mails se van a spam.
 
+## Mercado Pago
+
+Checkout Pro. La preferencia se arma en el servidor con los precios que ya
+validó `api/pedido.js`, y la clienta se va redirigida a Mercado Pago.
+
+```
+MP_ACCESS_TOKEN=APP_USR-...      # o TEST-... para probar
+MP_WEBHOOK_SECRET=...            # Tus integraciones > Webhooks
+```
+
+**Sin estas variables no se rompe nada**: el pedido se guarda igual, el checkout
+cae en la pantalla de siempre y el cobro se coordina a mano.
+
+El *Public Key* no se usa. En Checkout Pro no hay nada que tokenizar en el
+navegador.
+
+### El pedido pasa a pagado solo por el webhook
+
+La vuelta del navegador (`/pago?estado=exito`) **no decide nada**: cualquiera
+puede escribir esa URL a mano. Es una pantalla de cortesía.
+
+Lo que decide es `api/mp-webhook.js`, y hace tres cosas antes de tocar el pedido:
+
+1. **Verifica la firma.** Mercado Pago manda `x-signature: ts=...,v1=...` y el
+   `v1` es un HMAC-SHA256 de `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
+   con la clave secreta de la aplicación. Sin esto, cualquiera que sepa la URL
+   manda un POST y se lleva las piezas sin pagar. Sin `MP_WEBHOOK_SECRET` el
+   endpoint devuelve 503 antes que creerle a nadie.
+2. **No le cree al cuerpo de la notificación** más allá del id: el estado y el
+   monto se los pregunta a la API de Mercado Pago.
+3. **Compara el monto** contra el total del pedido. Si no cierra, no lo marca
+   pagado y queda para mirar a mano.
+
+Es idempotente: Mercado Pago manda varios eventos por el mismo pago y reintenta
+si no le contestamos 200. `marcar_pedido_pagado()` solo mueve pedidos en
+`pendiente` —un webhook atrasado no pisa uno ya despachado— y el mail de "pago
+cobrado" sale una sola vez.
+
+### El webhook no pasa por la cortina
+
+`middleware.js` tapaba todo con 503, incluido `/api`. Con la cortina puesta,
+Mercado Pago se comía el 503, reintentaba un rato y se rendía: el pedido quedaba
+en `pendiente` para siempre aunque la clienta hubiera pagado.
+
+`/api/mp-webhook` está en `SIEMPRE_ABIERTAS`. No es una puerta abierta: verifica
+la firma de cada notificación y sin ella no toca nada.
+
+### Configurar el webhook
+
+En Tus integraciones → la aplicación → **Webhooks**, la URL es
+`https://www.lunareacc.com/api/mp-webhook` y el evento es **Pagos**. Ahí mismo
+se revela la clave secreta que va en `MP_WEBHOOK_SECRET`.
+
+### Pendiente
+
+- **Salir a producción**: hoy con `TEST-` se cobra plata ficticia. El token
+  productivo tiene que salir de la cuenta de Mercado Pago que va a recibir el
+  dinero, y hay que rehacer el webhook con el secreto de esa aplicación.
+- **La preferencia vence a las 24 h.** Si no paga, el pedido queda en
+  `pendiente` reteniendo stock hasta que alguien lo cancele desde el panel.
+
 ## Panel de pedidos
 
 `/panel` es la pantalla para mirar los pedidos y moverlos de estado. Antes solo

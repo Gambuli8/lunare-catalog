@@ -8,6 +8,8 @@
 import { waitUntil } from '@vercel/functions'
 import { getCatalog } from './_catalog.js'
 import { avisarPedido } from './_aviso.js'
+import { rpc } from './_supabase.js'
+import { crearPreferencia, mpConfigurado } from './_mp.js'
 import {
   ENTREGAS, PAGOS, costoEnvio, validarItems, crearPedido, pedidosConfigurados,
 } from './_pedidos.js'
@@ -98,10 +100,31 @@ export default async function handler(req, res) {
       await aviso
     }
 
+    // Si eligió Mercado Pago, armamos la preferencia y le devolvemos el
+    // link para redirigirla. Si algo falla acá el pedido ya está guardado:
+    // devolvemos igual el 201 sin pago_url y el checkout cae en coordinar
+    // por WhatsApp, que es como funcionaba antes.
+    let pago_url = null
+    if (datos.pago === 'mercadopago' && mpConfigurado()) {
+      try {
+        const pref = await crearPreferencia({ pedido: r.pedido, datos, items })
+        pago_url = pref.url
+        // Se guarda para poder cruzar el pedido con el panel de Mercado
+        // Pago aunque el webhook nunca llegue.
+        await rpc('guardar_preferencia', {
+          p_pedido_id: r.pedido.id,
+          p_preference_id: pref.id,
+        }).catch(e => console.error('[pedido] no se pudo guardar la preferencia', e))
+      } catch (err) {
+        console.error(`[pedido] no se pudo crear la preferencia de ${r.pedido.numero}`, err)
+      }
+    }
+
     res.setHeader('Cache-Control', 'no-store')
     return res.status(201).json({
       ok: true,
       pedido: r.pedido,
+      pago_url,
       items: items.map(i => ({
         producto_id: i.producto_id,
         nombre: i.nombre,

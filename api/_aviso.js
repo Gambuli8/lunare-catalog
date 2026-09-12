@@ -478,3 +478,128 @@ export async function avisarArrepentimiento({ arrepentimiento, datos }) {
 
   return salida
 }
+
+// ── Pago cobrado ──────────────────────────────────────────────
+// Lo manda el webhook de Mercado Pago cuando el pago queda aprobado.
+// Es distinto del aviso de pedido nuevo: acá la plata ya entró y lo que
+// sigue es preparar y despachar.
+
+export async function avisarPagoAprobado({ pedido, pago }) {
+  const salida = { tienda: false, clienta: false }
+  if (!avisosConfigurados()) {
+    console.warn(`[aviso] sin Resend: el pago de ${pedido.numero} no se avisó`)
+    return salida
+  }
+
+  const wa = waLink(pedido.telefono)
+  const esEnvio = Boolean(ENTREGAS[pedido.entrega]?.envio)
+  const items = pedido.items || []
+
+  const encabezado = `
+    <div style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:${GRIS}">Pago cobrado</div>
+    <div style="font-size:30px;color:${ORO};padding-top:6px;letter-spacing:0.04em">${esc(pedido.numero)}</div>
+    <div style="font-size:16px;color:#2b2621;padding-top:4px">${esc(pedido.nombre)} — ${esc(pago.monto_texto)}</div>`
+
+  const cuerpo = `
+    <div style="padding:14px 16px;background:#eaf5ee;border-radius:6px;font-size:14px;color:#1c6b3c;line-height:1.6">
+      Mercado Pago aprobó el pago. El pedido ya figura como <b>pagado</b> en el panel.
+    </div>
+
+    ${wa ? `<div style="padding:22px 0">${boton(wa, 'Escribirle por WhatsApp')}</div>` : '<div style="height:22px"></div>'}
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+      ${dato('Cobrado', esc(pago.monto_texto))}
+      ${dato('Medio', `${esc(pago.medio)}${pago.cuotas > 1 ? ` · ${pago.cuotas} cuotas` : ''}`)}
+      ${dato('Pago Nº', esc(pago.id))}
+      ${dato(esEnvio ? 'Enviar a' : 'Retira en', esc(lineaEntrega(pedido)))}
+      ${dato('Notas', pedido.notas ? esc(pedido.notas) : '')}
+    </table>
+
+    ${items.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:24px;border-top:1px solid #ece7e0">
+      ${filasHTML(items, { conImagen: true })}
+    </table>` : ''}
+
+    <div style="margin-top:24px;padding:14px 16px;background:#faf8f5;border-radius:6px;font-size:13px;color:${GRIS};line-height:1.6">
+      Acordate de descontar el stock en la planilla y de marcarlo
+      <b style="color:#2b2621">despachado</b> cuando salga.
+    </div>`
+
+  const texto = [
+    `Pago cobrado — ${pedido.numero}`,
+    '',
+    `${pedido.nombre} — ${pago.monto_texto}`,
+    `Medio: ${pago.medio}${pago.cuotas > 1 ? ` (${pago.cuotas} cuotas)` : ''}`,
+    `Pago Nº: ${pago.id}`,
+    wa ? `WhatsApp: ${wa}` : '',
+    `${esEnvio ? 'Enviar a' : 'Retira en'}: ${lineaEntrega(pedido)}`,
+    pedido.notas ? `Notas: ${pedido.notas}` : '',
+    '',
+    items.length ? filasTexto(items) : '',
+    '',
+    'Acordate de descontar el stock en la planilla.',
+  ].filter(Boolean).join('\n')
+
+  try {
+    await enviar({
+      to: destino(),
+      subject: `Cobrado ${pago.monto_texto} · ${pedido.numero} · ${pedido.nombre}`,
+      responderA: pedido.email || undefined,
+      html: envoltorio({ titulo: `Pago cobrado ${pedido.numero}`, encabezado, cuerpo }),
+      texto,
+    })
+    salida.tienda = true
+  } catch (err) {
+    console.error(`[aviso] no salió el mail de pago de ${pedido.numero}`, err)
+  }
+
+  if (pedido.email) {
+    const encClienta = `
+      <div style="font-size:22px;color:#2b2621">Recibimos tu pago</div>
+      <div style="font-size:14px;color:${GRIS};padding-top:8px;line-height:1.6">Pedido</div>
+      <div style="font-size:30px;color:${ORO};padding-top:2px;letter-spacing:0.04em">${esc(pedido.numero)}</div>`
+
+    const cuerpoClienta = `
+      <div style="font-size:15px;color:#2b2621;line-height:1.7">
+        Nos llegaron ${esc(pago.monto_texto)}. Ya estamos preparando tu pedido y te
+        escribimos por WhatsApp para coordinar ${esEnvio ? 'el envío' : 'el retiro'}.
+      </div>
+
+      ${items.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:24px;border-top:1px solid #ece7e0">
+        ${filasHTML(items, { conImagen: true })}
+      </table>` : ''}
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:24px">
+        ${dato('Total pagado', `<b>${esc(pago.monto_texto)}</b>`)}
+        ${dato('Pago Nº', esc(pago.id))}
+        ${dato(esEnvio ? 'Enviamos a' : 'Retirás en', esc(lineaEntrega(pedido)))}
+      </table>
+
+      <div style="padding-top:22px">${boton(`https://wa.me/${WHATSAPP_LUNARE}`, 'Escribirnos por WhatsApp')}</div>`
+
+    try {
+      await enviar({
+        to: [pedido.email],
+        subject: `Recibimos tu pago — pedido ${pedido.numero}`,
+        html: envoltorio({ titulo: `Pago recibido ${pedido.numero}`, encabezado: encClienta, cuerpo: cuerpoClienta }),
+        texto: [
+          'Recibimos tu pago.',
+          `Pedido ${pedido.numero} — ${pago.monto_texto}`,
+          '',
+          `Ya estamos preparando tu pedido y te escribimos por WhatsApp para coordinar ${esEnvio ? 'el envío' : 'el retiro'}.`,
+          '',
+          items.length ? filasTexto(items) : '',
+          '',
+          `Pago Nº: ${pago.id}`,
+          `${esEnvio ? 'Enviamos a' : 'Retirás en'}: ${lineaEntrega(pedido)}`,
+          '',
+          `Cualquier cosa escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
+        ].filter(Boolean).join('\n'),
+      })
+      salida.clienta = true
+    } catch (err) {
+      console.error(`[aviso] no salió el mail de pago a la clienta de ${pedido.numero}`, err)
+    }
+  }
+
+  return salida
+}

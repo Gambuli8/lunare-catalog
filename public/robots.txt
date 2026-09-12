@@ -8,4 +8,7 @@ Disallow: /api/
 # esto es para que no aparezca en resultados, no para protegerlo.
 Disallow: /panel
 
+# La vuelta de Mercado Pago es una pantalla de tramite.
+Disallow: /pago
+
 Sitemap: https://www.lunareacc.com/sitemap.xml
