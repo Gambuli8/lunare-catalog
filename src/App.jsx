@@ -14,6 +14,7 @@ import Arrepentimiento   from './components/Arrepentimiento'
 import Panel             from './components/Panel'
 import Pago              from './components/Pago'
 import CartSidebar       from './components/CartSidebar'
+import PagoPendiente     from './components/PagoPendiente'
 import ProductPage       from './components/ProductPage'
 import Footer            from './components/Footer'
 import Toast             from './components/Toast'
@@ -136,6 +137,8 @@ export default function App() {
         </main>
         <Footer />
         <CartSidebar />
+        {/* En /pago la propia pantalla dice cómo salió; ahí no hace falta. */}
+        {route.name !== 'pago' && <PagoPendiente />}
         <Toast />
         <Analytics />
       </div>

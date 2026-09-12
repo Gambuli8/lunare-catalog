@@ -4,6 +4,7 @@
 
 import { getCatalog } from './_catalog.js'
 import { ENTREGAS, PAGOS, ENVIO_GRATIS_DESDE, pedidosConfigurados } from './_pedidos.js'
+import { mpConfigurado } from './_mp.js'
 
 export default async function handler(req, res) {
   try {
@@ -21,6 +22,9 @@ export default async function handler(req, res) {
       // estuvieran duplicadas en el cliente, tarde o temprano se separan.
       checkout: {
         activo: pedidosConfigurados(),
+        // Con Mercado Pago configurado se paga en el momento; sin el token,
+        // la opción sigue existiendo pero el link se manda por WhatsApp.
+        mp: mpConfigurado(),
         envioGratisDesde: ENVIO_GRATIS_DESDE,
         entregas: Object.entries(ENTREGAS).map(([key, e]) => ({
           key, etiqueta: e.etiqueta, costo: e.costo, envio: e.envio,

@@ -24,8 +24,8 @@ const FAQS = [
     a: 'Sí. Todo lo que aparece en la web tiene stock listo para comprar: las piezas agotadas se sacan del catálogo automáticamente.',
   },
   {
-    q: '¿Cómo se coordina el pago?',
-    a: 'Una vez que hacés el pedido por WhatsApp coordinamos el método: transferencia bancaria, Mercado Pago o efectivo al retirar.',
+    q: '¿Cómo puedo pagar?',
+    a: 'Con Mercado Pago pagás en el momento, al confirmar el pedido: tarjeta de crédito, débito o dinero en cuenta. Si elegís transferencia o efectivo al retirar, te escribimos por WhatsApp para coordinarlo.',
   },
 ]
 

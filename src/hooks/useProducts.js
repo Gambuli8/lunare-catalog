@@ -29,7 +29,7 @@ const store = {
   categories: [ALL],
   // Opciones de entrega y pago: llegan del servidor, que es quien las
   // cobra. Hasta que llegan, el checkout se muestra apagado.
-  checkout: { activo: false, entregas: [], pagos: [], envioGratisDesde: 0 },
+  checkout: { activo: false, mp: false, entregas: [], pagos: [], envioGratisDesde: 0 },
   loading: true,
   error: null,
   fetchedAt: 0,
