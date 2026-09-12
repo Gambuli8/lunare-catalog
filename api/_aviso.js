@@ -95,7 +95,9 @@ function proximoPaso(datos) {
     return 'Te escribimos por WhatsApp con los datos para transferir. Cuando nos pasás el comprobante, preparamos el pedido.'
   }
   if (datos.pago === 'mercadopago') {
-    return 'Te escribimos por WhatsApp con el link de Mercado Pago para que pagues.'
+    // El mail sale antes de que termine de pagar, así que no puede dar por
+    // hecho que pagó.
+    return 'Cuando se acredite el pago en Mercado Pago, te escribimos por WhatsApp para coordinar la entrega. Si no llegaste a pagar, las piezas quedan reservadas por 24 horas: podés terminar el pago desde la web o escribirnos con el número de pedido.'
   }
   return 'Pagás en efectivo cuando retirás el pedido.'
 }
