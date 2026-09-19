@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useCart } from '../context/CartContext'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { trackCheckout } from '../lib/track'
+import { guardarPagoPendiente, leerPagoPendiente } from '../lib/pagoPendiente'
 import CloudinaryImage from './CloudinaryImage'
 import Icon, { WhatsAppIcon } from './Icon'
 
@@ -84,6 +85,10 @@ export default function CartSidebar() {
   const [enviando, setEnviando] = useState(false)
   const [errores, setErrores] = useState([])
   const [confirmado, setConfirmado] = useState(null)
+  // El pedido que se está yendo a pagar a Mercado Pago, y uno que quedó
+  // sin pagar de una visita anterior.
+  const [redirigiendo, setRedirigiendo] = useState(null)
+  const [pendiente, setPendiente] = useState(null)
 
   const entregaDef = checkout.entregas.find(e => e.key === entrega)
   const esEnvio = !!entregaDef?.envio
@@ -107,6 +112,18 @@ export default function CartSidebar() {
 
   useEffect(() => { if (!isOpen) setErrores([]) }, [isOpen])
 
+  useEffect(() => { if (isOpen) setPendiente(leerPagoPendiente()) }, [isOpen])
+
+  // Si vuelve con "atrás" desde Mercado Pago, el navegador puede restaurar
+  // la página tal cual quedó: con el "Te llevamos a Mercado Pago" puesto.
+  useEffect(() => {
+    const alVolver = e => { if (e.persisted) setRedirigiendo(null) }
+    window.addEventListener('pageshow', alVolver)
+    return () => window.removeEventListener('pageshow', alVolver)
+  }, [])
+
+  const vaAMercadoPago = paso === 3 && pago === 'mercadopago' && checkout.mp
+
   const cerrar = () => {
     setIsOpen(false)
     if (confirmado) { setConfirmado(null); setPaso(1) }
@@ -121,10 +138,11 @@ export default function CartSidebar() {
     return m
   }
 
-  const irAWhatsApp = () => {
-    trackCheckout(items, totalFinal)
-    window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(textoWhatsApp())}`, '_blank', 'noopener')
-  }
+  // Link de verdad y no window.open: el navegador de Instagram —de donde
+  // viene casi todo el tráfico— y varios del celular bloquean las ventanas
+  // abiertas por script sin avisar, y el botón parecía no hacer nada.
+  const linkWhatsApp = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(textoWhatsApp())}`
+  const irAWhatsApp = () => trackCheckout(items, totalFinal)
 
   const confirmar = async () => {
     setEnviando(true)
@@ -152,11 +170,20 @@ export default function CartSidebar() {
         // servidor manda pago_url en null y cae en la pantalla de
         // siempre: se coordina por WhatsApp.
         if (data.pago_url) {
-          window.location.href = data.pago_url
+          guardarPagoPendiente({
+            id: data.pedido.id,
+            numero: data.pedido.numero,
+            total: data.pedido.total ?? totalFinal,
+            url: data.pago_url,
+          })
+          setRedirigiendo({ numero: data.pedido.numero, url: data.pago_url })
+          // Un momento para que se lea adónde va y con qué número. Sin esto
+          // la pantalla salta de golpe a otro sitio y parece que algo falló.
+          setTimeout(() => { window.location.href = data.pago_url }, 1400)
           return
         }
 
-        setConfirmado(data.pedido)
+        setConfirmado({ ...data.pedido, pago })
         return
       }
       if (data?.error === 'SIN_STOCK' && data.faltantes?.length) {
@@ -244,7 +271,24 @@ export default function CartSidebar() {
           </button>
         </div>
 
-        {confirmado ? (
+        {redirigiendo ? (
+          <div role='status' aria-live='polite' className='flex flex-col items-center gap-4 px-8 py-16 text-center'>
+            <span className='relative grid w-16 h-16 place-items-center text-gold'>
+              <span className='absolute inset-0 border rounded-full border-border' />
+              <span className='absolute inset-0 border border-transparent rounded-full border-t-gold animate-spin' />
+              <Icon name='tarjeta' size={24} strokeWidth={1.5} />
+            </span>
+            <h3 className='font-serif text-[26px] font-light'>Te llevamos a Mercado Pago</h3>
+            <span className='font-serif text-[30px] tracking-wider text-gold'>{redirigiendo.numero}</span>
+            <p className='text-sm leading-relaxed text-muted'>
+              Tu pedido ya quedó guardado y las piezas, reservadas.
+              Cuando termines de pagar, volvés a la tienda.
+            </p>
+            <a href={redirigiendo.url} className='min-h-[44px] inline-flex items-center text-[13px] text-muted underline underline-offset-4 hover:text-dark'>
+              Si no se abre, tocá acá
+            </a>
+          </div>
+        ) : confirmado ? (
           <div className='flex flex-col items-center gap-4 px-8 py-16 text-center'>
             <span className='grid w-16 h-16 rounded-full place-items-center bg-wa text-cream'>
               <Icon name='check' size={30} strokeWidth={2.2} />
@@ -252,14 +296,39 @@ export default function CartSidebar() {
             <h3 className='font-serif text-[26px] font-light'>¡Listo{datos.nombre.trim() ? `, ${datos.nombre.trim()}` : ''}!</h3>
             <span className='font-serif text-[30px] tracking-wider text-gold'>{confirmado.numero}</span>
             <p className='text-sm leading-relaxed text-muted'>
-              Te escribimos por WhatsApp para coordinar
-              {esEnvio ? ' el envío' : ' el retiro'} y el pago. Guardá el número del pedido.
+              {confirmado.pago === 'mercadopago'
+                ? `${checkout.mp ? 'No pudimos abrir Mercado Pago en este momento. ' : ''}Te escribimos por WhatsApp con el link de pago.`
+                : confirmado.pago === 'efectivo'
+                  ? 'Te escribimos por WhatsApp para coordinar el retiro. Pagás en efectivo cuando lo retirás.'
+                  : `Te escribimos por WhatsApp con los datos para transferir y coordinamos ${esEnvio ? 'el envío' : 'el retiro'}.`}
+              {' '}Guardá el número del pedido.
             </p>
             <a
               href='/tienda'
               onClick={cerrar}
               className='px-8 py-3.5 mt-2 text-xs tracking-[0.14em] uppercase border border-dark hover:bg-dark hover:text-cream transition-colors'
             >
+              Seguir mirando
+            </a>
+          </div>
+        ) : items.length === 0 && pendiente ? (
+          <div className='flex flex-col items-center gap-4 px-8 py-16 text-center'>
+            <span className='grid w-16 h-16 border rounded-full place-items-center border-gold-lt text-gold'>
+              <Icon name='reloj' size={28} strokeWidth={1.4} />
+            </span>
+            <h3 className='font-serif text-[26px] font-light leading-tight'>Tenés un pedido esperando el pago</h3>
+            <span className='font-serif text-[30px] tracking-wider text-gold'>{pendiente.numero}</span>
+            <p className='text-sm leading-relaxed text-muted'>
+              Te reservamos las piezas por 24 horas. Si ya pagaste, no tenés que hacer nada.
+            </p>
+            <a
+              href={pendiente.url}
+              className='inline-flex items-center justify-center gap-2.5 w-full min-h-[52px] mt-2 text-xs tracking-[0.14em] uppercase transition-colors bg-dark text-cream hover:bg-[#2e2a26]'
+            >
+              Terminar el pago
+              <Icon name='flecha' size={14} strokeWidth={1.9} />
+            </a>
+            <a href='/tienda' onClick={cerrar} className='min-h-[44px] inline-flex items-center text-[13px] text-muted hover:text-dark'>
               Seguir mirando
             </a>
           </div>
@@ -419,12 +488,20 @@ export default function CartSidebar() {
                       onClick={() => { setPago(p.key); setErrores([]) }}
                       titulo={p.etiqueta}
                       detalle={
-                        p.key === 'mercadopago' ? 'Te mandamos el link de pago por WhatsApp'
+                        p.key === 'mercadopago'
+                          ? (checkout.mp ? 'Pagás ahora con tarjeta, débito o dinero en cuenta' : 'Te mandamos el link de pago por WhatsApp')
                           : p.key === 'transferencia' ? 'Te pasamos el CBU y confirmás el comprobante'
                             : 'Pagás al retirar la pieza'
                       }
                     />
                   ))}
+
+                  {vaAMercadoPago && (
+                    <p className='p-3.5 text-[12.5px] leading-relaxed border-l-2 bg-[#f2ece4] border-gold-lt text-muted'>
+                      Al tocar <b className='font-medium text-dark'>Ir a pagar</b> te llevamos a Mercado Pago.
+                      Tu pedido queda guardado y las piezas, reservadas por 24 horas.
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -455,27 +532,35 @@ export default function CartSidebar() {
                     disabled={enviando}
                     className='flex items-center justify-center flex-grow gap-2.5 min-h-[52px] px-6 text-xs tracking-[0.14em] uppercase transition-colors bg-dark text-cream hover:bg-[#2e2a26] disabled:opacity-60'
                   >
-                    {enviando ? 'Confirmando…' : paso === 3 ? 'Confirmar pedido' : 'Continuar'}
-                    {!enviando && paso < 3 && <Icon name='flecha' size={14} strokeWidth={1.9} />}
+                    {enviando
+                      ? (vaAMercadoPago ? 'Preparando el pago…' : 'Confirmando…')
+                      : paso < 3 ? 'Continuar' : vaAMercadoPago ? 'Ir a pagar' : 'Confirmar pedido'}
+                    {!enviando && (paso < 3 || vaAMercadoPago) && <Icon name='flecha' size={14} strokeWidth={1.9} />}
                   </button>
                 </div>
               ) : (
-                <button
+                <a
+                  href={linkWhatsApp}
+                  target='_blank'
+                  rel='noopener noreferrer'
                   onClick={irAWhatsApp}
                   className='flex items-center justify-center w-full gap-2.5 min-h-[56px] text-xs tracking-[0.14em] uppercase transition-colors bg-wa text-cream hover:bg-wa-dark'
                 >
                   <WhatsAppIcon size={18} />
                   Finalizar por WhatsApp
-                </button>
+                </a>
               )}
 
               {checkout.activo && (
-                <button
+                <a
+                  href={linkWhatsApp}
+                  target='_blank'
+                  rel='noopener noreferrer'
                   onClick={irAWhatsApp}
-                  className='min-h-[44px] text-[12.5px] text-muted hover:text-gold transition-colors [@media(max-height:620px)]:hidden'
+                  className='flex items-center justify-center min-h-[44px] text-[12.5px] text-muted hover:text-gold transition-colors [@media(max-height:620px)]:hidden'
                 >
                   ¿Preferís coordinarlo por WhatsApp?
-                </button>
+                </a>
               )}
 
               <p className='text-[12px] text-center text-muted [@media(max-height:620px)]:hidden'>

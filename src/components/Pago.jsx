@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { leerPagoPendiente, borrarPagoPendiente } from '../lib/pagoPendiente'
 import Icon from './Icon'
 
 // ── Vuelta de Mercado Pago ────────────────────────────────────
@@ -18,7 +19,7 @@ const ESTADOS = {
   exito: {
     icono: 'check',
     titulo: 'Listo, el pago salió bien',
-    texto: 'Ya nos llegó el aviso. Estamos preparando tu pedido y te escribimos por WhatsApp para coordinar la entrega.',
+    texto: 'Estamos preparando tu pedido. Te escribimos por WhatsApp para coordinar la entrega.',
     tono: 'text-gold',
   },
   pendiente: {
@@ -30,7 +31,7 @@ const ESTADOS = {
   error: {
     icono: 'alerta',
     titulo: 'El pago no se pudo completar',
-    texto: 'No se descontó nada. Podés intentar de nuevo o escribirnos y lo arreglamos por WhatsApp.',
+    texto: 'No se descontó nada y las piezas siguen reservadas por 24 horas. Podés intentar de nuevo, con el mismo medio o con otro, o escribirnos y lo resolvemos por WhatsApp.',
     tono: 'text-sale',
   },
 }
@@ -38,6 +39,19 @@ const ESTADOS = {
 export default function Pago({ route }) {
   const estado = ESTADOS[route?.query?.estado] || ESTADOS.pendiente
   const numero = route?.query?.pedido || ''
+  const [reintento, setReintento] = useState(null)
+
+  // Si el pago salió o quedó en proceso, ya no hay nada que recordarle. Si
+  // falló, se guarda el link para que pueda volver a intentar desde acá.
+  useEffect(() => {
+    const clave = route?.query?.estado
+    if (clave === 'exito' || clave === 'pendiente') {
+      borrarPagoPendiente()
+      return
+    }
+    const p = leerPagoPendiente()
+    if (clave === 'error' && p && (!numero || p.numero === numero)) setReintento(p.url)
+  }, [route?.query?.estado, numero])
 
   // Es una pantalla de trámite, no tiene nada que hacer en Google.
   useEffect(() => {
@@ -66,7 +80,16 @@ export default function Pago({ route }) {
 
         <p className='mt-5 text-[15px] leading-relaxed text-muted'>{estado.texto}</p>
 
-        <div className='flex flex-col w-full gap-3 mt-9 sm:flex-row sm:justify-center'>
+        <div className='flex flex-col w-full gap-3 mt-9 sm:flex-row sm:flex-wrap sm:justify-center'>
+          {reintento && (
+            <a
+              href={reintento}
+              className='inline-flex items-center justify-center gap-2.5 min-h-[52px] px-7 text-xs tracking-[0.14em] uppercase transition-colors bg-dark text-cream hover:bg-[#2e2a26] sm:basis-full'
+            >
+              Intentar de nuevo
+              <Icon name='flecha' size={14} strokeWidth={1.9} />
+            </a>
+          )}
           <a
             href={`https://wa.me/${WHATSAPP}`}
             target='_blank'

@@ -296,6 +296,36 @@ en `pendiente` para siempre aunque la clienta hubiera pagado.
 `/api/mp-webhook` está en `SIEMPRE_ABIERTAS`. No es una puerta abierta: verifica
 la firma de cada notificación y sin ella no toca nada.
 
+### Antes de ir y al volver sin pagar
+
+En el paso 3, con Mercado Pago elegido, el botón pasa a **Ir a pagar** y un
+aviso explica que la llevamos a Mercado Pago y que las piezas quedan reservadas.
+Al confirmar, el carrito muestra *Te llevamos a Mercado Pago* con el número del
+pedido durante un segundo y medio, en vez de saltar de golpe a otro sitio.
+
+Si vuelve sin pagar —tocó "atrás", dudó, cerró la pestaña— el carrito ya está
+vacío, porque el pedido existe. Para que no quede sin rastro,
+`src/lib/pagoPendiente.js` guarda en el navegador el id, el número, el total y
+el link de pago, y vence a las 24 h junto con la preferencia:
+
+- **Al entrar a la tienda** aparece *Tu pedido te está esperando*
+  (`PagoPendiente.jsx`) con tres salidas: terminar el pago, consultar por
+  WhatsApp con el número ya escrito, o "Ahora no", que lo calla hasta cerrar el
+  navegador. También se dispara con `pageshow`, porque al volver con "atrás"
+  el navegador suele restaurar la página congelada sin volver a montar React.
+- **En el carrito vacío** aparece *Tenés un pedido esperando el pago*.
+- **En `/pago?estado=error`** aparece *Intentar de nuevo* con el mismo link.
+- `exito` y `pendiente` lo borran.
+
+Antes de mostrarlo pregunta a `GET /api/pedido-estado?id=<uuid>` si el pedido
+sigue pendiente, para no pedirle que pague a alguien que ya pagó. Va por el
+uuid y no por el número —que es correlativo y se adivina— y devuelve solo el
+número y el estado. Si la consulta falla se muestra igual, con la aclaración de
+que si ya pagó no tiene que hacer nada.
+
+> Depende de que el webhook funcione: si nunca marca el pedido como pagado,
+> quien pagó y cerró la pestaña antes de volver a la tienda ve el recordatorio.
+
 ### Configurar el webhook
 
 En Tus integraciones → la aplicación → **Webhooks**, la URL es

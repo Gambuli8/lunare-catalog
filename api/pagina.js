@@ -50,8 +50,8 @@ const FAQ = [
    'Sí, dentro de los 10 días corridos y siempre que esté sin uso. Por higiene, los aros y cuffs a presión no se cambian.'],
   ['¿Los productos tienen stock?',
    'Sí. Todo lo que aparece en la web tiene stock listo para comprar: las piezas agotadas se sacan del catálogo automáticamente.'],
-  ['¿Cómo se coordina el pago?',
-   'Una vez que hacés el pedido por WhatsApp coordinamos el método: transferencia bancaria, Mercado Pago o efectivo al retirar.'],
+  ['¿Cómo puedo pagar?',
+   'Con Mercado Pago pagás en el momento, al confirmar el pedido: tarjeta de crédito, débito o dinero en cuenta. Si elegís transferencia o efectivo al retirar, te escribimos por WhatsApp para coordinarlo.'],
 ]
 
 const faqJsonLd = () => ({
