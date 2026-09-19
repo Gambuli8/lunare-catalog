@@ -89,6 +89,7 @@ export default function CartSidebar() {
   // Qué transporte eligió: Andreani, Correo Argentino, Integral Pack. Va
   // aparte de la entrega, que solo dice si es a domicilio o a sucursal.
   const [transporte, setTransporte] = useState('')
+  const [opcionesServidor, setOpcionesServidor] = useState(null)
   const [datos, setDatos] = useState({ nombre: '', telefono: '', email: '', cp: '', direccion: '' })
   const [enviando, setEnviando] = useState(false)
   const [errores, setErrores] = useState([])
@@ -107,10 +108,13 @@ export default function CartSidebar() {
   // transporte. Se calculan acá contra la tabla que vino con el catálogo,
   // para que aparezcan mientras escribe; lo que se cobra lo decide el
   // servidor al confirmar.
-  const opciones = useMemo(
+  const opcionesLocales = useMemo(
     () => opcionesDeEnvio(checkout.zonas, datos.cp),
     [checkout.zonas, datos.cp]
   )
+  // Las de la tabla se ven al instante; el servidor las confirma y, si hay
+  // contrato de Andreani, trae su tarifa de verdad para ese CP y ese peso.
+  const opciones = opcionesServidor ?? opcionesLocales
   const opcionElegida = opciones.find(o => o.entrega === entrega && o.transporte === transporte)
 
   const envioGratis = total >= checkout.envioGratisDesde
@@ -134,6 +138,32 @@ export default function CartSidebar() {
   useEffect(() => { if (!isOpen) setErrores([]) }, [isOpen])
 
   useEffect(() => { if (isOpen) setPendiente(leerPagoPendiente()) }, [isOpen])
+
+  // Al terminar de escribir el código postal le preguntamos al servidor.
+  // Si no contesta, quedan los precios de la tabla: nadie se queda sin
+  // poder elegir envío porque se cayó una API.
+  // Ojo: no depende del paso. Si se descartaran al pasar al paso 3, el
+  // resumen volvería a los precios de la tabla y podría mostrar un envío
+  // que no es el que se eligió —o gratis, si esa opción no está en la
+  // tabla—. Se limpian solo cuando cambia el código postal.
+  useEffect(() => {
+    if (!cpValido(datos.cp)) { setOpcionesServidor(null); return }
+
+    const corte = new AbortController()
+    const piezas = items.reduce((n, i) => n + i.qty, 0)
+    const espera = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/envio?cp=${datos.cp}&piezas=${piezas}&valor=${Math.round(total)}`,
+          { signal: corte.signal }
+        )
+        const data = await res.json()
+        if (data?.ok && Array.isArray(data.opciones)) setOpcionesServidor(data.opciones)
+      } catch { /* se sigue con la tabla que vino con el catálogo */ }
+    }, 350)
+
+    return () => { clearTimeout(espera); corte.abort() }
+  }, [datos.cp, total, items.length])
 
   // Si vuelve con "atrás" desde Mercado Pago, el navegador puede restaurar
   // la página tal cual quedó: con el "Te llevamos a Mercado Pago" puesto.
@@ -167,6 +197,21 @@ export default function CartSidebar() {
   // abiertas por script sin avisar, y el botón parecía no hacer nada.
   const linkWhatsApp = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(textoWhatsApp())}`
   const irAWhatsApp = () => trackCheckout(items, totalFinal)
+
+  // El mensaje del pedido ya confirmado. Va con el número adelante: es lo
+  // que Lunare busca en el panel para saber de qué pedido le hablan.
+  const textoConfirmado = pedido => {
+    const quien = datos.nombre.trim() ? `Soy ${datos.nombre.trim()}. ` : ''
+    const como = esEnvio
+      ? `envío${transporte ? ` por ${transporte}` : ''}`
+      : entregaDef?.etiqueta || 'retiro'
+    const cierre = pedido.pago === 'efectivo'
+      ? 'Quiero coordinar el retiro y pago en efectivo cuando lo busque.'
+      : pedido.pago === 'transferencia'
+        ? 'Necesito los datos para transferir.'
+        : 'Quiero coordinar el pago.'
+    return `¡Hola! ${quien}Hice el pedido ${pedido.numero} en la web (${como}, ${formatPrice(pedido.total ?? totalFinal)}). ${cierre}`
+  }
 
   const confirmar = async () => {
     setEnviando(true)
@@ -328,14 +373,29 @@ export default function CartSidebar() {
               {confirmado.pago === 'mercadopago'
                 ? `${checkout.mp ? 'No pudimos abrir Mercado Pago en este momento. ' : ''}Te escribimos por WhatsApp con el link de pago.`
                 : confirmado.pago === 'efectivo'
-                  ? 'Te escribimos por WhatsApp para coordinar el retiro. Pagás en efectivo cuando lo retirás.'
-                  : `Te escribimos por WhatsApp con los datos para transferir y coordinamos ${esEnvio ? 'el envío' : 'el retiro'}.`}
+                  ? 'Escribinos y cerramos el retiro: acordamos el día y el punto, y pagás en efectivo cuando lo retirás.'
+                  : `Te pasamos los datos para transferir por WhatsApp y coordinamos ${esEnvio ? 'el envío' : 'el retiro'}.`}
               {' '}Guardá el número del pedido.
             </p>
+
+            {/* Con efectivo la venta se termina de cerrar por WhatsApp, así
+                que el botón es la acción principal y no una alternativa. */}
+            <a
+              href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(textoConfirmado(confirmado))}`}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='flex items-center justify-center w-full gap-2.5 min-h-[52px] mt-2 text-xs tracking-[0.14em] uppercase transition-colors bg-wa text-cream hover:bg-wa-dark'
+            >
+              <WhatsAppIcon size={17} />
+              {confirmado.pago === 'efectivo'
+                ? (esEnvio ? 'Coordinar por WhatsApp' : 'Coordinar el retiro')
+                : confirmado.pago === 'transferencia' ? 'Pedir los datos para transferir'
+                  : 'Escribirnos por WhatsApp'}
+            </a>
             <a
               href='/tienda'
               onClick={cerrar}
-              className='px-8 py-3.5 mt-2 text-xs tracking-[0.14em] uppercase border border-dark hover:bg-dark hover:text-cream transition-colors'
+              className='min-h-[44px] inline-flex items-center text-[13px] text-muted hover:text-dark transition-colors'
             >
               Seguir mirando
             </a>
@@ -516,6 +576,49 @@ export default function CartSidebar() {
 
               {paso === 3 && (
                 <>
+                  {/* El repaso antes de confirmar: qué se lleva, cómo le
+                      llega y cuánto es cada cosa. Sin esto, el último paso
+                      pide datos y cobra sin mostrar qué se está pagando. */}
+                  <div className='flex flex-col gap-2.5 p-4 border bg-paper border-border'>
+                    <span className='text-[11px] tracking-[0.14em] uppercase text-muted'>Tu pedido</span>
+
+                    {items.map(i => (
+                      <div key={i.id} className='flex items-baseline justify-between gap-3 text-[13px]'>
+                        <span className='min-w-0 text-dark'>
+                          <span className='text-muted'>{i.qty}×</span> {i.name}
+                        </span>
+                        <span className='whitespace-nowrap text-dark'>{formatPrice(i.price * i.qty)}</span>
+                      </div>
+                    ))}
+
+                    <div className='flex items-baseline justify-between gap-3 pt-2.5 text-[13px] border-t border-line text-muted'>
+                      <span>Subtotal</span>
+                      <span>{formatPrice(total)}</span>
+                    </div>
+
+                    <div className='flex items-baseline justify-between gap-3 text-[13px] text-muted'>
+                      <span className='min-w-0'>
+                        {esEnvio
+                          ? `Envío · ${transporte} ${aDomicilio ? 'a domicilio' : 'a sucursal'}`
+                          : entregaDef?.etiqueta || 'Retiro'}
+                      </span>
+                      <span className={`whitespace-nowrap ${costoEnvio === 0 ? 'text-wa' : ''}`}>
+                        {costoEnvio === 0 ? 'Sin cargo' : formatPrice(costoEnvio)}
+                      </span>
+                    </div>
+
+                    {esEnvio && aDomicilio && datos.direccion.trim() && (
+                      <p className='text-[12px] leading-relaxed text-soft'>
+                        {datos.direccion.trim()}{datos.cp && ` · CP ${datos.cp}`}
+                      </p>
+                    )}
+
+                    <div className='flex items-baseline justify-between gap-3 pt-2.5 border-t border-line'>
+                      <span className='text-[13px] text-dark'>Total</span>
+                      <span className='font-serif text-[22px] text-dark'>{formatPrice(totalFinal)}</span>
+                    </div>
+                  </div>
+
                   <Campo
                     label='Tu nombre'
                     placeholder='Cómo te llamás'
@@ -597,16 +700,25 @@ export default function CartSidebar() {
                   </button>
                 </div>
               ) : (
-                <a
-                  href={linkWhatsApp}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  onClick={irAWhatsApp}
-                  className='flex items-center justify-center w-full gap-2.5 min-h-[56px] text-xs tracking-[0.14em] uppercase transition-colors bg-wa text-cream hover:bg-wa-dark'
-                >
-                  <WhatsAppIcon size={18} />
-                  Finalizar por WhatsApp
-                </a>
+                // Salida de emergencia: solo se ve si el pedido online no
+                // está disponible. Va con el estilo de la tienda y no como
+                // un bloque verde, que competía con el checkout de verdad.
+                <>
+                  <p className='text-[12.5px] leading-relaxed text-muted'>
+                    El pedido online no está disponible en este momento. Mandanos
+                    tu pedido por WhatsApp y lo cerramos ahí.
+                  </p>
+                  <a
+                    href={linkWhatsApp}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    onClick={irAWhatsApp}
+                    className='flex items-center justify-center w-full gap-2.5 min-h-[52px] text-xs tracking-[0.14em] uppercase transition-colors bg-dark text-cream hover:bg-[#2e2a26]'
+                  >
+                    <WhatsAppIcon size={17} />
+                    Hacer el pedido por WhatsApp
+                  </a>
+                </>
               )}
 
               {checkout.activo && (

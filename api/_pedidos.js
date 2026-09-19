@@ -42,12 +42,12 @@ export const ENVIO_GRATIS_DESDE = 60000
 // navegador muestra un precio, pero el que vale es este: si viniera del
 // carrito, cualquiera podría mandar un envío de $0 o elegir el precio de
 // Integral Pack y hacerse despachar por Andreani.
-export async function resolverEnvio({ entrega, transporte, subtotal, cp }) {
+export async function resolverEnvio({ entrega, transporte, subtotal, cp, piezas = 1 }) {
   const def = ENTREGAS[entrega]
   if (!def) return { ok: false, codigo: 'ENTREGA_INVALIDA' }
   if (!def.envio) return { ok: true, costo: 0 }
 
-  const opciones = await cotizar(cp)
+  const opciones = await cotizar(cp, { piezas, valorDeclarado: subtotal })
   if (!opciones.length) return { ok: false, codigo: 'CP_SIN_COBERTURA' }
 
   // Tiene que existir esa combinación de transporte y modalidad para ese

@@ -30,6 +30,7 @@
 // Los archivos de api/ que empiezan con "_" no son endpoints.
 
 import { parseCSV } from './_catalog.js'
+import { aplicarTarifas } from './_andreani.js'
 
 const csvUrl = () => process.env.SHEET_ENVIOS_CSV_URL
 const TTL = 5 * 60 * 1000
@@ -166,6 +167,10 @@ export function opcionesDeEnvio(zonas, cp) {
   return opciones.sort((a, b) => a.costo - b.costo)
 }
 
-export async function cotizar(cp) {
-  return opcionesDeEnvio(await getZonas(), cp)
+// Las opciones ya con el precio final: las de Andreani las cotiza su API
+// si hay contrato cargado, y si no quedan las del Sheet.
+export async function cotizar(cp, { piezas = 1, valorDeclarado = 0 } = {}) {
+  const opciones = opcionesDeEnvio(await getZonas(), cp)
+  if (!opciones.length) return []
+  return aplicarTarifas(opciones, { cp, piezas, valorDeclarado })
 }

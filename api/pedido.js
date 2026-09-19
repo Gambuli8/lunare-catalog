@@ -94,6 +94,7 @@ export default async function handler(req, res) {
     transporte: datos.transporte,
     subtotal,
     cp: datos.cp,
+    piezas: items.reduce((n, i) => n + i.cantidad, 0),
   })
   if (!envio.ok) {
     return res.status(400).json({

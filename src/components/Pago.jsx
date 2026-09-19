@@ -20,12 +20,15 @@ const ESTADOS = {
     icono: 'check',
     titulo: 'Listo, el pago salió bien',
     texto: 'Estamos preparando tu pedido. Te escribimos por WhatsApp para coordinar la entrega.',
+    // Quien retira no espera un envío: espera que lo llamen.
+    textoRetiro: 'Ya está todo pago. Te escribimos por WhatsApp dentro de las 24 horas para coordinar el día y el punto de retiro.',
     tono: 'text-gold',
   },
   pendiente: {
     icono: 'reloj',
     titulo: 'El pago quedó en camino',
     texto: 'Mercado Pago todavía lo está procesando. Puede tardar un rato, sobre todo si pagaste con efectivo o transferencia. Te avisamos apenas se acredite.',
+    textoRetiro: 'Mercado Pago todavía lo está procesando. Apenas se acredite te escribimos por WhatsApp, dentro de las 24 horas, para coordinar el retiro.',
     tono: 'text-gold',
   },
   error: {
@@ -39,6 +42,18 @@ const ESTADOS = {
 export default function Pago({ route }) {
   const estado = ESTADOS[route?.query?.estado] || ESTADOS.pendiente
   const numero = route?.query?.pedido || ''
+  // Lo pone la preferencia de Mercado Pago cuando el pedido es para
+  // retirar, así el texto habla del retiro y no de una entrega.
+  const esRetiro = route?.query?.retiro === '1'
+  const texto = (esRetiro && estado.textoRetiro) || estado.texto
+
+  // El mensaje ya escrito le ahorra tener que explicar de qué pedido
+  // habla, que con un número a mano es donde más se traba.
+  const mensaje = numero
+    ? esRetiro
+      ? `¡Hola! Pagué el pedido ${numero} y quiero coordinar el retiro.`
+      : `¡Hola! Te escribo por el pedido ${numero}.`
+    : ''
   const [reintento, setReintento] = useState(null)
 
   // Si el pago salió o quedó en proceso, ya no hay nada que recordarle. Si
@@ -78,7 +93,7 @@ export default function Pago({ route }) {
           </>
         )}
 
-        <p className='mt-5 text-[15px] leading-relaxed text-muted'>{estado.texto}</p>
+        <p className='mt-5 text-[15px] leading-relaxed text-muted'>{texto}</p>
 
         <div className='flex flex-col w-full gap-3 mt-9 sm:flex-row sm:flex-wrap sm:justify-center'>
           {reintento && (
@@ -91,12 +106,12 @@ export default function Pago({ route }) {
             </a>
           )}
           <a
-            href={`https://wa.me/${WHATSAPP}`}
+            href={`https://wa.me/${WHATSAPP}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ''}`}
             target='_blank'
             rel='noopener noreferrer'
             className='inline-flex items-center justify-center gap-2.5 min-h-[52px] px-7 text-xs tracking-[0.14em] uppercase transition-colors bg-wa text-cream hover:bg-wa-dark'
           >
-            Escribirnos por WhatsApp
+            {esRetiro ? 'Coordinar el retiro' : 'Escribirnos por WhatsApp'}
           </a>
           <a
             href='/tienda'

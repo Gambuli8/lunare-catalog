@@ -492,12 +492,37 @@ El envío sigue siendo sin cargo desde `ENVIO_GRATIS_DESDE`.
 `pedidos.transporte` guarda cuál eligió, como texto. Es texto y no un enum
 justamente porque los transportes se agregan y se sacan desde el Sheet.
 
-### Todavía no están conectados por API
+### Andreani en vivo
 
-Andreani y Correo Argentino tienen API para cotizar, despachar y rastrear, pero
-piden cuenta comercial con contrato; Integral Pack no tiene API pública. Hoy los
-precios salen de la tabla. Cuando existan esas cuentas, la cotización en vivo
-reemplaza de dónde sale el número y el checkout no cambia.
+El cotizador de Andreani ya está conectado, apagado hasta que haya contrato:
+
+```
+ANDREANI_CONTRATO_DOMICILIO=...   # envío a domicilio
+ANDREANI_CONTRATO_SUCURSAL=...    # envío a sucursal
+```
+
+Son dos contratos distintos —Andreani cobra los servicios por separado— y salen
+de la cuenta comercial. Con uno cargado, las filas del Sheet cuyo transporte sea
+Andreani dejan de usar el precio de la planilla y se cotizan contra la API por
+código postal, peso y valor declarado; el resultado se redondea a la centena de
+arriba. Sin contrato, o si la API falla o tarda más de 6 segundos, queda el
+precio del Sheet: nadie se queda sin poder comprar por esto.
+
+El peso se estima en 150 g de base más 60 g por pieza, en una caja de 10 × 10 ×
+10. Para joyería el cobro es por peso aforado mínimo, así que alcanza.
+
+`GET /api/envio?cp=6300&piezas=2&valor=57400` devuelve las opciones ya con el
+precio final. El carrito muestra al instante los precios de la tabla y lo llama
+en segundo plano para confirmarlos; el que se cobra se recalcula igual al
+confirmar el pedido.
+
+El listado de sucursales (`/v2/sucursales`) es público y no necesita contrato:
+son 317 sucursales que atienden público, cacheadas 12 horas.
+
+### Correo Argentino e Integral Pack
+
+Correo Argentino tiene API pero pide cuenta empresa; Integral Pack no tiene API
+pública. Sus precios salen de la tabla del Sheet.
 
 ## Modo mantenimiento
 

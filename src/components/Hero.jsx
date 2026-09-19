@@ -45,7 +45,7 @@ export default function Hero() {
                   fallback={<div className='w-full h-full bg-line md:aspect-[4/5]' />}
                 />
                 {/* Velo para que el texto se lea sobre la foto. Solo mobile. */}
-                <div className='absolute inset-0 bg-gradient-to-t from-dark/92 via-dark/62 via-45% to-dark/20 md:hidden' />
+                <div className='absolute inset-0 bg-gradient-to-t from-dark/92 via-dark/72 via-40% to-dark/25 md:hidden' />
 
                 <a
                   href={`/producto/${pieza.slug}`}
@@ -68,7 +68,7 @@ export default function Hero() {
         </div>
 
         {/* Texto */}
-        <div className='relative z-10 flex flex-col justify-end gap-5 px-6 pt-32 pb-9 h-[calc(100svh-116px)] min-h-[520px] max-h-[760px] md:h-auto md:min-h-0 md:max-h-none md:p-0 md:gap-6 md:order-1 md:items-start'>
+        <div className='relative z-10 flex flex-col justify-end gap-3.5 px-6 pt-32 pb-7 h-[calc(100svh-116px)] min-h-[520px] max-h-[760px] md:h-auto md:min-h-0 md:max-h-none md:p-0 md:gap-6 md:justify-center md:order-1 md:items-start'>
 
           <p className='text-[10.5px] md:text-xs tracking-[0.12em] md:tracking-[0.16em] uppercase font-medium text-cream/85 md:text-gold animate-fade-up'>
             Plata 925 · Plata dorada · Acero blanco
@@ -91,7 +91,7 @@ export default function Hero() {
           </p>
 
           <div
-            className='flex flex-col w-full gap-4 mt-1 animate-fade-up md:flex-row md:items-center md:w-auto md:gap-5 md:mt-2'
+            className='flex flex-col w-full gap-3 animate-fade-up md:flex-row md:items-center md:w-auto md:gap-5 md:mt-2'
             style={{ animationDelay: '.42s' }}
           >
             <a
@@ -118,7 +118,7 @@ export default function Hero() {
           {pieza && (
             <a
               href={`/producto/${pieza.slug}`}
-              className='inline-flex items-center gap-2 py-2 text-[12px] text-cream/70 md:hidden animate-fade-up'
+              className='inline-flex items-center gap-2 -mt-1 py-2 text-[12px] text-cream/70 md:hidden animate-fade-up'
               style={{ animationDelay: '.5s' }}
             >
               En la foto: {pieza.name} · {formatPrice(pieza.pricePromo ?? pieza.price)}
