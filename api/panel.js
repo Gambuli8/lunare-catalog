@@ -6,8 +6,12 @@
 //   GET  ?vista=arrepentimientos           los trámites abiertos
 //   GET  ?vista=resumen                    los números de la cabecera
 //   POST { tipo, id, estado }              cambia un estado
+//   POST { tipo: 'seguimiento', id, transporte, seguimiento }
+//                                          despacha y avisa a la clienta
 
+import { waitUntil } from '@vercel/functions'
 import { rpc, supabaseConfigurado } from './_supabase.js'
+import { avisarDespacho } from './_aviso.js'
 import { autorizado, panelConfigurado, cabeceras } from './_panel.js'
 
 const ESTADOS_PEDIDO = ['pendiente', 'pagado', 'despachado', 'entregado', 'cancelado']
@@ -64,6 +68,28 @@ export default async function handler(req, res) {
       const tipo = String(body?.tipo || 'pedido')
 
       if (!UUID.test(id)) return res.status(400).json({ ok: false, error: 'ID_INVALIDO' })
+
+      // Cargar el número de seguimiento es despachar: la base mueve el
+      // estado y acá sale el aviso a la clienta con el link para rastrear.
+      if (tipo === 'seguimiento') {
+        const seguimiento = String(body?.seguimiento || '').trim().slice(0, 60)
+        const transporte = String(body?.transporte || '').trim().slice(0, 60)
+        if (!seguimiento) return res.status(400).json({ ok: false, error: 'SEGUIMIENTO_REQUERIDO' })
+
+        const r = await rpc('guardar_seguimiento', {
+          p_pedido_id: id,
+          p_transporte: transporte,
+          p_seguimiento: seguimiento,
+        })
+        if (!r?.ok) return res.status(404).json(r ?? { ok: false, error: 'NO_ENCONTRADO' })
+
+        // El mail sale después de responder: si falla el servidor de
+        // correo, el número ya quedó guardado igual.
+        const aviso = avisarDespacho({ pedido: r.pedido })
+        try { waitUntil(aviso) } catch { await aviso }
+
+        return res.status(200).json(r)
+      }
 
       const validos = tipo === 'arrepentimiento' ? ESTADOS_ARREPENTIMIENTO : ESTADOS_PEDIDO
       if (!validos.includes(estado)) {

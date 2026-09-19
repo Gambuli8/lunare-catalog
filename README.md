@@ -358,6 +358,28 @@ Cambiar un estado tiene efecto real sobre el stock: solo `pendiente` y `pagado`
 lo comprometen, así que cancelar un pedido libera las piezas para que se puedan
 volver a vender.
 
+### Número de seguimiento
+
+Cuando Lunare despacha, carga en la tarjeta del pedido el transporte y el
+número que le dio el correo. Eso hace tres cosas de una:
+
+1. Guarda el número en el pedido (`pedidos.seguimiento`).
+2. **Mueve el pedido a despachado**, solo si venía de pendiente o pagado: uno
+   ya entregado no vuelve para atrás.
+3. Le manda a la clienta un mail con el número bien grande y el botón a la
+   página de rastreo del transporte.
+
+Los links de rastreo salen de `linkSeguimiento()`: Andreani, Correo Argentino e
+Integral Pack, verificados. Un transporte que no esté en esa lista igual se
+guarda y se avisa, solo que sin botón.
+
+Los tres rastreadores son páginas hechas en JavaScript, así que un link con el
+número adentro no es confiable: por eso el mail lleva el número para copiar y
+el link a la página, y no un link directo que puede romperse.
+
+Si la clienta no dejó correo, el número se guarda igual y el panel avisa que hay
+que pasárselo por WhatsApp.
+
 ### Cómo se protege
 
 Una sola clave compartida, sin usuarios: del otro lado hay una persona.
