@@ -6,6 +6,7 @@ import { guardarPagoPendiente, leerPagoPendiente } from '../lib/pagoPendiente'
 import { opcionesDeEnvio, cpValido, MODOS } from '../lib/envios'
 import CloudinaryImage from './CloudinaryImage'
 import Icon, { WhatsAppIcon } from './Icon'
+import Copiable from './Copiable'
 
 const WHATSAPP = '542954476558'
 
@@ -353,7 +354,7 @@ export default function CartSidebar() {
               <Icon name='tarjeta' size={24} strokeWidth={1.5} />
             </span>
             <h3 className='font-serif text-[26px] font-light'>Te llevamos a Mercado Pago</h3>
-            <span className='font-serif text-[30px] tracking-wider text-gold'>{redirigiendo.numero}</span>
+            <Copiable valor={redirigiendo.numero} etiqueta='número de pedido' className='font-serif text-[30px] tracking-wider text-gold' />
             <p className='text-sm leading-relaxed text-muted'>
               Tu pedido ya quedó guardado y las piezas, reservadas.
               Cuando termines de pagar, volvés a la tienda.
@@ -368,7 +369,7 @@ export default function CartSidebar() {
               <Icon name='check' size={30} strokeWidth={2.2} />
             </span>
             <h3 className='font-serif text-[26px] font-light'>¡Listo{datos.nombre.trim() ? `, ${datos.nombre.trim()}` : ''}!</h3>
-            <span className='font-serif text-[30px] tracking-wider text-gold'>{confirmado.numero}</span>
+            <Copiable valor={confirmado.numero} etiqueta='número de pedido' className='font-serif text-[30px] tracking-wider text-gold' />
             <p className='text-sm leading-relaxed text-muted'>
               {confirmado.pago === 'mercadopago'
                 ? `${checkout.mp ? 'No pudimos abrir Mercado Pago en este momento. ' : ''}Te escribimos por WhatsApp con el link de pago.`
@@ -406,7 +407,7 @@ export default function CartSidebar() {
               <Icon name='reloj' size={28} strokeWidth={1.4} />
             </span>
             <h3 className='font-serif text-[26px] font-light leading-tight'>Tenés un pedido esperando el pago</h3>
-            <span className='font-serif text-[30px] tracking-wider text-gold'>{pendiente.numero}</span>
+            <Copiable valor={pendiente.numero} etiqueta='número de pedido' className='font-serif text-[30px] tracking-wider text-gold' />
             <p className='text-sm leading-relaxed text-muted'>
               Te reservamos las piezas por 24 horas. Si ya pagaste, no tenés que hacer nada.
             </p>

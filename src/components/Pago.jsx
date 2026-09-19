@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { leerPagoPendiente, borrarPagoPendiente } from '../lib/pagoPendiente'
 import Icon from './Icon'
+import Copiable from './Copiable'
 
 // ── Vuelta de Mercado Pago ────────────────────────────────────
 // Adonde caen las back_urls de la preferencia.
@@ -89,7 +90,7 @@ export default function Pago({ route }) {
         {numero && (
           <>
             <p className='mt-6 text-[13px] tracking-[0.14em] uppercase text-muted'>Tu pedido</p>
-            <span className='font-serif text-[34px] tracking-wider text-gold'>{numero}</span>
+            <Copiable valor={numero} etiqueta='número de pedido' className='font-serif text-[34px] tracking-wider text-gold' />
           </>
         )}
 

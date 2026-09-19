@@ -165,7 +165,9 @@ export default function ProductPage({ slug }) {
             <div className='flex flex-wrap items-center gap-3'>
               <span className='text-xs tracking-[0.16em] uppercase text-[#8f7647] font-medium'>{product.material}</span>
               <span className='w-[3px] h-[3px] rounded-full bg-[#b0a89e]' />
-              <span className='text-xs text-[#5f574e] tracking-wide'>Cód. {product.id}</span>
+              <Copiable valor={product.id} etiqueta='código de la pieza' className='text-xs text-[#5f574e] tracking-wide'>
+                Cód. {product.id}
+              </Copiable>
             </div>
             <h1 className='font-serif text-[clamp(34px,5vw,50px)] font-light leading-none'>{product.name}</h1>
             <p className='text-[15px] text-[#5f574e]'>

@@ -10,6 +10,7 @@ const PATHS = {
   menos: <path d='M5 12h14' />,
   check: <path d='M5 13l4 4L19 7' />,
   cerrar: <path d='M18 6L6 18M6 6l12 12' />,
+  copiar: <><rect x='9' y='9' width='11.5' height='11.5' rx='2' /><path d='M5.5 15.5V5.5a2 2 0 012-2h8' /></>,
   chevron: <path d='M6 9l6 6 6-6' />,
   buscar: <><circle cx='11' cy='11' r='7.5' /><path d='M21 21l-4.5-4.5' /></>,
   pin: <><path d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0z' /><circle cx='12' cy='10' r='3' /></>,
