@@ -440,49 +440,64 @@ cortina así. Los valores los confirma el contador.
   abajo con el precio y el botón. Sin resolver.
 ## Envíos por zona
 
-El precio del envío sale del código postal, contra una tabla que vive en una
-pestaña del mismo Google Sheet del catálogo. Así Lunare cambia las tarifas
-cuando aumenta el correo, sin tocar código ni esperar un deploy.
+El precio del envío sale del código postal. La clienta escribe el suyo y ve
+**las opciones que le llegan, con el precio de cada transporte**, y elige.
+
+Las tarifas viven en una pestaña del mismo Google Sheet del catálogo, así las
+cambia Lunare cuando aumenta el correo, sin tocar código ni esperar un deploy.
 
 ```
 SHEET_ENVIOS_CSV_URL=...   # la pestaña "Envios", publicada como CSV
 ```
 
-**Sin esa variable no se rompe nada**: se usa la tarifa plana de antes
-($6.800 a todo el país) y la tienda funciona igual.
+**Sin esa variable no se rompe nada**: se usa la tarifa plana de antes ($6.800
+a domicilio, a todo el país) y la tienda funciona igual.
 
 ### La pestaña
 
-| Zona | CP desde | CP hasta | Domicilio | Sucursal | Dias |
-|------|----------|----------|-----------|----------|------|
-| Santa Rosa | 6300 | 6399 | 4200 | 3500 | 1 a 2 |
-| Resto del país | 1000 | 9999 | 12500 | | 5 a 8 |
+Va una fila por transporte y por zona:
 
-- **Gana la fila más específica.** Si un CP entra en dos zonas, manda la del
-  rango más chico: una fila para Santa Rosa le gana a la del país entero sin
-  tener que ordenar nada.
-- **Sucursal vacía** significa que a esa zona no se llega a sucursal: la opción
-  aparece deshabilitada en el checkout y el servidor la rechaza.
-- **Dias** es texto libre y solo se muestra ("llega en 2 a 3 días hábiles").
-- Los encabezados se leen sin acentos ni mayúsculas, así que `Días`, `dias` o
-  `DIAS` son lo mismo.
+| Transporte | Zona | CP desde | CP hasta | Domicilio | Sucursal | Dias |
+|------------|------|----------|----------|-----------|----------|------|
+| Andreani | Santa Rosa | 6300 | 6399 | 4200 | 3500 | 1 a 2 |
+| Correo Argentino | Santa Rosa | 6300 | 6399 | 3900 | 3100 | 2 a 3 |
+| Integral Pack | La Pampa | 6200 | 6499 | 3500 | | 1 |
+| Andreani | Resto del país | 1000 | 9999 | 12500 | 9900 | 5 a 8 |
+
+- **Gana la fila más específica.** Si un CP entra en dos zonas, para ese
+  transporte manda la del rango más chico: una fila para Santa Rosa le gana a la
+  del país entero sin tener que ordenar la planilla.
+- **Celda vacía** significa que ese transporte no ofrece esa modalidad en esa
+  zona, y la opción no se muestra.
+- **Dias** es texto libre y solo se muestra ("llega en 2 a 3 días hábiles"; con
+  `1` dice "1 día hábil").
+- Los encabezados se leen sin acentos ni mayúsculas: `Días`, `dias` o `DIAS` son
+  lo mismo.
+- Agregar un transporte es agregar filas. No hay que tocar código ni la base.
 
 ### Quién decide el precio
 
-La tabla viaja con `/api/products` para que el precio aparezca apenas se
+La tabla viaja con `/api/products` para que las opciones aparezcan apenas se
 escribe el código postal, sin otra consulta. Pero **el que se cobra lo calcula
-el servidor** en `resolverEnvio()` al confirmar: si viniera del navegador,
-cualquiera podría mandarse un envío de $0.
+el servidor** en `resolverEnvio()` al confirmar, y verifica que esa combinación
+de transporte y modalidad exista para ese CP. Si no fuera así, alcanzaría con
+editar el pedido para elegir el precio del transporte más barato y hacerse
+despachar por el más caro.
 
 El envío sigue siendo sin cargo desde `ENVIO_GRATIS_DESDE`.
 
-### Transportes
+### Qué se guarda
 
-Despacha Lunare por Andreani, Correo Argentino o Integral Pack según la zona;
-la clienta elige entre domicilio y sucursal, que es lo que le cambia el precio.
-Andreani y Correo Argentino tienen API para cotizar y rastrear, pero piden
-cuenta comercial con contrato: cuando existan esas cuentas, la cotización
-automática se enchufa arriba de esta tabla sin rehacer el checkout.
+`pedidos.entrega` dice la modalidad (`envio` a domicilio, `envio_sucursal`) y
+`pedidos.transporte` guarda cuál eligió, como texto. Es texto y no un enum
+justamente porque los transportes se agregan y se sacan desde el Sheet.
+
+### Todavía no están conectados por API
+
+Andreani y Correo Argentino tienen API para cotizar, despachar y rastrear, pero
+piden cuenta comercial con contrato; Integral Pack no tiene API pública. Hoy los
+precios salen de la tabla. Cuando existan esas cuentas, la cotización en vivo
+reemplaza de dónde sale el número y el checkout no cambia.
 
 ## Modo mantenimiento
 

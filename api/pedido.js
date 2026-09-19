@@ -23,6 +23,7 @@ function validarDatos(b) {
   const telefono = limpiar(b.telefono, 40)
   const email = limpiar(b.email, 120)
   const entrega = limpiar(b.entrega, 30)
+  const transporte = limpiar(b.transporte, 60)
   const pago = limpiar(b.pago, 20)
   const cp = limpiar(b.cp, 10)
   const direccion = limpiar(b.direccion, 200)
@@ -46,7 +47,10 @@ function validarDatos(b) {
   // rechaza, pero conviene decirlo antes y con un mensaje claro.
   if (PAGOS[pago]?.soloRetiro && esEnvio) errores.push({ codigo: 'EFECTIVO_SOLO_RETIRO' })
 
-  return { errores, datos: { nombre, telefono, email, entrega, pago, cp, direccion, notas } }
+  return {
+    errores,
+    datos: { nombre, telefono, email, entrega, transporte, pago, cp, direccion, notas },
+  }
 }
 
 export default async function handler(req, res) {
@@ -85,7 +89,12 @@ export default async function handler(req, res) {
 
   // El precio del envío sale del código postal, en el servidor. El
   // carrito muestra el suyo, pero el que se cobra es este.
-  const envio = await resolverEnvio(datos.entrega, subtotal, datos.cp)
+  const envio = await resolverEnvio({
+    entrega: datos.entrega,
+    transporte: datos.transporte,
+    subtotal,
+    cp: datos.cp,
+  })
   if (!envio.ok) {
     return res.status(400).json({
       ok: false, error: 'DATOS_INVALIDOS', errores: [{ codigo: envio.codigo }],

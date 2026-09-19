@@ -3,7 +3,7 @@ import { useCart } from '../context/CartContext'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { trackCheckout } from '../lib/track'
 import { guardarPagoPendiente, leerPagoPendiente } from '../lib/pagoPendiente'
-import { zonaDeCp, precioDeEnvio } from '../lib/envios'
+import { opcionesDeEnvio, cpValido, MODOS } from '../lib/envios'
 import CloudinaryImage from './CloudinaryImage'
 import Icon, { WhatsAppIcon } from './Icon'
 
@@ -18,7 +18,7 @@ const MENSAJES = {
   CP_REQUERIDO: 'Poné tu código postal, son 4 números.',
   DIRECCION_REQUERIDA: 'Necesitamos la dirección de entrega.',
   CP_SIN_COBERTURA: 'No tenemos tarifa para ese código postal. Escribinos y lo vemos.',
-  SUCURSAL_NO_DISPONIBLE: 'A tu zona no llegamos a sucursal. Probá con envío a domicilio.',
+  ENVIO_NO_DISPONIBLE: 'Elegí con qué transporte querés recibirlo.',
   EFECTIVO_SOLO_RETIRO: 'El efectivo es solo para pedidos que se retiran.',
   PEDIDO_VACIO: 'Tu pedido está vacío.',
   CATALOGO_NO_DISPONIBLE: 'No pudimos leer el catálogo. Probá de nuevo en un momento.',
@@ -86,6 +86,9 @@ export default function CartSidebar() {
   const [paso, setPaso] = useState(1)
   const [entrega, setEntrega] = useState('retiro_cordoba')
   const [pago, setPago] = useState('transferencia')
+  // Qué transporte eligió: Andreani, Correo Argentino, Integral Pack. Va
+  // aparte de la entrega, que solo dice si es a domicilio o a sucursal.
+  const [transporte, setTransporte] = useState('')
   const [datos, setDatos] = useState({ nombre: '', telefono: '', email: '', cp: '', direccion: '' })
   const [enviando, setEnviando] = useState(false)
   const [errores, setErrores] = useState([])
@@ -98,16 +101,20 @@ export default function CartSidebar() {
   const entregaDef = checkout.entregas.find(e => e.key === entrega)
   const esEnvio = !!entregaDef?.envio
   const aDomicilio = entregaDef?.modo === 'domicilio'
-  const envioGratis = esEnvio && total >= checkout.envioGratisDesde
+  const retiros = useMemo(() => checkout.entregas.filter(e => !e.envio), [checkout.entregas])
 
-  // La zona sale del código postal contra la tabla que vino con el
-  // catálogo. Es lo que se muestra; lo que se cobra lo decide el servidor.
-  const zona = useMemo(
-    () => zonaDeCp(checkout.zonas, datos.cp),
+  // Las opciones que le llegan a ese código postal, con el precio de cada
+  // transporte. Se calculan acá contra la tabla que vino con el catálogo,
+  // para que aparezcan mientras escribe; lo que se cobra lo decide el
+  // servidor al confirmar.
+  const opciones = useMemo(
+    () => opcionesDeEnvio(checkout.zonas, datos.cp),
     [checkout.zonas, datos.cp]
   )
-  const precioEnvio = precioDeEnvio(entregaDef, zona, { gratis: envioGratis })
-  const costoEnvio = typeof precioEnvio === 'number' ? precioEnvio : 0
+  const opcionElegida = opciones.find(o => o.entrega === entrega && o.transporte === transporte)
+
+  const envioGratis = total >= checkout.envioGratisDesde
+  const costoEnvio = !esEnvio || envioGratis ? 0 : (opcionElegida?.costo ?? 0)
   const totalFinal = total + costoEnvio
   const falta = checkout.envioGratisDesde - total
 
@@ -147,7 +154,10 @@ export default function CartSidebar() {
     let m = `¡Hola! Soy ${datos.nombre.trim() || '[tu nombre]'} y quiero hacer este pedido:\n\n`
     items.forEach(i => { m += `• [${i.id}] ${i.name} — ${i.qty} x ${formatPrice(i.price)}\n` })
     m += `\nSubtotal: ${formatPrice(total)}`
-    if (entregaDef) m += `\nEntrega: ${entregaDef.etiqueta}${costoEnvio ? ` — ${formatPrice(costoEnvio)}` : ' — sin cargo'}`
+    if (entregaDef) {
+      const como = transporte ? `${entregaDef.etiqueta} — ${transporte}` : entregaDef.etiqueta
+      m += `\nEntrega: ${como}${costoEnvio ? ` — ${formatPrice(costoEnvio)}` : ' — sin cargo'}`
+    }
     m += `\nTotal: ${formatPrice(totalFinal)}`
     return m
   }
@@ -168,6 +178,7 @@ export default function CartSidebar() {
         body: JSON.stringify({
           ...datos,
           entrega,
+          transporte,
           pago,
           // Solo qué piezas y cuántas: el precio lo pone el servidor.
           items: items.map(i => ({ id: i.id, qty: i.qty })),
@@ -229,22 +240,22 @@ export default function CartSidebar() {
     if (enfocar) el.focus({ preventScroll: true })
   }
 
-  // Al elegir envío aparecen dos campos nuevos abajo del área visible.
-  // Sin traerlos a la vista, no hay ninguna señal de que existen.
+  // Al elegir un envío a domicilio aparece la dirección abajo del área
+  // visible. Sin traerla a la vista, no hay señal de que exista.
   useEffect(() => {
-    if (paso !== 2 || !esEnvio) return
-    const t = setTimeout(() => traerALaVista('#campo-cp'), 80)
+    if (paso !== 2 || !aDomicilio) return
+    const t = setTimeout(() => traerALaVista('#campo-direccion'), 80)
     return () => clearTimeout(t)
-  }, [paso, esEnvio])
+  }, [paso, aDomicilio])
 
   const siguiente = () => {
     if (paso === 2 && esEnvio) {
       const fallos = []
-      if (!/^\d{4}$/.test(datos.cp)) fallos.push(MENSAJES.CP_REQUERIDO)
-      // Con el código postal puesto pero sin tarifa, no se puede seguir:
+      if (!cpValido(datos.cp)) fallos.push(MENSAJES.CP_REQUERIDO)
+      // Sin una opción válida para ese código postal no se puede seguir:
       // el servidor lo rechazaría al confirmar.
-      else if (!zona) fallos.push(MENSAJES.CP_SIN_COBERTURA)
-      else if (precioEnvio === false) fallos.push(MENSAJES.SUCURSAL_NO_DISPONIBLE)
+      else if (!opciones.length) fallos.push(MENSAJES.CP_SIN_COBERTURA)
+      else if (!opcionElegida) fallos.push(MENSAJES.ENVIO_NO_DISPONIBLE)
       if (aDomicilio && datos.direccion.trim().length < 5) fallos.push(MENSAJES.DIRECCION_REQUERIDA)
       if (fallos.length) {
         setErrores(fallos)
@@ -434,40 +445,56 @@ export default function CartSidebar() {
 
               {paso === 2 && (
                 <>
-                  <span className='text-[11px] tracking-[0.14em] uppercase text-muted'>Cómo lo recibís</span>
-                  {checkout.entregas.map(e => {
-                    const precio = precioDeEnvio(e, zona, { gratis: total >= checkout.envioGratisDesde })
-                    const sinCobertura = precio === false
-                    return (
-                      <Opcion
-                        key={e.key}
-                        activa={entrega === e.key}
-                        onClick={() => { setEntrega(e.key); setErrores([]) }}
-                        deshabilitada={sinCobertura}
-                        titulo={e.etiqueta}
-                        detalle={
-                          !e.envio ? 'Coordinamos día y punto por WhatsApp'
-                            : sinCobertura ? 'A tu zona no llegamos con esta opción'
-                              : !zona ? 'Escribí tu código postal y te decimos cuánto sale'
-                                : `${zona.zona}${zona.dias ? ` · llega en ${zona.dias} días hábiles` : ''}`
-                        }
-                        costo={sinCobertura ? null : precio}
-                        costoLibre={precio === 0}
-                      />
+                  <span className='text-[11px] tracking-[0.14em] uppercase text-muted'>Retirar en persona</span>
+                  {retiros.map(e => (
+                    <Opcion
+                      key={e.key}
+                      activa={entrega === e.key}
+                      onClick={() => { setEntrega(e.key); setTransporte(''); setErrores([]) }}
+                      titulo={e.etiqueta}
+                      detalle='Coordinamos día y punto por WhatsApp'
+                      costo={0}
+                      costoLibre
+                    />
+                  ))}
+
+                  <span className='mt-3 text-[11px] tracking-[0.14em] uppercase text-muted'>
+                    O que te lo mandemos
+                  </span>
+                  <Campo
+                    id='campo-cp'
+                    label='Tu código postal'
+                    inputMode='numeric'
+                    maxLength={4}
+                    placeholder='Ej. 6300'
+                    hint={!cpValido(datos.cp) ? 'Con el código postal te mostramos los transportes que llegan y cuánto sale cada uno.' : undefined}
+                    value={datos.cp}
+                    onChange={e => setDatos({ ...datos, cp: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                  />
+
+                  {cpValido(datos.cp) && (
+                    opciones.length === 0 ? (
+                      <p className='p-3.5 text-[12.5px] leading-relaxed border-l-2 bg-[#f2ece4] border-gold-lt text-muted'>
+                        Todavía no tenemos tarifa para ese código postal. Escribinos por
+                        WhatsApp y lo resolvemos con vos.
+                      </p>
+                    ) : (
+                      opciones.map(o => (
+                        <Opcion
+                          key={o.id}
+                          activa={opcionElegida?.id === o.id}
+                          onClick={() => { setEntrega(o.entrega); setTransporte(o.transporte); setErrores([]) }}
+                          titulo={`${o.transporte} · ${MODOS[o.modo].etiqueta}`}
+                          detalle={[o.zona, o.dias && `llega en ${o.dias} ${o.dias.trim() === '1' ? 'día hábil' : 'días hábiles'}`].filter(Boolean).join(' · ')}
+                          costo={envioGratis ? 0 : o.costo}
+                          costoLibre={envioGratis}
+                        />
+                      ))
                     )
-                  })}
+                  )}
 
                   {esEnvio && (
                     <div className='flex flex-col gap-3 mt-1'>
-                      <Campo
-                        id='campo-cp'
-                        label='Código postal'
-                        inputMode='numeric'
-                        maxLength={4}
-                        placeholder='Ej. 6300'
-                        value={datos.cp}
-                        onChange={e => setDatos({ ...datos, cp: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      />
                       {aDomicilio && (
                         <Campo
                           id='campo-direccion'
@@ -478,9 +505,9 @@ export default function CartSidebar() {
                         />
                       )}
                       <p className='text-[12px] leading-relaxed text-soft'>
-                        Despachamos por Andreani, Correo Argentino o Integral Pack, según
-                        tu zona. Cuando sale, te pasamos el número de seguimiento.
-                        {!aDomicilio && ' La sucursal la coordinamos por WhatsApp.'}
+                        {aDomicilio
+                          ? 'Cuando despachamos te pasamos el número de seguimiento por WhatsApp.'
+                          : 'La sucursal exacta la coordinamos por WhatsApp, y te pasamos el número de seguimiento cuando despachamos.'}
                       </p>
                     </div>
                   )}

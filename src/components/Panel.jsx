@@ -31,6 +31,7 @@ const ENTREGAS = {
   retiro_santa_rosa: 'Retira en Santa Rosa',
   retiro_cordoba: 'Retira en Nueva Córdoba',
   envio: 'Envío a domicilio',
+  envio_sucursal: 'Envío a sucursal',
 }
 
 const PAGOS = {
@@ -138,7 +139,7 @@ function Entrar({ onEntro }) {
 function Pedido({ pedido: p, onEstado, moviendo }) {
   const [abierto, setAbierto] = useState(false)
   const wa = waLink(p.telefono)
-  const esEnvio = p.entrega === 'envio'
+  const esEnvio = p.entrega === 'envio' || p.entrega === 'envio_sucursal'
 
   return (
     <article className='border border-border bg-paper'>
@@ -167,7 +168,9 @@ function Pedido({ pedido: p, onEstado, moviendo }) {
         </div>
 
         <p className='text-[13px] text-muted'>
-          {ENTREGAS[p.entrega] || p.entrega} · {PAGOS[p.pago] || p.pago}
+          {ENTREGAS[p.entrega] || p.entrega}
+          {p.transporte && <> · <b className='font-medium text-dark'>{p.transporte}</b></>}
+          {' · '}{PAGOS[p.pago] || p.pago}
         </p>
 
         {esEnvio && (p.direccion || p.cp) && (

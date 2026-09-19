@@ -1,26 +1,47 @@
-// Espejo de api/_envios.js para mostrar el precio mientras se escribe el
-// código postal, sin ir al servidor. El precio que se cobra lo decide
+// Espejo de api/_envios.js para mostrar las opciones de envío mientras se
+// escribe el código postal, sin ir al servidor. Lo que se cobra lo decide
 // igual el servidor al confirmar: esto es solo lo que se ve.
+
+export const MODOS = {
+  domicilio: { etiqueta: 'A domicilio', entrega: 'envio' },
+  sucursal: { etiqueta: 'A sucursal', entrega: 'envio_sucursal' },
+}
 
 export const cpValido = cp => /^\d{4}$/.test(String(cp || '').trim())
 
-// Gana la fila más específica, igual que en el servidor.
-export function zonaDeCp(zonas, cp) {
-  if (!Array.isArray(zonas) || !cpValido(cp)) return null
+// De la más barata a la más cara. Para cada transporte y modalidad gana
+// la fila más específica, igual que en el servidor.
+export function opcionesDeEnvio(zonas, cp) {
+  if (!Array.isArray(zonas) || !cpValido(cp)) return []
   const n = Number(cp)
-  return zonas
-    .filter(z => n >= z.desde && n <= z.hasta)
-    .sort((a, b) => (a.hasta - a.desde) - (b.hasta - b.desde))[0] || null
-}
 
-// Cuánto sale una opción de entrega para esa zona:
-//   número → ese precio     0 → sin cargo
-//   null   → todavía no se sabe (falta el código postal)
-//   false  → esa opción no llega a esa zona
-export function precioDeEnvio(entrega, zona, { gratis = false } = {}) {
-  if (!entrega?.envio) return 0
-  if (gratis) return 0
-  if (!zona) return null
-  const precio = zona[entrega.modo]
-  return precio === null || precio === undefined ? false : precio
+  const candidatas = zonas
+    .filter(z => n >= z.desde && n <= z.hasta)
+    .sort((a, b) => (a.hasta - a.desde) - (b.hasta - b.desde))
+
+  const vistas = new Set()
+  const opciones = []
+
+  for (const z of candidatas) {
+    for (const modo of Object.keys(MODOS)) {
+      const costo = z[modo]
+      if (costo === null || costo === undefined) continue
+
+      const id = `${z.transporte}|${modo}`
+      if (vistas.has(id)) continue
+      vistas.add(id)
+
+      opciones.push({
+        id,
+        transporte: z.transporte,
+        modo,
+        entrega: MODOS[modo].entrega,
+        costo,
+        dias: z.dias,
+        zona: z.zona,
+      })
+    }
+  }
+
+  return opciones.sort((a, b) => a.costo - b.costo)
 }

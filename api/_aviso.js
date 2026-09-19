@@ -85,8 +85,11 @@ const etiquetaPago = k => PAGOS[k]?.etiqueta || k
 function lineaEntrega(datos) {
   const base = etiquetaEntrega(datos.entrega)
   if (!ENTREGAS[datos.entrega]?.envio) return base
+  // Por dónde se despacha: lo eligió la clienta y es lo primero que hay
+  // que saber para preparar el paquete.
+  const con = datos.transporte ? `${base} por ${datos.transporte}` : base
   const partes = [datos.direccion, datos.cp && `CP ${datos.cp}`].filter(Boolean)
-  return partes.length ? `${base} — ${partes.join(', ')}` : base
+  return partes.length ? `${con} — ${partes.join(', ')}` : con
 }
 
 // Qué tiene que pasar ahora, contado desde el lado de la clienta.
