@@ -438,6 +438,51 @@ cortina así. Los valores los confirma el contador.
 - **El botón de agregar de la ficha cae en y=926**, con el fold del celular en
   812: hay que scrollear para comprar. Lo normal en e-commerce es una barra fija
   abajo con el precio y el botón. Sin resolver.
+## Envíos por zona
+
+El precio del envío sale del código postal, contra una tabla que vive en una
+pestaña del mismo Google Sheet del catálogo. Así Lunare cambia las tarifas
+cuando aumenta el correo, sin tocar código ni esperar un deploy.
+
+```
+SHEET_ENVIOS_CSV_URL=...   # la pestaña "Envios", publicada como CSV
+```
+
+**Sin esa variable no se rompe nada**: se usa la tarifa plana de antes
+($6.800 a todo el país) y la tienda funciona igual.
+
+### La pestaña
+
+| Zona | CP desde | CP hasta | Domicilio | Sucursal | Dias |
+|------|----------|----------|-----------|----------|------|
+| Santa Rosa | 6300 | 6399 | 4200 | 3500 | 1 a 2 |
+| Resto del país | 1000 | 9999 | 12500 | | 5 a 8 |
+
+- **Gana la fila más específica.** Si un CP entra en dos zonas, manda la del
+  rango más chico: una fila para Santa Rosa le gana a la del país entero sin
+  tener que ordenar nada.
+- **Sucursal vacía** significa que a esa zona no se llega a sucursal: la opción
+  aparece deshabilitada en el checkout y el servidor la rechaza.
+- **Dias** es texto libre y solo se muestra ("llega en 2 a 3 días hábiles").
+- Los encabezados se leen sin acentos ni mayúsculas, así que `Días`, `dias` o
+  `DIAS` son lo mismo.
+
+### Quién decide el precio
+
+La tabla viaja con `/api/products` para que el precio aparezca apenas se
+escribe el código postal, sin otra consulta. Pero **el que se cobra lo calcula
+el servidor** en `resolverEnvio()` al confirmar: si viniera del navegador,
+cualquiera podría mandarse un envío de $0.
+
+El envío sigue siendo sin cargo desde `ENVIO_GRATIS_DESDE`.
+
+### Transportes
+
+Despacha Lunare por Andreani, Correo Argentino o Integral Pack según la zona;
+la clienta elige entre domicilio y sucursal, que es lo que le cambia el precio.
+Andreani y Correo Argentino tienen API para cotizar y rastrear, pero piden
+cuenta comercial con contrato: cuando existan esas cuentas, la cotización
+automática se enchufa arriba de esta tabla sin rehacer el checkout.
 
 ## Modo mantenimiento
 

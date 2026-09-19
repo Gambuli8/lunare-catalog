@@ -11,7 +11,7 @@ import { avisarPedido } from './_aviso.js'
 import { rpc } from './_supabase.js'
 import { crearPreferencia, mpConfigurado } from './_mp.js'
 import {
-  ENTREGAS, PAGOS, costoEnvio, validarItems, crearPedido, pedidosConfigurados,
+  ENTREGAS, PAGOS, resolverEnvio, validarItems, crearPedido, pedidosConfigurados,
 } from './_pedidos.js'
 
 const limpiar = (v, max) => String(v ?? '').trim().slice(0, max)
@@ -37,7 +37,11 @@ function validarDatos(b) {
 
   const esEnvio = ENTREGAS[entrega]?.envio
   if (esEnvio && !/^\d{4}$/.test(cp)) errores.push({ codigo: 'CP_REQUERIDO' })
-  if (esEnvio && direccion.length < 5) errores.push({ codigo: 'DIRECCION_REQUERIDA' })
+  // A sucursal no hace falta la dirección: la retira ella y la sucursal
+  // se coordina por WhatsApp.
+  if (ENTREGAS[entrega]?.modo === 'domicilio' && direccion.length < 5) {
+    errores.push({ codigo: 'DIRECCION_REQUERIDA' })
+  }
   // El efectivo es solo para quien retira en persona; la base también lo
   // rechaza, pero conviene decirlo antes y con un mensaje claro.
   if (PAGOS[pago]?.soloRetiro && esEnvio) errores.push({ codigo: 'EFECTIVO_SOLO_RETIRO' })
@@ -78,10 +82,18 @@ export default async function handler(req, res) {
   if (errores.length) return res.status(400).json({ ok: false, error: 'DATOS_INVALIDOS', errores })
 
   const subtotal = items.reduce((t, i) => t + i.precio_unitario * i.cantidad, 0)
-  const envio = costoEnvio(datos.entrega, subtotal)
+
+  // El precio del envío sale del código postal, en el servidor. El
+  // carrito muestra el suyo, pero el que se cobra es este.
+  const envio = await resolverEnvio(datos.entrega, subtotal, datos.cp)
+  if (!envio.ok) {
+    return res.status(400).json({
+      ok: false, error: 'DATOS_INVALIDOS', errores: [{ codigo: envio.codigo }],
+    })
+  }
 
   try {
-    const r = await crearPedido({ ...datos, costo_envio: envio }, items)
+    const r = await crearPedido({ ...datos, costo_envio: envio.costo }, items)
 
     // La base rechaza el pedido si otra persona se llevó la última pieza
     // entre que se armó el carrito y se confirmó.

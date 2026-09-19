@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { trackCheckout } from '../lib/track'
 import { guardarPagoPendiente, leerPagoPendiente } from '../lib/pagoPendiente'
+import { zonaDeCp, precioDeEnvio } from '../lib/envios'
 import CloudinaryImage from './CloudinaryImage'
 import Icon, { WhatsAppIcon } from './Icon'
 
@@ -16,6 +17,8 @@ const MENSAJES = {
   PAGO_INVALIDO: 'Elegí cómo querés pagar.',
   CP_REQUERIDO: 'Poné tu código postal, son 4 números.',
   DIRECCION_REQUERIDA: 'Necesitamos la dirección de entrega.',
+  CP_SIN_COBERTURA: 'No tenemos tarifa para ese código postal. Escribinos y lo vemos.',
+  SUCURSAL_NO_DISPONIBLE: 'A tu zona no llegamos a sucursal. Probá con envío a domicilio.',
   EFECTIVO_SOLO_RETIRO: 'El efectivo es solo para pedidos que se retiran.',
   PEDIDO_VACIO: 'Tu pedido está vacío.',
   CATALOGO_NO_DISPONIBLE: 'No pudimos leer el catálogo. Probá de nuevo en un momento.',
@@ -39,11 +42,12 @@ function Pasos({ paso }) {
   )
 }
 
-function Opcion({ activa, onClick, titulo, detalle, costo, costoLibre }) {
+function Opcion({ activa, onClick, titulo, detalle, costo, costoLibre, deshabilitada }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-start w-full gap-3 p-4 text-left transition-colors border bg-paper ${activa ? 'border-dark' : 'border-border hover:border-[#cfc5b8]'}`}
+      disabled={deshabilitada}
+      className={`flex items-start w-full gap-3 p-4 text-left transition-colors border bg-paper ${activa ? 'border-dark' : 'border-border hover:border-[#cfc5b8]'} ${deshabilitada ? 'opacity-50 hover:border-border' : ''}`}
     >
       <span className={`grid flex-shrink-0 w-[18px] h-[18px] mt-0.5 border rounded-full place-items-center transition-colors ${activa ? 'border-dark' : 'border-[#c4bcb2]'}`}>
         <span className={`w-2.5 h-2.5 rounded-full bg-dark transition-transform duration-300 ${activa ? 'scale-100' : 'scale-0'}`} />
@@ -54,7 +58,8 @@ function Opcion({ activa, onClick, titulo, detalle, costo, costoLibre }) {
       </span>
       {costo !== undefined && (
         <span className={`text-sm font-medium whitespace-nowrap ${costoLibre ? 'text-wa' : 'text-dark'}`}>
-          {costoLibre ? 'Sin cargo' : formatPrice(costo)}
+          {/* null: todavía no sabemos el código postal. */}
+          {costoLibre ? 'Sin cargo' : costo === null ? '—' : formatPrice(costo)}
         </span>
       )}
     </button>
@@ -92,8 +97,17 @@ export default function CartSidebar() {
 
   const entregaDef = checkout.entregas.find(e => e.key === entrega)
   const esEnvio = !!entregaDef?.envio
+  const aDomicilio = entregaDef?.modo === 'domicilio'
   const envioGratis = esEnvio && total >= checkout.envioGratisDesde
-  const costoEnvio = esEnvio && !envioGratis ? entregaDef.costo : 0
+
+  // La zona sale del código postal contra la tabla que vino con el
+  // catálogo. Es lo que se muestra; lo que se cobra lo decide el servidor.
+  const zona = useMemo(
+    () => zonaDeCp(checkout.zonas, datos.cp),
+    [checkout.zonas, datos.cp]
+  )
+  const precioEnvio = precioDeEnvio(entregaDef, zona, { gratis: envioGratis })
+  const costoEnvio = typeof precioEnvio === 'number' ? precioEnvio : 0
   const totalFinal = total + costoEnvio
   const falta = checkout.envioGratisDesde - total
 
@@ -227,7 +241,11 @@ export default function CartSidebar() {
     if (paso === 2 && esEnvio) {
       const fallos = []
       if (!/^\d{4}$/.test(datos.cp)) fallos.push(MENSAJES.CP_REQUERIDO)
-      if (datos.direccion.trim().length < 5) fallos.push(MENSAJES.DIRECCION_REQUERIDA)
+      // Con el código postal puesto pero sin tarifa, no se puede seguir:
+      // el servidor lo rechazaría al confirmar.
+      else if (!zona) fallos.push(MENSAJES.CP_SIN_COBERTURA)
+      else if (precioEnvio === false) fallos.push(MENSAJES.SUCURSAL_NO_DISPONIBLE)
+      if (aDomicilio && datos.direccion.trim().length < 5) fallos.push(MENSAJES.DIRECCION_REQUERIDA)
       if (fallos.length) {
         setErrores(fallos)
         // El error solo se lee arriba de todo, y el campo del que habla
@@ -417,17 +435,27 @@ export default function CartSidebar() {
               {paso === 2 && (
                 <>
                   <span className='text-[11px] tracking-[0.14em] uppercase text-muted'>Cómo lo recibís</span>
-                  {checkout.entregas.map(e => (
-                    <Opcion
-                      key={e.key}
-                      activa={entrega === e.key}
-                      onClick={() => { setEntrega(e.key); setErrores([]) }}
-                      titulo={e.etiqueta}
-                      detalle={e.envio ? 'A coordinar según el código postal' : 'Coordinamos día y punto por WhatsApp'}
-                      costo={e.envio && !(total >= checkout.envioGratisDesde) ? e.costo : 0}
-                      costoLibre={!e.envio || total >= checkout.envioGratisDesde}
-                    />
-                  ))}
+                  {checkout.entregas.map(e => {
+                    const precio = precioDeEnvio(e, zona, { gratis: total >= checkout.envioGratisDesde })
+                    const sinCobertura = precio === false
+                    return (
+                      <Opcion
+                        key={e.key}
+                        activa={entrega === e.key}
+                        onClick={() => { setEntrega(e.key); setErrores([]) }}
+                        deshabilitada={sinCobertura}
+                        titulo={e.etiqueta}
+                        detalle={
+                          !e.envio ? 'Coordinamos día y punto por WhatsApp'
+                            : sinCobertura ? 'A tu zona no llegamos con esta opción'
+                              : !zona ? 'Escribí tu código postal y te decimos cuánto sale'
+                                : `${zona.zona}${zona.dias ? ` · llega en ${zona.dias} días hábiles` : ''}`
+                        }
+                        costo={sinCobertura ? null : precio}
+                        costoLibre={precio === 0}
+                      />
+                    )
+                  })}
 
                   {esEnvio && (
                     <div className='flex flex-col gap-3 mt-1'>
@@ -440,16 +468,19 @@ export default function CartSidebar() {
                         value={datos.cp}
                         onChange={e => setDatos({ ...datos, cp: e.target.value.replace(/\D/g, '').slice(0, 4) })}
                       />
-                      <Campo
-                        id='campo-direccion'
-                        label='Dirección de entrega'
-                        placeholder='Calle, número, piso'
-                        value={datos.direccion}
-                        onChange={e => setDatos({ ...datos, direccion: e.target.value })}
-                      />
+                      {aDomicilio && (
+                        <Campo
+                          id='campo-direccion'
+                          label='Dirección de entrega'
+                          placeholder='Calle, número, piso'
+                          value={datos.direccion}
+                          onChange={e => setDatos({ ...datos, direccion: e.target.value })}
+                        />
+                      )}
                       <p className='text-[12px] leading-relaxed text-soft'>
-                        El costo del envío es provisorio hasta que confirmemos la tarifa
-                        del correo para tu código postal. Te avisamos antes de despachar.
+                        Despachamos por Andreani, Correo Argentino o Integral Pack, según
+                        tu zona. Cuando sale, te pasamos el número de seguimiento.
+                        {!aDomicilio && ' La sucursal la coordinamos por WhatsApp.'}
                       </p>
                     </div>
                   )}

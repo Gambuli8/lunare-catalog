@@ -4,6 +4,7 @@
 
 import { getCatalog } from './_catalog.js'
 import { ENTREGAS, PAGOS, ENVIO_GRATIS_DESDE, pedidosConfigurados } from './_pedidos.js'
+import { getZonas } from './_envios.js'
 import { mpConfigurado } from './_mp.js'
 
 export default async function handler(req, res) {
@@ -27,8 +28,13 @@ export default async function handler(req, res) {
         mp: mpConfigurado(),
         envioGratisDesde: ENVIO_GRATIS_DESDE,
         entregas: Object.entries(ENTREGAS).map(([key, e]) => ({
-          key, etiqueta: e.etiqueta, costo: e.costo, envio: e.envio,
+          key, etiqueta: e.etiqueta, costo: e.costo, envio: e.envio, modo: e.modo,
         })),
+        // La tabla de tarifas viaja con el catálogo: así el precio del
+        // envío aparece apenas la clienta escribe el código postal, sin
+        // esperar otra consulta. El que se cobra igual lo decide el
+        // servidor al confirmar.
+        zonas: await getZonas(),
         pagos: Object.entries(PAGOS).map(([key, p]) => ({
           key, etiqueta: p.etiqueta, soloRetiro: !!p.soloRetiro,
         })),
