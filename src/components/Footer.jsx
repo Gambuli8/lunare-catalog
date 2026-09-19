@@ -34,17 +34,6 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* La Resolución 424/2020 pide que este link sea de acceso fácil y
-            directo desde la home y que ocupe un lugar destacado en visibilidad
-            y tamaño. Por eso va aparte de la fila de arriba, con borde y con
-            el nombre exacto que nombra la norma. */}
-        <a
-          href='/arrepentimiento'
-          className='inline-flex items-center justify-center w-full px-6 py-4 text-xs tracking-[0.14em] uppercase transition-colors duration-300 border sm:w-auto border-gold-lt text-gold-lt hover:bg-gold-lt hover:text-dark'
-        >
-          Botón de arrepentimiento
-        </a>
-
         <a
           href={DEFENSA_CONSUMIDOR_URL}
           target='_blank'
