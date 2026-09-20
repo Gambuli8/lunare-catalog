@@ -503,10 +503,43 @@ confirmar el pedido.
 El listado de sucursales (`/v2/sucursales`) es público y no necesita contrato:
 son 317 sucursales que atienden público, cacheadas 12 horas.
 
-### Correo Argentino e Integral Pack
+### Correo Argentino en vivo
 
-Correo Argentino tiene API pero pide cuenta empresa; Integral Pack no tiene API
-pública. Sus precios salen de la tabla del Sheet.
+También conectado y apagado, por la API de **MiCorreo**:
+
+```
+MICORREO_USUARIO=...       # las pide Correo, distintas por ambiente
+MICORREO_PASSWORD=...
+MICORREO_CLIENTE=...       # el customerId de la cuenta de MiCorreo
+MICORREO_CP_ORIGEN=6300    # desde dónde se despacha (opcional)
+MICORREO_AMBIENTE=test     # apunta al ambiente de pruebas
+```
+
+MiCorreo es de **alta abierta**: uno se registra con DNI o CUIT y despacha en
+cualquier sucursal, sin acuerdo comercial previo. Las credenciales de la API se
+piden por formulario a Correo, y son distintas para test y para producción.
+
+No confundir con **Paq.ar**, la otra API de Correo: esa pide acuerdo comercial
+con el área Comercial, y encima no cotiza —da de alta envíos, imprime rótulos y
+devuelve el seguimiento—.
+
+Se autentica en dos pasos: `POST /token` con usuario y contraseña devuelve un
+JWT que dura un par de horas, y ese token se reusa para cotizar. Pedir uno por
+cotización sería duplicar las llamadas.
+
+`POST /rates` **devuelve las dos tarifas en un solo pedido** —a domicilio (`D`)
+y a sucursal (`S`)— así que cotizar cuesta una sola llamada. El precio se
+redondea a la centena de arriba.
+
+### Cómo conviven las dos APIs
+
+`cotizar()` arma las opciones desde el Sheet y después deja que cada transporte
+con credenciales reemplace **solo sus propias filas**. Las dos APIs se llaman en
+paralelo: son servicios distintos y esperar una atrás de la otra sería regalar
+segundos justo mientras la clienta elige.
+
+Si una falla, tarda o no está configurada, esa fila queda con el precio del
+Sheet. Integral Pack no tiene API pública: siempre sale de la tabla.
 
 ## Modo mantenimiento
 
