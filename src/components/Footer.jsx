@@ -27,7 +27,7 @@ export default function Footer() {
             <a
               key={l.href}
               href={l.href}
-              className='py-2 text-[11px] tracking-[0.15em] uppercase text-white/50 hover:text-gold-lt transition-colors duration-200 font-sans'
+              className='inline-flex items-center min-h-[44px] px-1 text-[11px] tracking-[0.15em] uppercase text-white/50 hover:text-gold-lt transition-colors duration-200 font-sans'
             >
               {l.label}
             </a>
@@ -38,7 +38,7 @@ export default function Footer() {
           href={DEFENSA_CONSUMIDOR_URL}
           target='_blank'
           rel='noopener noreferrer'
-          className='mt-6 text-[11px] tracking-wider text-white/45 underline hover:text-gold-lt transition-colors'
+          className='inline-flex items-center min-h-[44px] mt-4 text-[11px] tracking-wider text-white/45 underline hover:text-gold-lt transition-colors'
         >
           Defensa de las y los Consumidores. Para reclamos, ingresá acá
         </a>

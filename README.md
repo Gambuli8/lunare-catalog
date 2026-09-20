@@ -172,6 +172,11 @@ Si el sitio cambia de dominio, actualizá la variable `SITE_URL` (por defecto
 - ✅ **Checkout por WhatsApp** con mensaje prearmado
 - ✅ **Precio costo fuera del navegador** — ver la advertencia de arriba
 - ✅ **Solo productos en stock** — sin stock = no aparecen
+- ✅ **Barra de compra fija en el celular** — en la ficha, el botón de agregar
+  cae a unos 1.000 px del tope y la pantalla termina en 812: aparece una barra
+  abajo con el precio y el botón, y se esconde sola cuando el botón de verdad
+  entra en pantalla
+- ✅ **Áreas táctiles de 44 px** en todo lo que se toca, medido en 375×812
 - ✅ **Responsive** — mobile, tablet, desktop
 - ✅ **Secciones**: Inicio, Tienda, Contacto, Cuidados, Políticas
 

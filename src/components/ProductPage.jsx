@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { useCart } from '../context/CartContext'
 import CloudinaryImage from './CloudinaryImage'
@@ -63,6 +63,10 @@ export default function ProductPage({ slug }) {
   // si no, entrás a otro producto y arrancás en la foto 3.
   const [foto, setFoto] = useState(0)
 
+  // La barra de compra aparece cuando el botón de verdad no está a la vista.
+  const botonComprar = useRef(null)
+  const [barraVisible, setBarraVisible] = useState(false)
+
   const product = useMemo(() => {
     const fresh = products.find(p => p.slug === slug)
     if (fresh) return fresh
@@ -71,6 +75,14 @@ export default function ProductPage({ slug }) {
   }, [products, slug])
 
   useEffect(() => { setQty(1); setFoto(0) }, [slug])
+
+  useEffect(() => {
+    const el = botonComprar.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const mirar = new IntersectionObserver(([entrada]) => setBarraVisible(!entrada.isIntersecting))
+    mirar.observe(el)
+    return () => mirar.disconnect()
+  }, [slug])
 
   useEffect(() => {
     if (!product) return
@@ -126,9 +138,6 @@ export default function ProductPage({ slug }) {
     for (let i = 0; i < qty; i++) addItem({ ...product, price: effective })
   }
 
-  const waText = encodeURIComponent(
-    `¡Hola! Me interesa ${product.name} (Cód. ${product.id}) — ${formatPrice(effective)}. ¿Me contás más?`
-  )
 
   const sections = [
     { title: 'Descripción', body: `${product.subcategory || product.category} de ${product.material.toLowerCase()}. ${product.priceNote === 'par' ? 'Se vende por par.' : 'Se vende por unidad.'}` },
@@ -143,9 +152,9 @@ export default function ProductPage({ slug }) {
         aria-label='Ruta de navegación'
         className='flex items-center gap-2 pt-6 text-xs tracking-wide text-[#5f574e]'
       >
-        <a href='/' className='inline-block py-1.5 hover:text-[#8f7647] transition-colors'>Inicio</a>
+        <a href='/' className='inline-flex items-center min-h-[44px] hover:text-[#8f7647] transition-colors'>Inicio</a>
         <span className='text-[#8f877e]'>/</span>
-        <a href='/tienda' className='inline-block py-1.5 hover:text-[#8f7647] transition-colors'>Tienda</a>
+        <a href='/tienda' className='inline-flex items-center min-h-[44px] hover:text-[#8f7647] transition-colors'>Tienda</a>
         <span className='text-[#8f877e]'>/</span>
         <span className='text-[#0e0d0c]'>{product.name}</span>
       </nav>
@@ -264,24 +273,13 @@ export default function ProductPage({ slug }) {
               </button>
             </div>
             <button
+              ref={botonComprar}
               onClick={handleAdd}
               className='flex-grow min-w-[200px] h-14 bg-[#0e0d0c] text-white text-xs tracking-[0.16em] uppercase hover:bg-[#8f7647] transition-colors duration-300'
             >
               {inCart ? 'Agregar otra vez' : 'Agregar al pedido'}
             </button>
           </div>
-
-          <a
-            href={`https://wa.me/542954476558?text=${waText}`}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='flex items-center justify-center gap-2.5 h-13 py-3.5 bg-[#0f7a41] text-white text-xs tracking-[0.14em] uppercase hover:bg-[#0c6836] transition-colors'
-          >
-            <svg width='17' height='17' viewBox='0 0 24 24' fill='currentColor'>
-              <path d='M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.47-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.03 1.02-1.03 2.48s1.06 2.87 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.7.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.42-.08-.12-.28-.2-.57-.34M12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.22-3.74.99 1-3.65-.24-.37a9.86 9.86 0 01-1.51-5.26C2.16 6.45 6.6 2.02 12.05 2.02c2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 012.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.8 11.8 0 0012.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 005.69 1.45c6.55 0 11.89-5.34 11.89-11.89 0-3.18-1.24-6.17-3.48-8.41z' />
-            </svg>
-            Consultar por esta pieza
-          </a>
 
           <div className='flex flex-wrap gap-6 p-5 bg-white border border-[#e8e2da]'>
             <div className='flex items-start gap-3'>
@@ -312,7 +310,7 @@ export default function ProductPage({ slug }) {
         <section className='pt-20'>
           <div className='flex items-baseline justify-between gap-4 mb-7'>
             <h2 className='font-serif text-[32px] font-light'>Completá el look</h2>
-            <a href='/tienda' className='text-xs tracking-[0.12em] uppercase text-[#5f574e] hover:text-[#8f7647] transition-colors'>
+            <a href='/tienda' className='inline-flex items-center min-h-[44px] text-xs tracking-[0.12em] uppercase text-[#5f574e] hover:text-[#8f7647] transition-colors'>
               Ver toda la tienda
             </a>
           </div>
@@ -321,6 +319,34 @@ export default function ProductPage({ slug }) {
           </div>
         </section>
       )}
+
+      {/* Barra de compra fija, solo en celular.
+          El botón de agregar cae a unos 1000 px del tope y la pantalla del
+          celular termina en 812: sin esto hay que scrollear para comprar, y
+          casi todo el tráfico entra desde Instagram al celular. Aparece
+          cuando el botón de arriba se va de la vista, así no compite con él. */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-40 md:hidden border-t border-[#e8e2da] bg-white/95 backdrop-blur-sm transition-transform duration-300 ${barraVisible ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        aria-hidden={!barraVisible}
+      >
+        <div className='flex items-center gap-3 px-4 py-2.5'>
+          <div className='min-w-0'>
+            <p className='truncate text-[13px] text-[#5f574e]'>{product.name}</p>
+            <p className='text-[17px] text-[#0e0d0c]'>
+              {formatPrice(effective)}
+              {product.priceNote === 'par' && <span className='text-[12px] text-[#8f877e]'> el par</span>}
+            </p>
+          </div>
+          <button
+            onClick={handleAdd}
+            tabIndex={barraVisible ? 0 : -1}
+            className='flex-shrink-0 px-6 ml-auto min-h-[48px] bg-[#0e0d0c] text-white text-xs tracking-[0.14em] uppercase transition-colors hover:bg-[#8f7647]'
+          >
+            {inCart ? 'Agregar otra' : 'Agregar'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

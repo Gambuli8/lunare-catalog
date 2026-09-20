@@ -33,7 +33,7 @@ export default function Navbar() {
         {/* ── LOGO "Dream Avenue" ── */}
         <a
           href='/'
-          className='flex flex-col leading-none group'
+          className='flex flex-col justify-center min-h-[44px] leading-none group'
         >
           <span
             className='text-dark group-hover:text-gold transition-colors duration-300'

@@ -722,20 +722,9 @@ export default function CartSidebar() {
                 </>
               )}
 
-              {checkout.activo && (
-                <a
-                  href={linkWhatsApp}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  onClick={irAWhatsApp}
-                  className='flex items-center justify-center min-h-[44px] text-[12.5px] text-muted hover:text-gold transition-colors [@media(max-height:620px)]:hidden'
-                >
-                  ¿Preferís coordinarlo por WhatsApp?
-                </a>
-              )}
 
               <p className='text-[12px] text-center text-muted [@media(max-height:620px)]:hidden'>
-                Guardamos tu pedido por 7 días, aunque cierres la página.
+                Guardamos tu carrito por 7 días, aunque cierres la página.
               </p>
             </div>
           </>
