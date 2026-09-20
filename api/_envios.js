@@ -24,13 +24,15 @@
 // Sin SHEET_ENVIOS_CSV_URL se usa la tarifa de abajo y la tienda funciona
 // igual que antes, con una sola opción de envío.
 //
-// El día que haya cuenta comercial en Andreani o Correo Argentino, sus
-// APIs reemplazan de dónde sale el número: la pantalla no cambia.
+// Andreani y Correo Argentino pueden cotizar en vivo si están sus
+// credenciales cargadas: ver _andreani.js y _micorreo.js. Sin ellas, el
+// precio sale del Sheet y la pantalla es la misma.
 //
 // Los archivos de api/ que empiezan con "_" no son endpoints.
 
 import { parseCSV } from './_catalog.js'
-import { aplicarTarifas } from './_andreani.js'
+import { aplicarTarifas as tarifasAndreani } from './_andreani.js'
+import { aplicarTarifas as tarifasMiCorreo } from './_micorreo.js'
 
 const csvUrl = () => process.env.SHEET_ENVIOS_CSV_URL
 const TTL = 5 * 60 * 1000
@@ -167,12 +169,25 @@ export function opcionesDeEnvio(zonas, cp) {
   return opciones.sort((a, b) => a.costo - b.costo)
 }
 
-// Las opciones ya con el precio final: las de Andreani las cotiza su API
-// si hay contrato cargado, y si no quedan las del Sheet.
+// Las opciones ya con el precio final. Cada transporte que tenga API
+// configurada reemplaza su propio precio; el resto queda con el del
+// Sheet, que es el que se usa mientras no haya credenciales.
 export async function cotizar(cp, { piezas = 1, valorDeclarado = 0 } = {}) {
   const opciones = opcionesDeEnvio(await getZonas(), cp)
   if (!opciones.length) return []
-  return aplicarTarifas(opciones, { cp, piezas, valorDeclarado })
+
+  // En paralelo: son dos servicios distintos y cada uno toca solo sus
+  // propias filas, así que esperar uno atrás del otro sería regalar
+  // segundos en el peor momento, que es mientras la clienta elige.
+  const [conAndreani, conCorreo] = await Promise.all([
+    tarifasAndreani(opciones, { cp, piezas, valorDeclarado }),
+    tarifasMiCorreo(opciones, { cp, piezas }),
+  ])
+
+  const porId = new Map(conAndreani.map(o => [o.id, o]));
+  for (const o of conCorreo) if (o.envivo) porId.set(o.id, o)
+
+  return [...porId.values()].sort((a, b) => a.costo - b.costo)
 }
 
 // ── Dónde se rastrea cada transporte ──────────────────────────
