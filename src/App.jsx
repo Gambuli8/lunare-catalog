@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { CartProvider }  from './context/CartContext'
 import { useRoute }      from './hooks/useRoute'
 import Navbar            from './components/Navbar'
@@ -106,14 +106,31 @@ function Vista({ route }) {
 export default function App() {
   const route = useRoute()
 
+  // Qué pantalla se está mirando, para saber si hubo un cambio de página de
+  // verdad o solo se tocó un filtro.
+  const pantalla = `${route.name}:${route.slug || route.categorySlug || ''}`
+  const pantallaAnterior = useRef(null)
+
   useEffect(() => {
     // Producto y tienda arman su propio título con el nombre de la pieza
     // o de la categoría.
     if (TITULOS[route.name]) document.title = TITULOS[route.name]
+
     // Al filtrar dentro de la tienda no conviene saltar arriba: la persona
-    // está mirando la grilla.
-    if (route.name !== 'shop') window.scrollTo(0, 0)
-  }, [route.name, route.slug])
+    // está mirando la grilla. Pero al llegar a la tienda desde otra página
+    // sí, o se cae en el medio del catálogo.
+    if (pantallaAnterior.current !== pantalla) {
+      // La página tiene scroll suave para las anclas, pero al cambiar de
+      // pantalla eso se ve como un viaje largo hacia arriba mientras carga
+      // lo nuevo. Un cambio de página arranca arriba y punto.
+      const raiz = document.documentElement
+      const suave = raiz.style.scrollBehavior
+      raiz.style.scrollBehavior = 'auto'
+      window.scrollTo(0, 0)
+      raiz.style.scrollBehavior = suave
+    }
+    pantallaAnterior.current = pantalla
+  }, [pantalla, route.name])
 
   // El panel es una herramienta interna: no lleva la tienda alrededor ni
   // se mide con analitica.
