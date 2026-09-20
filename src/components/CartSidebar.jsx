@@ -724,7 +724,7 @@ export default function CartSidebar() {
 
 
               <p className='text-[12px] text-center text-muted [@media(max-height:620px)]:hidden'>
-                Guardamos tu pedido por 7 días, aunque cierres la página.
+                Guardamos tu carrito por 7 días, aunque cierres la página.
               </p>
             </div>
           </>
