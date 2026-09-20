@@ -31,7 +31,6 @@ export default async function handler(req, res) {
     url(`${SITE_URL}/cuidados`, '0.4', 'monthly'),
     url(`${SITE_URL}/cambios`, '0.4', 'monthly'),
     url(`${SITE_URL}/contacto`, '0.5', 'monthly'),
-    url(`${SITE_URL}/arrepentimiento`, '0.3', 'yearly'),
     ...products.map(p => url(`${SITE_URL}/producto/${p.slug}`, '0.8', 'weekly')),
   ]
 
