@@ -16,6 +16,8 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
   const mainSize = size === 'lg' ? 'text-[32px]' : 'text-[22px]'
   const noteSize = size === 'lg' ? 'text-[12px]' : 'text-[11px]'
 
+
+
   return (
     <div>
       {pricePromo ? (
@@ -62,6 +64,9 @@ export default function ProductCard({ product, index }) {
     setTimeout(() => setAdded(false), 1500)
   }
 
+  // La foto 2, si la pieza la tiene: se muestra al pasar el mouse.
+  const segunda = product.images?.[1] || null
+
   const fallback = (
     <div className='w-full h-full bg-gradient-to-br from-white to-[#ede7df] flex items-center justify-center'>
       <span className='text-5xl opacity-50 select-none transition-transform duration-500 group-hover:scale-110'>
@@ -84,9 +89,23 @@ export default function ProductCard({ product, index }) {
             src={product.image}
             alt={`${product.name} — ${product.subcategory || product.category} de ${product.material}`}
             priority={priority}
-            className='object-cover w-full h-full transition-transform duration-500 group-hover:scale-105'
+            className={`object-cover w-full h-full transition-transform duration-500 group-hover:scale-105 ${segunda ? 'md:group-hover:opacity-0 md:transition-opacity' : ''}`}
             fallback={fallback}
           />
+
+          {/* La segunda foto aparece al pasar el mouse. Solo de tablet
+              para arriba: en el celular no hay hover y cargarla sería
+              pedir el doble de imágenes para nada. */}
+          {segunda && (
+            <span aria-hidden='true' className='absolute inset-0 hidden opacity-0 md:block group-hover:opacity-100 transition-opacity duration-500'>
+              <CloudinaryImage
+                src={segunda}
+                alt=''
+                className='object-cover w-full h-full transition-transform duration-500 group-hover:scale-105'
+                fallback={fallback}
+              />
+            </span>
+          )}
           <span
             className='absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase px-2.5 py-1 rounded-sm font-sans font-medium z-10'
             style={{ backgroundColor: badge.bg, color: badge.text }}

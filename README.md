@@ -105,10 +105,17 @@ publicar siguen siendo accesibles con la URL vieja.
 
 ```
 Id | Nombre | Categoría | Material | Precio costo | Precio individual |
-Precio Par | Stock | Imagen | Destacado | Precio promo
+Precio Par | Stock | Imagen | Imagen 2 | Imagen 3 | Imagen 4 |
+Destacado | Precio promo
 ```
 
 - **Stock ≤ 0** → el producto no aparece.
+- **`Imagen 2` en adelante** son opcionales: si están, la ficha muestra una
+  galería con miniaturas y la tarjeta del catálogo cambia a la segunda foto al
+  pasar el mouse. El orden lo dan los números de las columnas, no el orden en
+  que estén en la planilla. Se aceptan `Imagen 2`, `imagen2`, `Foto 2` o
+  `Image 2`: los encabezados se leen sin acentos ni mayúsculas. Una foto
+  repetida se ignora.
 - **Sin `Id`** → el producto no aparece (el código va en el mensaje de WhatsApp
   y es lo que identifica cada ítem del carrito).
 - **`Precio promo`** solo se usa si es menor al precio normal.

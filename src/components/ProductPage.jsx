@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext'
 import CloudinaryImage from './CloudinaryImage'
 import ProductCard from './ProductCard'
 import { trackProductView } from '../lib/track'
+import Copiable from './Copiable'
 
 // El servidor inyecta la pieza en el HTML (ver api/page.js) para que la
 // ficha se pinte de una sin esperar al fetch del catálogo.
@@ -58,6 +59,9 @@ export default function ProductPage({ slug }) {
   const { products, loading } = useProducts()
   const { addItem, items } = useCart()
   const [qty, setQty] = useState(1)
+  // Qué foto se está mirando. Vuelve a la primera al cambiar de pieza:
+  // si no, entrás a otro producto y arrancás en la foto 3.
+  const [foto, setFoto] = useState(0)
 
   const product = useMemo(() => {
     const fresh = products.find(p => p.slug === slug)
@@ -66,7 +70,7 @@ export default function ProductPage({ slug }) {
     return injected && injected.slug === slug ? injected : null
   }, [products, slug])
 
-  useEffect(() => { setQty(1) }, [slug])
+  useEffect(() => { setQty(1); setFoto(0) }, [slug])
 
   useEffect(() => {
     if (!product) return
@@ -106,6 +110,13 @@ export default function ProductPage({ slug }) {
     )
   }
 
+  // Una pieza puede tener varias fotos (columnas Imagen, Imagen 2...).
+  const fotos = product.images?.length ? product.images : [product.image].filter(Boolean)
+  const indiceFoto = Math.min(foto, Math.max(fotos.length - 1, 0))
+  const fotoActiva = fotos[indiceFoto] || product.image
+  const descripcionFoto = `${product.name} — ${product.subcategory || product.category} de ${product.material}`
+    + (indiceFoto > 0 ? ` (foto ${indiceFoto + 1} de ${fotos.length})` : '')
+
   const effective = product.pricePromo ?? product.price
   const inCart = items.find(i => i.id === product.id)
   const maxQty = product.stock ?? 1
@@ -140,10 +151,14 @@ export default function ProductPage({ slug }) {
       </nav>
 
       <div className='grid gap-10 pt-8 md:grid-cols-2 md:gap-16'>
+        <div>
         <div className='relative bg-[#f0ece6] overflow-hidden'>
+          {/* Sin key: al cambiar de foto se reemplaza el src y el navegador
+              mantiene la anterior hasta que la nueva está lista. Con key,
+              React desmontaba la imagen y quedaba un parpadeo en blanco. */}
           <CloudinaryImage
-            src={product.image}
-            alt={`${product.name} — ${product.subcategory || product.category} de ${product.material}`}
+            src={fotoActiva}
+            alt={descripcionFoto}
             priority
             modal
             className='w-full aspect-[4/5] object-contain'
@@ -158,6 +173,35 @@ export default function ProductPage({ slug }) {
               Oferta
             </span>
           )}
+        </div>
+
+        {/* Las miniaturas solo existen si la pieza tiene más de una foto.
+            Son botones: se llega con Tab y se activan con Enter. */}
+        {fotos.length > 1 && (
+          <div
+            role='group'
+            aria-label={`Fotos de ${product.name}`}
+            className='flex gap-2 pt-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+          >
+            {fotos.map((foto, i) => (
+              <button
+                key={foto}
+                type='button'
+                onClick={() => setFoto(i)}
+                aria-label={`Ver foto ${i + 1} de ${fotos.length}`}
+                aria-current={i === indiceFoto}
+                className={`flex-shrink-0 w-[68px] h-[85px] overflow-hidden border-2 bg-[#f0ece6] transition-colors ${i === indiceFoto ? 'border-[#8f7647]' : 'border-transparent hover:border-[#cfc5b8]'}`}
+              >
+                <CloudinaryImage
+                  src={foto}
+                  alt=''
+                  className='object-cover w-full h-full'
+                  fallback={<span className='block w-full h-full bg-[#e8e2da]' />}
+                />
+              </button>
+            ))}
+          </div>
+        )}
         </div>
 
         <div className='flex flex-col gap-5'>
