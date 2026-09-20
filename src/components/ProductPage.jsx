@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { useCart } from '../context/CartContext'
 import CloudinaryImage from './CloudinaryImage'
@@ -63,6 +63,10 @@ export default function ProductPage({ slug }) {
   // si no, entrás a otro producto y arrancás en la foto 3.
   const [foto, setFoto] = useState(0)
 
+  // La barra de compra aparece cuando el botón de verdad no está a la vista.
+  const botonComprar = useRef(null)
+  const [barraVisible, setBarraVisible] = useState(false)
+
   const product = useMemo(() => {
     const fresh = products.find(p => p.slug === slug)
     if (fresh) return fresh
@@ -71,6 +75,14 @@ export default function ProductPage({ slug }) {
   }, [products, slug])
 
   useEffect(() => { setQty(1); setFoto(0) }, [slug])
+
+  useEffect(() => {
+    const el = botonComprar.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const mirar = new IntersectionObserver(([entrada]) => setBarraVisible(!entrada.isIntersecting))
+    mirar.observe(el)
+    return () => mirar.disconnect()
+  }, [slug])
 
   useEffect(() => {
     if (!product) return
@@ -143,9 +155,9 @@ export default function ProductPage({ slug }) {
         aria-label='Ruta de navegación'
         className='flex items-center gap-2 pt-6 text-xs tracking-wide text-[#5f574e]'
       >
-        <a href='/' className='inline-block py-1.5 hover:text-[#8f7647] transition-colors'>Inicio</a>
+        <a href='/' className='inline-flex items-center min-h-[44px] hover:text-[#8f7647] transition-colors'>Inicio</a>
         <span className='text-[#8f877e]'>/</span>
-        <a href='/tienda' className='inline-block py-1.5 hover:text-[#8f7647] transition-colors'>Tienda</a>
+        <a href='/tienda' className='inline-flex items-center min-h-[44px] hover:text-[#8f7647] transition-colors'>Tienda</a>
         <span className='text-[#8f877e]'>/</span>
         <span className='text-[#0e0d0c]'>{product.name}</span>
       </nav>
@@ -264,6 +276,7 @@ export default function ProductPage({ slug }) {
               </button>
             </div>
             <button
+              ref={botonComprar}
               onClick={handleAdd}
               className='flex-grow min-w-[200px] h-14 bg-[#0e0d0c] text-white text-xs tracking-[0.16em] uppercase hover:bg-[#8f7647] transition-colors duration-300'
             >
@@ -312,7 +325,7 @@ export default function ProductPage({ slug }) {
         <section className='pt-20'>
           <div className='flex items-baseline justify-between gap-4 mb-7'>
             <h2 className='font-serif text-[32px] font-light'>Completá el look</h2>
-            <a href='/tienda' className='text-xs tracking-[0.12em] uppercase text-[#5f574e] hover:text-[#8f7647] transition-colors'>
+            <a href='/tienda' className='inline-flex items-center min-h-[44px] text-xs tracking-[0.12em] uppercase text-[#5f574e] hover:text-[#8f7647] transition-colors'>
               Ver toda la tienda
             </a>
           </div>
@@ -321,6 +334,34 @@ export default function ProductPage({ slug }) {
           </div>
         </section>
       )}
+
+      {/* Barra de compra fija, solo en celular.
+          El botón de agregar cae a unos 1000 px del tope y la pantalla del
+          celular termina en 812: sin esto hay que scrollear para comprar, y
+          casi todo el tráfico entra desde Instagram al celular. Aparece
+          cuando el botón de arriba se va de la vista, así no compite con él. */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-40 md:hidden border-t border-[#e8e2da] bg-white/95 backdrop-blur-sm transition-transform duration-300 ${barraVisible ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        aria-hidden={!barraVisible}
+      >
+        <div className='flex items-center gap-3 px-4 py-2.5'>
+          <div className='min-w-0'>
+            <p className='truncate text-[13px] text-[#5f574e]'>{product.name}</p>
+            <p className='text-[17px] text-[#0e0d0c]'>
+              {formatPrice(effective)}
+              {product.priceNote === 'par' && <span className='text-[12px] text-[#8f877e]'> el par</span>}
+            </p>
+          </div>
+          <button
+            onClick={handleAdd}
+            tabIndex={barraVisible ? 0 : -1}
+            className='flex-shrink-0 px-6 ml-auto min-h-[48px] bg-[#0e0d0c] text-white text-xs tracking-[0.14em] uppercase transition-colors hover:bg-[#8f7647]'
+          >
+            {inCart ? 'Agregar otra' : 'Agregar'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
