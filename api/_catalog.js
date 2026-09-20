@@ -138,6 +138,12 @@ function fotosDeLaFila(row) {
   return [...new Set(encontradas.map(f => f.url))]
 }
 
+// "pulsera" -> "Pulsera". La planilla mezcla mayúsculas y minúsculas.
+const titulo = texto => {
+  const limpio = String(texto || '').trim()
+  return limpio ? limpio[0].toUpperCase() + limpio.slice(1) : ''
+}
+
 function normalizeCategory(raw = '') {
   const s = raw.trim().toLowerCase()
   if (!s) return 'Otros'
@@ -192,9 +198,15 @@ function rowToProduct(row) {
   const name = correctName(row['Nombre'] || '')
   const fotos = fotosDeLaFila(row)
 
+  // Red de seguridad: si la planilla no trae nombre, la pieza aparecía en
+  // blanco en la grilla, en el carrito y en el título de su propia ficha.
+  // Mejor mostrar de qué es que no mostrar nada. Se sigue viendo el
+  // código al lado, así que se distinguen entre sí.
+  const nombreVisible = name || titulo(rawCategory) || titulo(category) || `Pieza ${id}`
+
   return {
     id,
-    name,
+    name: nombreVisible,
     category,
     subcategory: rawCategory,
     material: normalizeMaterial(row['Material']),
