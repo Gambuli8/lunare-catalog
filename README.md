@@ -405,68 +405,23 @@ Una sola clave compartida, sin usuarios: del otro lado hay una persona.
 
 ⚠️ Que no sea la misma clave que `MANTENIMIENTO_PASSWORD`.
 
-## Botón de arrepentimiento
+## Botón de arrepentimiento — sacado
 
-Vender online en Argentina obliga a tener publicado un link llamado
-**BOTÓN DE ARREPENTIMIENTO**, de acceso fácil y directo desde la home y en un
-lugar destacado (Resolución 424/2020 de la Secretaría de Comercio Interior). Va
-en el footer, aparte de la fila de links y con borde, para que se vea.
+Vender online en Argentina **obliga** a publicar un link llamado *Botón de
+arrepentimiento*, de acceso fácil y directo desde la home y en lugar destacado
+(Resolución 424/2020 de la Secretaría de Comercio Interior).
 
-La norma prohíbe pedir registración previa o cualquier trámite extra, así que
-`/arrepentimiento` no tiene login y el número de pedido es opcional: alcanza con
-nombre y correo.
+**Se sacó del sitio por pedido expreso del dueño del proyecto**, avisado del
+riesgo: sin ese link la tienda incumple la Ley de Defensa del Consumidor y
+queda expuesta a multa. Salieron el link del footer, la página, el formulario,
+`api/arrepentimiento.js`, la entrada del sitemap, las reescrituras y los mails.
 
-### El código sale en el acto
+Lo que quedó: la pestaña **Arrepentimientos** del panel y la tabla en Supabase,
+para que las solicitudes ya recibidas se sigan viendo.
 
-La norma da 24 horas para entregarle a la clienta un código de identificación del
-trámite. Como lo genera la base en el insert (`ARR-1000`, `ARR-1001`…), se lo
-mostramos en pantalla al enviar el formulario y se lo mandamos por mail. El plazo
-deja de depender de que alguien conteste a tiempo.
+Para reponerlo alcanza con revertir el commit "Sacar el botón de arrepentimiento
+del sitio público".
 
-`crear_arrepentimiento()` engancha el pedido si el número existe —normalizando
-mayúsculas y espacios— y lo guarda igual si no, porque no es un requisito. La
-tabla usa el mismo criterio que `pedidos`: RLS prendido sin políticas y `EXECUTE`
-revocado, incluido el que Postgres le da a `PUBLIC` por defecto.
-
-### Datos fiscales
-
-Van en `src/lib/fiscal.js`, que es lo único que hay que tocar:
-
-| Constante | Qué es |
-|---|---|
-| `RAZON_SOCIAL` | El nombre con el que factura |
-| `CUIT` | El CUIT |
-| `DOMICILIO` | Domicilio fiscal |
-| `DATA_FISCAL_URL` | El link de `qr.afip.gob.ar` que da el Formulario 960/D en ARCA |
-
-⚠️ **Están vacíos.** Mientras lo estén el footer no muestra el bloque —es
-preferible a publicar un CUIT equivocado— pero el sitio no debería salir de la
-cortina así. Los valores los confirma el contador.
-
-⚠️ Esto implementa el mecanismo, no reemplaza asesoramiento legal. Ver también
-"Pendiente": el texto de `/cambios` hoy contradice esta página.
-
-### Pendiente
-
-- **Mercado Pago**: falta el access token. El checkout ya ofrece la opción y
-  registra el pedido; el cobro se coordina a mano hasta conectarlo.
-- **Tarifas de envío**: las de `api/_pedidos.js` son provisorias, a la espera de
-  la API del correo que las calcula por código postal y peso.
-- **Descuento de stock en la planilla**: sigue siendo manual. La base evita
-  vender de más, pero no edita el Sheet.
-- **El texto de `/cambios` contradice a `/arrepentimiento`**: dice "no
-  realizamos devoluciones" y "los productos NO tienen garantía". Para una compra
-  online las dos cosas van contra la Ley 24.240 —el derecho a arrepentirse no se
-  puede renunciar (art. 34) y la garantía legal es de 6 meses (arts. 11 a 18)—,
-  así que esas cláusulas no se sostienen. Hay que reescribir la página; el texto
-  lo tiene que aprobar quien los asesore.
-- **Datos fiscales**: `src/lib/fiscal.js` está vacío. Ver "Botón de
-  arrepentimiento".
-- **El panel no pagina**: trae los últimos 60 pedidos y listo. Sobra por ahora;
-  cuando no alcance, `listar_pedidos()` ya acepta un límite.
-- **El botón de agregar de la ficha cae en y=926**, con el fold del celular en
-  812: hay que scrollear para comprar. Lo normal en e-commerce es una barra fija
-  abajo con el precio y el botón. Sin resolver.
 ## Envíos por zona
 
 El precio del envío sale del código postal. La clienta escribe el suyo y ve
