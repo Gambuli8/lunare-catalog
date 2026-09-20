@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { formatPrice } from '../hooks/useProducts'
 import Icon from './Icon'
+import { linkSeguimiento } from '../lib/envios'
 
 // ── Panel de pedidos ──────────────────────────────────────────
 // Hasta acá los pedidos solo se veían consultando la base. Esto es la
@@ -31,6 +32,7 @@ const ENTREGAS = {
   retiro_santa_rosa: 'Retira en Santa Rosa',
   retiro_cordoba: 'Retira en Nueva Córdoba',
   envio: 'Envío a domicilio',
+  envio_sucursal: 'Envío a sucursal',
 }
 
 const PAGOS = {
@@ -135,10 +137,62 @@ function Entrar({ onEntro }) {
 
 // ── Un pedido ─────────────────────────────────────────────────
 
-function Pedido({ pedido: p, onEstado, moviendo }) {
+// Cargar el número de seguimiento es el momento en que el pedido pasa a
+// despachado: la base lo mueve sola y a la clienta le sale el mail con el
+// número y el link para rastrearlo.
+function Seguimiento({ pedido: p, onGuardar, guardando }) {
+  const [transporte, setTransporte] = useState(p.transporte || '')
+  const [numero, setNumero] = useState(p.seguimiento || '')
+  const cargado = Boolean(p.seguimiento)
+  const sinCambios = numero.trim() === (p.seguimiento || '') && transporte.trim() === (p.transporte || '')
+  const url = linkSeguimiento(transporte)
+
+  return (
+    <div className='flex flex-col gap-2 p-3 border bg-cream border-border'>
+      <span className='text-[11px] tracking-[0.14em] uppercase text-soft'>
+        {cargado ? 'Despachado' : 'Cargar el seguimiento'}
+      </span>
+
+      <div className='flex flex-wrap gap-2'>
+        <input
+          value={transporte}
+          onChange={e => setTransporte(e.target.value)}
+          placeholder='Transporte'
+          className='h-10 px-3 text-[13px] bg-paper border border-border outline-none focus:border-gold transition-colors w-full sm:w-[150px]'
+        />
+        <input
+          value={numero}
+          onChange={e => setNumero(e.target.value)}
+          placeholder='Número de seguimiento'
+          className='h-10 px-3 text-[13px] bg-paper border border-border outline-none focus:border-gold transition-colors flex-1 min-w-[160px]'
+        />
+        <button
+          onClick={() => onGuardar(p.id, transporte.trim(), numero.trim())}
+          disabled={guardando || !numero.trim() || sinCambios}
+          className='h-10 px-4 text-[12px] tracking-wide uppercase transition-colors bg-dark text-cream hover:bg-[#2e2a26] disabled:opacity-40'
+        >
+          {cargado ? 'Actualizar' : 'Guardar y avisar'}
+        </button>
+      </div>
+
+      <p className='text-[12px] leading-relaxed text-soft'>
+        {cargado
+          ? p.email
+            ? 'Le mandamos el número por mail cuando lo guardaste.'
+            : 'No dejó correo: pasale el número por WhatsApp.'
+          : p.email
+            ? 'Al guardarlo, el pedido pasa a despachado y le llega el número por mail.'
+            : 'No dejó correo: se guarda igual, pero el número se lo tenés que pasar vos.'}
+        {url && <> · <a href={url} target='_blank' rel='noopener noreferrer' className='underline hover:text-gold'>Página de rastreo</a></>}
+      </p>
+    </div>
+  )
+}
+
+function Pedido({ pedido: p, onEstado, onSeguimiento, moviendo }) {
   const [abierto, setAbierto] = useState(false)
   const wa = waLink(p.telefono)
-  const esEnvio = p.entrega === 'envio'
+  const esEnvio = p.entrega === 'envio' || p.entrega === 'envio_sucursal'
 
   return (
     <article className='border border-border bg-paper'>
@@ -167,7 +221,9 @@ function Pedido({ pedido: p, onEstado, moviendo }) {
         </div>
 
         <p className='text-[13px] text-muted'>
-          {ENTREGAS[p.entrega] || p.entrega} · {PAGOS[p.pago] || p.pago}
+          {ENTREGAS[p.entrega] || p.entrega}
+          {p.transporte && <> · <b className='font-medium text-dark'>{p.transporte}</b></>}
+          {' · '}{PAGOS[p.pago] || p.pago}
         </p>
 
         {esEnvio && (p.direccion || p.cp) && (
@@ -214,6 +270,8 @@ function Pedido({ pedido: p, onEstado, moviendo }) {
             Subtotal {formatPrice(p.subtotal)} + envío {formatPrice(p.costo_envio)}
           </p>
         )}
+
+        {esEnvio && <Seguimiento pedido={p} onGuardar={onSeguimiento} guardando={moviendo} />}
       </div>
 
       {/* "Marcar como" y no solo el nombre del estado: arriba hay una fila
@@ -358,6 +416,26 @@ export default function Panel() {
 
   useEffect(() => { if (sesion) cargar() }, [sesion, cargar])
 
+  const guardarSeguimiento = async (id, transporte, seguimiento) => {
+    setMoviendo(true)
+    setError('')
+    try {
+      const res = await fetch('/api/panel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: 'seguimiento', id, transporte, seguimiento }),
+      })
+      if (res.status === 401) { setSesion(false); return }
+      const data = await res.json().catch(() => null)
+      if (!data?.ok) { setError('No pudimos guardar el seguimiento.'); return }
+      await cargar()
+    } catch {
+      setError('No pudimos conectarnos.')
+    } finally {
+      setMoviendo(false)
+    }
+  }
+
   const cambiarEstado = async (id, estado, tipo = 'pedido') => {
     setMoviendo(true)
     setError('')
@@ -476,7 +554,7 @@ export default function Panel() {
           <div className='flex flex-col gap-4'>
             {vista === 'pedidos'
               ? pedidos.map(p => (
-                  <Pedido key={p.id} pedido={p} moviendo={moviendo} onEstado={cambiarEstado} />
+                  <Pedido key={p.id} pedido={p} moviendo={moviendo} onEstado={cambiarEstado} onSeguimiento={guardarSeguimiento} />
                 ))
               : arrepentimientos.map(a => (
                   <Arrepentido

@@ -3,8 +3,10 @@ import { useCart } from '../context/CartContext'
 import { useProducts, formatPrice } from '../hooks/useProducts'
 import { trackCheckout } from '../lib/track'
 import { guardarPagoPendiente, leerPagoPendiente } from '../lib/pagoPendiente'
+import { opcionesDeEnvio, cpValido, MODOS } from '../lib/envios'
 import CloudinaryImage from './CloudinaryImage'
 import Icon, { WhatsAppIcon } from './Icon'
+import Copiable from './Copiable'
 
 const WHATSAPP = '542954476558'
 
@@ -16,6 +18,8 @@ const MENSAJES = {
   PAGO_INVALIDO: 'Elegí cómo querés pagar.',
   CP_REQUERIDO: 'Poné tu código postal, son 4 números.',
   DIRECCION_REQUERIDA: 'Necesitamos la dirección de entrega.',
+  CP_SIN_COBERTURA: 'No tenemos tarifa para ese código postal. Escribinos y lo vemos.',
+  ENVIO_NO_DISPONIBLE: 'Elegí con qué transporte querés recibirlo.',
   EFECTIVO_SOLO_RETIRO: 'El efectivo es solo para pedidos que se retiran.',
   PEDIDO_VACIO: 'Tu pedido está vacío.',
   CATALOGO_NO_DISPONIBLE: 'No pudimos leer el catálogo. Probá de nuevo en un momento.',
@@ -39,11 +43,12 @@ function Pasos({ paso }) {
   )
 }
 
-function Opcion({ activa, onClick, titulo, detalle, costo, costoLibre }) {
+function Opcion({ activa, onClick, titulo, detalle, costo, costoLibre, deshabilitada }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-start w-full gap-3 p-4 text-left transition-colors border bg-paper ${activa ? 'border-dark' : 'border-border hover:border-[#cfc5b8]'}`}
+      disabled={deshabilitada}
+      className={`flex items-start w-full gap-3 p-4 text-left transition-colors border bg-paper ${activa ? 'border-dark' : 'border-border hover:border-[#cfc5b8]'} ${deshabilitada ? 'opacity-50 hover:border-border' : ''}`}
     >
       <span className={`grid flex-shrink-0 w-[18px] h-[18px] mt-0.5 border rounded-full place-items-center transition-colors ${activa ? 'border-dark' : 'border-[#c4bcb2]'}`}>
         <span className={`w-2.5 h-2.5 rounded-full bg-dark transition-transform duration-300 ${activa ? 'scale-100' : 'scale-0'}`} />
@@ -54,7 +59,8 @@ function Opcion({ activa, onClick, titulo, detalle, costo, costoLibre }) {
       </span>
       {costo !== undefined && (
         <span className={`text-sm font-medium whitespace-nowrap ${costoLibre ? 'text-wa' : 'text-dark'}`}>
-          {costoLibre ? 'Sin cargo' : formatPrice(costo)}
+          {/* null: todavía no sabemos el código postal. */}
+          {costoLibre ? 'Sin cargo' : costo === null ? '—' : formatPrice(costo)}
         </span>
       )}
     </button>
@@ -81,6 +87,10 @@ export default function CartSidebar() {
   const [paso, setPaso] = useState(1)
   const [entrega, setEntrega] = useState('retiro_cordoba')
   const [pago, setPago] = useState('transferencia')
+  // Qué transporte eligió: Andreani, Correo Argentino, Integral Pack. Va
+  // aparte de la entrega, que solo dice si es a domicilio o a sucursal.
+  const [transporte, setTransporte] = useState('')
+  const [opcionesServidor, setOpcionesServidor] = useState(null)
   const [datos, setDatos] = useState({ nombre: '', telefono: '', email: '', cp: '', direccion: '' })
   const [enviando, setEnviando] = useState(false)
   const [errores, setErrores] = useState([])
@@ -92,8 +102,24 @@ export default function CartSidebar() {
 
   const entregaDef = checkout.entregas.find(e => e.key === entrega)
   const esEnvio = !!entregaDef?.envio
-  const envioGratis = esEnvio && total >= checkout.envioGratisDesde
-  const costoEnvio = esEnvio && !envioGratis ? entregaDef.costo : 0
+  const aDomicilio = entregaDef?.modo === 'domicilio'
+  const retiros = useMemo(() => checkout.entregas.filter(e => !e.envio), [checkout.entregas])
+
+  // Las opciones que le llegan a ese código postal, con el precio de cada
+  // transporte. Se calculan acá contra la tabla que vino con el catálogo,
+  // para que aparezcan mientras escribe; lo que se cobra lo decide el
+  // servidor al confirmar.
+  const opcionesLocales = useMemo(
+    () => opcionesDeEnvio(checkout.zonas, datos.cp),
+    [checkout.zonas, datos.cp]
+  )
+  // Las de la tabla se ven al instante; el servidor las confirma y, si hay
+  // contrato de Andreani, trae su tarifa de verdad para ese CP y ese peso.
+  const opciones = opcionesServidor ?? opcionesLocales
+  const opcionElegida = opciones.find(o => o.entrega === entrega && o.transporte === transporte)
+
+  const envioGratis = total >= checkout.envioGratisDesde
+  const costoEnvio = !esEnvio || envioGratis ? 0 : (opcionElegida?.costo ?? 0)
   const totalFinal = total + costoEnvio
   const falta = checkout.envioGratisDesde - total
 
@@ -114,6 +140,32 @@ export default function CartSidebar() {
 
   useEffect(() => { if (isOpen) setPendiente(leerPagoPendiente()) }, [isOpen])
 
+  // Al terminar de escribir el código postal le preguntamos al servidor.
+  // Si no contesta, quedan los precios de la tabla: nadie se queda sin
+  // poder elegir envío porque se cayó una API.
+  // Ojo: no depende del paso. Si se descartaran al pasar al paso 3, el
+  // resumen volvería a los precios de la tabla y podría mostrar un envío
+  // que no es el que se eligió —o gratis, si esa opción no está en la
+  // tabla—. Se limpian solo cuando cambia el código postal.
+  useEffect(() => {
+    if (!cpValido(datos.cp)) { setOpcionesServidor(null); return }
+
+    const corte = new AbortController()
+    const piezas = items.reduce((n, i) => n + i.qty, 0)
+    const espera = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/envio?cp=${datos.cp}&piezas=${piezas}&valor=${Math.round(total)}`,
+          { signal: corte.signal }
+        )
+        const data = await res.json()
+        if (data?.ok && Array.isArray(data.opciones)) setOpcionesServidor(data.opciones)
+      } catch { /* se sigue con la tabla que vino con el catálogo */ }
+    }, 350)
+
+    return () => { clearTimeout(espera); corte.abort() }
+  }, [datos.cp, total, items.length])
+
   // Si vuelve con "atrás" desde Mercado Pago, el navegador puede restaurar
   // la página tal cual quedó: con el "Te llevamos a Mercado Pago" puesto.
   useEffect(() => {
@@ -133,7 +185,10 @@ export default function CartSidebar() {
     let m = `¡Hola! Soy ${datos.nombre.trim() || '[tu nombre]'} y quiero hacer este pedido:\n\n`
     items.forEach(i => { m += `• [${i.id}] ${i.name} — ${i.qty} x ${formatPrice(i.price)}\n` })
     m += `\nSubtotal: ${formatPrice(total)}`
-    if (entregaDef) m += `\nEntrega: ${entregaDef.etiqueta}${costoEnvio ? ` — ${formatPrice(costoEnvio)}` : ' — sin cargo'}`
+    if (entregaDef) {
+      const como = transporte ? `${entregaDef.etiqueta} — ${transporte}` : entregaDef.etiqueta
+      m += `\nEntrega: ${como}${costoEnvio ? ` — ${formatPrice(costoEnvio)}` : ' — sin cargo'}`
+    }
     m += `\nTotal: ${formatPrice(totalFinal)}`
     return m
   }
@@ -143,6 +198,21 @@ export default function CartSidebar() {
   // abiertas por script sin avisar, y el botón parecía no hacer nada.
   const linkWhatsApp = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(textoWhatsApp())}`
   const irAWhatsApp = () => trackCheckout(items, totalFinal)
+
+  // El mensaje del pedido ya confirmado. Va con el número adelante: es lo
+  // que Lunare busca en el panel para saber de qué pedido le hablan.
+  const textoConfirmado = pedido => {
+    const quien = datos.nombre.trim() ? `Soy ${datos.nombre.trim()}. ` : ''
+    const como = esEnvio
+      ? `envío${transporte ? ` por ${transporte}` : ''}`
+      : entregaDef?.etiqueta || 'retiro'
+    const cierre = pedido.pago === 'efectivo'
+      ? 'Quiero coordinar el retiro y pago en efectivo cuando lo busque.'
+      : pedido.pago === 'transferencia'
+        ? 'Necesito los datos para transferir.'
+        : 'Quiero coordinar el pago.'
+    return `¡Hola! ${quien}Hice el pedido ${pedido.numero} en la web (${como}, ${formatPrice(pedido.total ?? totalFinal)}). ${cierre}`
+  }
 
   const confirmar = async () => {
     setEnviando(true)
@@ -154,6 +224,7 @@ export default function CartSidebar() {
         body: JSON.stringify({
           ...datos,
           entrega,
+          transporte,
           pago,
           // Solo qué piezas y cuántas: el precio lo pone el servidor.
           items: items.map(i => ({ id: i.id, qty: i.qty })),
@@ -215,19 +286,23 @@ export default function CartSidebar() {
     if (enfocar) el.focus({ preventScroll: true })
   }
 
-  // Al elegir envío aparecen dos campos nuevos abajo del área visible.
-  // Sin traerlos a la vista, no hay ninguna señal de que existen.
+  // Al elegir un envío a domicilio aparece la dirección abajo del área
+  // visible. Sin traerla a la vista, no hay señal de que exista.
   useEffect(() => {
-    if (paso !== 2 || !esEnvio) return
-    const t = setTimeout(() => traerALaVista('#campo-cp'), 80)
+    if (paso !== 2 || !aDomicilio) return
+    const t = setTimeout(() => traerALaVista('#campo-direccion'), 80)
     return () => clearTimeout(t)
-  }, [paso, esEnvio])
+  }, [paso, aDomicilio])
 
   const siguiente = () => {
     if (paso === 2 && esEnvio) {
       const fallos = []
-      if (!/^\d{4}$/.test(datos.cp)) fallos.push(MENSAJES.CP_REQUERIDO)
-      if (datos.direccion.trim().length < 5) fallos.push(MENSAJES.DIRECCION_REQUERIDA)
+      if (!cpValido(datos.cp)) fallos.push(MENSAJES.CP_REQUERIDO)
+      // Sin una opción válida para ese código postal no se puede seguir:
+      // el servidor lo rechazaría al confirmar.
+      else if (!opciones.length) fallos.push(MENSAJES.CP_SIN_COBERTURA)
+      else if (!opcionElegida) fallos.push(MENSAJES.ENVIO_NO_DISPONIBLE)
+      if (aDomicilio && datos.direccion.trim().length < 5) fallos.push(MENSAJES.DIRECCION_REQUERIDA)
       if (fallos.length) {
         setErrores(fallos)
         // El error solo se lee arriba de todo, y el campo del que habla
@@ -279,7 +354,7 @@ export default function CartSidebar() {
               <Icon name='tarjeta' size={24} strokeWidth={1.5} />
             </span>
             <h3 className='font-serif text-[26px] font-light'>Te llevamos a Mercado Pago</h3>
-            <span className='font-serif text-[30px] tracking-wider text-gold'>{redirigiendo.numero}</span>
+            <Copiable valor={redirigiendo.numero} etiqueta='número de pedido' className='font-serif text-[30px] tracking-wider text-gold' />
             <p className='text-sm leading-relaxed text-muted'>
               Tu pedido ya quedó guardado y las piezas, reservadas.
               Cuando termines de pagar, volvés a la tienda.
@@ -294,19 +369,34 @@ export default function CartSidebar() {
               <Icon name='check' size={30} strokeWidth={2.2} />
             </span>
             <h3 className='font-serif text-[26px] font-light'>¡Listo{datos.nombre.trim() ? `, ${datos.nombre.trim()}` : ''}!</h3>
-            <span className='font-serif text-[30px] tracking-wider text-gold'>{confirmado.numero}</span>
+            <Copiable valor={confirmado.numero} etiqueta='número de pedido' className='font-serif text-[30px] tracking-wider text-gold' />
             <p className='text-sm leading-relaxed text-muted'>
               {confirmado.pago === 'mercadopago'
                 ? `${checkout.mp ? 'No pudimos abrir Mercado Pago en este momento. ' : ''}Te escribimos por WhatsApp con el link de pago.`
                 : confirmado.pago === 'efectivo'
-                  ? 'Te escribimos por WhatsApp para coordinar el retiro. Pagás en efectivo cuando lo retirás.'
-                  : `Te escribimos por WhatsApp con los datos para transferir y coordinamos ${esEnvio ? 'el envío' : 'el retiro'}.`}
+                  ? 'Escribinos y cerramos el retiro: acordamos el día y el punto, y pagás en efectivo cuando lo retirás.'
+                  : `Te pasamos los datos para transferir por WhatsApp y coordinamos ${esEnvio ? 'el envío' : 'el retiro'}.`}
               {' '}Guardá el número del pedido.
             </p>
+
+            {/* Con efectivo la venta se termina de cerrar por WhatsApp, así
+                que el botón es la acción principal y no una alternativa. */}
+            <a
+              href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(textoConfirmado(confirmado))}`}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='flex items-center justify-center w-full gap-2.5 min-h-[52px] mt-2 text-xs tracking-[0.14em] uppercase transition-colors bg-wa text-cream hover:bg-wa-dark'
+            >
+              <WhatsAppIcon size={17} />
+              {confirmado.pago === 'efectivo'
+                ? (esEnvio ? 'Coordinar por WhatsApp' : 'Coordinar el retiro')
+                : confirmado.pago === 'transferencia' ? 'Pedir los datos para transferir'
+                  : 'Escribirnos por WhatsApp'}
+            </a>
             <a
               href='/tienda'
               onClick={cerrar}
-              className='px-8 py-3.5 mt-2 text-xs tracking-[0.14em] uppercase border border-dark hover:bg-dark hover:text-cream transition-colors'
+              className='min-h-[44px] inline-flex items-center text-[13px] text-muted hover:text-dark transition-colors'
             >
               Seguir mirando
             </a>
@@ -317,7 +407,7 @@ export default function CartSidebar() {
               <Icon name='reloj' size={28} strokeWidth={1.4} />
             </span>
             <h3 className='font-serif text-[26px] font-light leading-tight'>Tenés un pedido esperando el pago</h3>
-            <span className='font-serif text-[30px] tracking-wider text-gold'>{pendiente.numero}</span>
+            <Copiable valor={pendiente.numero} etiqueta='número de pedido' className='font-serif text-[30px] tracking-wider text-gold' />
             <p className='text-sm leading-relaxed text-muted'>
               Te reservamos las piezas por 24 horas. Si ya pagaste, no tenés que hacer nada.
             </p>
@@ -416,40 +506,69 @@ export default function CartSidebar() {
 
               {paso === 2 && (
                 <>
-                  <span className='text-[11px] tracking-[0.14em] uppercase text-muted'>Cómo lo recibís</span>
-                  {checkout.entregas.map(e => (
+                  <span className='text-[11px] tracking-[0.14em] uppercase text-muted'>Retirar en persona</span>
+                  {retiros.map(e => (
                     <Opcion
                       key={e.key}
                       activa={entrega === e.key}
-                      onClick={() => { setEntrega(e.key); setErrores([]) }}
+                      onClick={() => { setEntrega(e.key); setTransporte(''); setErrores([]) }}
                       titulo={e.etiqueta}
-                      detalle={e.envio ? 'A coordinar según el código postal' : 'Coordinamos día y punto por WhatsApp'}
-                      costo={e.envio && !(total >= checkout.envioGratisDesde) ? e.costo : 0}
-                      costoLibre={!e.envio || total >= checkout.envioGratisDesde}
+                      detalle='Coordinamos día y punto por WhatsApp'
+                      costo={0}
+                      costoLibre
                     />
                   ))}
 
+                  <span className='mt-3 text-[11px] tracking-[0.14em] uppercase text-muted'>
+                    O que te lo mandemos
+                  </span>
+                  <Campo
+                    id='campo-cp'
+                    label='Tu código postal'
+                    inputMode='numeric'
+                    maxLength={4}
+                    placeholder='Ej. 6300'
+                    hint={!cpValido(datos.cp) ? 'Con el código postal te mostramos los transportes que llegan y cuánto sale cada uno.' : undefined}
+                    value={datos.cp}
+                    onChange={e => setDatos({ ...datos, cp: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                  />
+
+                  {cpValido(datos.cp) && (
+                    opciones.length === 0 ? (
+                      <p className='p-3.5 text-[12.5px] leading-relaxed border-l-2 bg-[#f2ece4] border-gold-lt text-muted'>
+                        Todavía no tenemos tarifa para ese código postal. Escribinos por
+                        WhatsApp y lo resolvemos con vos.
+                      </p>
+                    ) : (
+                      opciones.map(o => (
+                        <Opcion
+                          key={o.id}
+                          activa={opcionElegida?.id === o.id}
+                          onClick={() => { setEntrega(o.entrega); setTransporte(o.transporte); setErrores([]) }}
+                          titulo={`${o.transporte} · ${MODOS[o.modo].etiqueta}`}
+                          detalle={[o.zona, o.dias && `llega en ${o.dias} ${o.dias.trim() === '1' ? 'día hábil' : 'días hábiles'}`].filter(Boolean).join(' · ')}
+                          costo={envioGratis ? 0 : o.costo}
+                          costoLibre={envioGratis}
+                        />
+                      ))
+                    )
+                  )}
+
                   {esEnvio && (
                     <div className='flex flex-col gap-3 mt-1'>
-                      <Campo
-                        id='campo-cp'
-                        label='Código postal'
-                        inputMode='numeric'
-                        maxLength={4}
-                        placeholder='Ej. 6300'
-                        value={datos.cp}
-                        onChange={e => setDatos({ ...datos, cp: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      />
-                      <Campo
-                        id='campo-direccion'
-                        label='Dirección de entrega'
-                        placeholder='Calle, número, piso'
-                        value={datos.direccion}
-                        onChange={e => setDatos({ ...datos, direccion: e.target.value })}
-                      />
+                      {aDomicilio && (
+                        <Campo
+                          id='campo-direccion'
+                          label='Dirección de entrega'
+                          placeholder='Calle, número, piso'
+                          value={datos.direccion}
+                          onChange={e => setDatos({ ...datos, direccion: e.target.value })}
+                        />
+                      )}
                       <p className='text-[12px] leading-relaxed text-soft'>
-                        El costo del envío es provisorio hasta que confirmemos la tarifa
-                        del correo para tu código postal. Te avisamos antes de despachar.
+                        {aDomicilio
+                          ? 'Cuando despachamos te pasamos el número de seguimiento por WhatsApp.'
+                          : 'La sucursal exacta la coordinamos por WhatsApp, y te pasamos el número de seguimiento cuando despachamos.'}
                       </p>
                     </div>
                   )}
@@ -458,6 +577,49 @@ export default function CartSidebar() {
 
               {paso === 3 && (
                 <>
+                  {/* El repaso antes de confirmar: qué se lleva, cómo le
+                      llega y cuánto es cada cosa. Sin esto, el último paso
+                      pide datos y cobra sin mostrar qué se está pagando. */}
+                  <div className='flex flex-col gap-2.5 p-4 border bg-paper border-border'>
+                    <span className='text-[11px] tracking-[0.14em] uppercase text-muted'>Tu pedido</span>
+
+                    {items.map(i => (
+                      <div key={i.id} className='flex items-baseline justify-between gap-3 text-[13px]'>
+                        <span className='min-w-0 text-dark'>
+                          <span className='text-muted'>{i.qty}×</span> {i.name}
+                        </span>
+                        <span className='whitespace-nowrap text-dark'>{formatPrice(i.price * i.qty)}</span>
+                      </div>
+                    ))}
+
+                    <div className='flex items-baseline justify-between gap-3 pt-2.5 text-[13px] border-t border-line text-muted'>
+                      <span>Subtotal</span>
+                      <span>{formatPrice(total)}</span>
+                    </div>
+
+                    <div className='flex items-baseline justify-between gap-3 text-[13px] text-muted'>
+                      <span className='min-w-0'>
+                        {esEnvio
+                          ? `Envío · ${transporte} ${aDomicilio ? 'a domicilio' : 'a sucursal'}`
+                          : entregaDef?.etiqueta || 'Retiro'}
+                      </span>
+                      <span className={`whitespace-nowrap ${costoEnvio === 0 ? 'text-wa' : ''}`}>
+                        {costoEnvio === 0 ? 'Sin cargo' : formatPrice(costoEnvio)}
+                      </span>
+                    </div>
+
+                    {esEnvio && aDomicilio && datos.direccion.trim() && (
+                      <p className='text-[12px] leading-relaxed text-soft'>
+                        {datos.direccion.trim()}{datos.cp && ` · CP ${datos.cp}`}
+                      </p>
+                    )}
+
+                    <div className='flex items-baseline justify-between gap-3 pt-2.5 border-t border-line'>
+                      <span className='text-[13px] text-dark'>Total</span>
+                      <span className='font-serif text-[22px] text-dark'>{formatPrice(totalFinal)}</span>
+                    </div>
+                  </div>
+
                   <Campo
                     label='Tu nombre'
                     placeholder='Cómo te llamás'
@@ -539,16 +701,25 @@ export default function CartSidebar() {
                   </button>
                 </div>
               ) : (
-                <a
-                  href={linkWhatsApp}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  onClick={irAWhatsApp}
-                  className='flex items-center justify-center w-full gap-2.5 min-h-[56px] text-xs tracking-[0.14em] uppercase transition-colors bg-wa text-cream hover:bg-wa-dark'
-                >
-                  <WhatsAppIcon size={18} />
-                  Finalizar por WhatsApp
-                </a>
+                // Salida de emergencia: solo se ve si el pedido online no
+                // está disponible. Va con el estilo de la tienda y no como
+                // un bloque verde, que competía con el checkout de verdad.
+                <>
+                  <p className='text-[12.5px] leading-relaxed text-muted'>
+                    El pedido online no está disponible en este momento. Mandanos
+                    tu pedido por WhatsApp y lo cerramos ahí.
+                  </p>
+                  <a
+                    href={linkWhatsApp}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    onClick={irAWhatsApp}
+                    className='flex items-center justify-center w-full gap-2.5 min-h-[52px] text-xs tracking-[0.14em] uppercase transition-colors bg-dark text-cream hover:bg-[#2e2a26]'
+                  >
+                    <WhatsAppIcon size={17} />
+                    Hacer el pedido por WhatsApp
+                  </a>
+                </>
               )}
 
               {checkout.activo && (

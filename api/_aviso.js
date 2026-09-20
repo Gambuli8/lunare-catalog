@@ -12,6 +12,7 @@
 import { esc } from './_html.js'
 import { formatPrice, productImage, SITE_URL } from './_catalog.js'
 import { ENTREGAS, PAGOS } from './_pedidos.js'
+import { linkSeguimiento } from './_envios.js'
 
 const API = 'https://api.resend.com/emails'
 
@@ -85,8 +86,11 @@ const etiquetaPago = k => PAGOS[k]?.etiqueta || k
 function lineaEntrega(datos) {
   const base = etiquetaEntrega(datos.entrega)
   if (!ENTREGAS[datos.entrega]?.envio) return base
+  // Por dónde se despacha: lo eligió la clienta y es lo primero que hay
+  // que saber para preparar el paquete.
+  const con = datos.transporte ? `${base} por ${datos.transporte}` : base
   const partes = [datos.direccion, datos.cp && `CP ${datos.cp}`].filter(Boolean)
-  return partes.length ? `${base} — ${partes.join(', ')}` : base
+  return partes.length ? `${con} — ${partes.join(', ')}` : con
 }
 
 // Qué tiene que pasar ahora, contado desde el lado de la clienta.
@@ -470,4 +474,90 @@ export async function avisarPagoAprobado({ pedido, pago }) {
   }
 
   return salida
+}
+
+// ── Despacho ──────────────────────────────────────────────────
+// Sale cuando Lunare carga el número de seguimiento en el panel. Es el
+// mail que la clienta espera: dónde está su paquete.
+//
+// El número va grande y aparte, porque lo tiene que copiar y pegar en la
+// página del transporte: las tres son páginas hechas en JavaScript y un
+// link con el número adentro no funciona de forma confiable.
+
+function mailDespacho({ pedido }) {
+  const primerNombre = String(pedido.nombre || '').split(' ')[0]
+  const url = linkSeguimiento(pedido.transporte)
+  const donde = [pedido.direccion, pedido.cp && `CP ${pedido.cp}`].filter(Boolean).join(', ')
+
+  const encabezado = `
+    <div style="font-size:22px;color:#2b2621">Tu pedido salió${primerNombre ? `, ${esc(primerNombre)}` : ''}</div>
+    <div style="font-size:14px;color:${GRIS};padding-top:8px;line-height:1.6">Pedido</div>
+    <div style="font-size:30px;color:${ORO};padding-top:2px;letter-spacing:0.04em">${esc(pedido.numero)}</div>`
+
+  const cuerpo = `
+    <div style="font-size:15px;color:#2b2621;line-height:1.7">
+      Ya lo despachamos${pedido.transporte ? ` por <b>${esc(pedido.transporte)}</b>` : ''}.
+      Este es el número para seguirlo:
+    </div>
+
+    <div style="margin-top:18px;padding:18px;background:#f6f3ef;border-radius:8px;text-align:center">
+      <div style="font-size:12px;color:${GRIS};letter-spacing:0.12em;text-transform:uppercase">Seguimiento</div>
+      <div style="font-size:24px;color:#2b2621;padding-top:6px;letter-spacing:0.04em"><b>${esc(pedido.seguimiento)}</b></div>
+    </div>
+
+    ${url ? `
+    <div style="margin-top:20px;font-size:14px;color:${GRIS};line-height:1.7">
+      Copiá el número y pegalo acá para ver dónde está:
+    </div>
+    <div style="padding-top:12px">${boton(url, 'Seguir el envío')}</div>` : ''}
+
+    ${donde ? `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:24px">
+      ${dato('Va a', esc(donde))}
+    </table>` : ''}
+
+    <div style="margin-top:26px;font-size:14px;color:${GRIS};line-height:1.7">
+      Puede tardar unas horas en aparecer en la página del transporte, recién
+      cargado a veces no figura. Si algo no cierra, escribinos con tu número de pedido.
+    </div>
+    <div style="padding-top:14px">${boton(`https://wa.me/${WHATSAPP_LUNARE}?text=${encodeURIComponent(`¡Hola! Te escribo por el pedido ${pedido.numero}.`)}`, 'Escribirnos por WhatsApp')}</div>`
+
+  const texto = [
+    `Tu pedido salió${primerNombre ? `, ${primerNombre}` : ''}.`,
+    `Pedido ${pedido.numero}.`,
+    '',
+    `Despachado${pedido.transporte ? ` por ${pedido.transporte}` : ''}.`,
+    `Número de seguimiento: ${pedido.seguimiento}`,
+    url ? `Seguilo en: ${url}` : '',
+    donde ? `Va a: ${donde}` : '',
+    '',
+    'Puede tardar unas horas en aparecer en la página del transporte.',
+    `Cualquier cosa escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
+  ].filter(Boolean).join('\n')
+
+  return {
+    to: [pedido.email],
+    subject: `Tu pedido ${pedido.numero} ya está en camino`,
+    html: envoltorio({ titulo: `Pedido ${pedido.numero} en camino`, encabezado, cuerpo }),
+    texto,
+  }
+}
+
+export async function avisarDespacho({ pedido }) {
+  if (!avisosConfigurados()) {
+    console.warn(`[aviso] sin Resend: el despacho de ${pedido?.numero} no se avisó`)
+    return { clienta: false }
+  }
+  // Sin correo no hay a quién avisarle: el número queda en el panel y
+  // Lunare se lo pasa por WhatsApp.
+  if (!pedido?.email) return { clienta: false }
+  if (!pedido?.seguimiento) return { clienta: false }
+
+  try {
+    await enviar(mailDespacho({ pedido }))
+    return { clienta: true }
+  } catch (err) {
+    console.error(`[aviso] no salió el mail de despacho por ${pedido.numero}`, err)
+    return { clienta: false }
+  }
 }

@@ -105,10 +105,17 @@ publicar siguen siendo accesibles con la URL vieja.
 
 ```
 Id | Nombre | Categoría | Material | Precio costo | Precio individual |
-Precio Par | Stock | Imagen | Destacado | Precio promo
+Precio Par | Stock | Imagen | Imagen 2 | Imagen 3 | Imagen 4 |
+Destacado | Precio promo
 ```
 
 - **Stock ≤ 0** → el producto no aparece.
+- **`Imagen 2` en adelante** son opcionales: si están, la ficha muestra una
+  galería con miniaturas y la tarjeta del catálogo cambia a la segunda foto al
+  pasar el mouse. El orden lo dan los números de las columnas, no el orden en
+  que estén en la planilla. Se aceptan `Imagen 2`, `imagen2`, `Foto 2` o
+  `Image 2`: los encabezados se leen sin acentos ni mayúsculas. Una foto
+  repetida se ignora.
 - **Sin `Id`** → el producto no aparece (el código va en el mensaje de WhatsApp
   y es lo que identifica cada ítem del carrito).
 - **`Precio promo`** solo se usa si es menor al precio normal.
@@ -358,6 +365,28 @@ Cambiar un estado tiene efecto real sobre el stock: solo `pendiente` y `pagado`
 lo comprometen, así que cancelar un pedido libera las piezas para que se puedan
 volver a vender.
 
+### Número de seguimiento
+
+Cuando Lunare despacha, carga en la tarjeta del pedido el transporte y el
+número que le dio el correo. Eso hace tres cosas de una:
+
+1. Guarda el número en el pedido (`pedidos.seguimiento`).
+2. **Mueve el pedido a despachado**, solo si venía de pendiente o pagado: uno
+   ya entregado no vuelve para atrás.
+3. Le manda a la clienta un mail con el número bien grande y el botón a la
+   página de rastreo del transporte.
+
+Los links de rastreo salen de `linkSeguimiento()`: Andreani, Correo Argentino e
+Integral Pack, verificados. Un transporte que no esté en esa lista igual se
+guarda y se avisa, solo que sin botón.
+
+Los tres rastreadores son páginas hechas en JavaScript, así que un link con el
+número adentro no es confiable: por eso el mail lleva el número para copiar y
+el link a la página, y no un link directo que puede romperse.
+
+Si la clienta no dejó correo, el número se guarda igual y el panel avisa que hay
+que pasárselo por WhatsApp.
+
 ### Cómo se protege
 
 Una sola clave compartida, sin usuarios: del otro lado hay una persona.
@@ -375,6 +404,154 @@ Una sola clave compartida, sin usuarios: del otro lado hay una persona.
 - `noindex` por cabecera, `Disallow` en `robots.txt` y sin analítica.
 
 ⚠️ Que no sea la misma clave que `MANTENIMIENTO_PASSWORD`.
+
+## Botón de arrepentimiento
+
+Vender online en Argentina obliga a tener publicado un link llamado
+**BOTÓN DE ARREPENTIMIENTO**, de acceso fácil y directo desde la home y en un
+lugar destacado (Resolución 424/2020 de la Secretaría de Comercio Interior). Va
+en el footer, aparte de la fila de links y con borde, para que se vea.
+
+La norma prohíbe pedir registración previa o cualquier trámite extra, así que
+`/arrepentimiento` no tiene login y el número de pedido es opcional: alcanza con
+nombre y correo.
+
+### El código sale en el acto
+
+La norma da 24 horas para entregarle a la clienta un código de identificación del
+trámite. Como lo genera la base en el insert (`ARR-1000`, `ARR-1001`…), se lo
+mostramos en pantalla al enviar el formulario y se lo mandamos por mail. El plazo
+deja de depender de que alguien conteste a tiempo.
+
+`crear_arrepentimiento()` engancha el pedido si el número existe —normalizando
+mayúsculas y espacios— y lo guarda igual si no, porque no es un requisito. La
+tabla usa el mismo criterio que `pedidos`: RLS prendido sin políticas y `EXECUTE`
+revocado, incluido el que Postgres le da a `PUBLIC` por defecto.
+
+### Datos fiscales
+
+Van en `src/lib/fiscal.js`, que es lo único que hay que tocar:
+
+| Constante | Qué es |
+|---|---|
+| `RAZON_SOCIAL` | El nombre con el que factura |
+| `CUIT` | El CUIT |
+| `DOMICILIO` | Domicilio fiscal |
+| `DATA_FISCAL_URL` | El link de `qr.afip.gob.ar` que da el Formulario 960/D en ARCA |
+
+⚠️ **Están vacíos.** Mientras lo estén el footer no muestra el bloque —es
+preferible a publicar un CUIT equivocado— pero el sitio no debería salir de la
+cortina así. Los valores los confirma el contador.
+
+⚠️ Esto implementa el mecanismo, no reemplaza asesoramiento legal. Ver también
+"Pendiente": el texto de `/cambios` hoy contradice esta página.
+
+### Pendiente
+
+- **Mercado Pago**: falta el access token. El checkout ya ofrece la opción y
+  registra el pedido; el cobro se coordina a mano hasta conectarlo.
+- **Tarifas de envío**: las de `api/_pedidos.js` son provisorias, a la espera de
+  la API del correo que las calcula por código postal y peso.
+- **Descuento de stock en la planilla**: sigue siendo manual. La base evita
+  vender de más, pero no edita el Sheet.
+- **El texto de `/cambios` contradice a `/arrepentimiento`**: dice "no
+  realizamos devoluciones" y "los productos NO tienen garantía". Para una compra
+  online las dos cosas van contra la Ley 24.240 —el derecho a arrepentirse no se
+  puede renunciar (art. 34) y la garantía legal es de 6 meses (arts. 11 a 18)—,
+  así que esas cláusulas no se sostienen. Hay que reescribir la página; el texto
+  lo tiene que aprobar quien los asesore.
+- **Datos fiscales**: `src/lib/fiscal.js` está vacío. Ver "Botón de
+  arrepentimiento".
+- **El panel no pagina**: trae los últimos 60 pedidos y listo. Sobra por ahora;
+  cuando no alcance, `listar_pedidos()` ya acepta un límite.
+- **El botón de agregar de la ficha cae en y=926**, con el fold del celular en
+  812: hay que scrollear para comprar. Lo normal en e-commerce es una barra fija
+  abajo con el precio y el botón. Sin resolver.
+## Envíos por zona
+
+El precio del envío sale del código postal. La clienta escribe el suyo y ve
+**las opciones que le llegan, con el precio de cada transporte**, y elige.
+
+Las tarifas viven en una pestaña del mismo Google Sheet del catálogo, así las
+cambia Lunare cuando aumenta el correo, sin tocar código ni esperar un deploy.
+
+```
+SHEET_ENVIOS_CSV_URL=...   # la pestaña "Envios", publicada como CSV
+```
+
+**Sin esa variable no se rompe nada**: se usa la tarifa plana de antes ($6.800
+a domicilio, a todo el país) y la tienda funciona igual.
+
+### La pestaña
+
+Va una fila por transporte y por zona:
+
+| Transporte | Zona | CP desde | CP hasta | Domicilio | Sucursal | Dias |
+|------------|------|----------|----------|-----------|----------|------|
+| Andreani | Santa Rosa | 6300 | 6399 | 4200 | 3500 | 1 a 2 |
+| Correo Argentino | Santa Rosa | 6300 | 6399 | 3900 | 3100 | 2 a 3 |
+| Integral Pack | La Pampa | 6200 | 6499 | 3500 | | 1 |
+| Andreani | Resto del país | 1000 | 9999 | 12500 | 9900 | 5 a 8 |
+
+- **Gana la fila más específica.** Si un CP entra en dos zonas, para ese
+  transporte manda la del rango más chico: una fila para Santa Rosa le gana a la
+  del país entero sin tener que ordenar la planilla.
+- **Celda vacía** significa que ese transporte no ofrece esa modalidad en esa
+  zona, y la opción no se muestra.
+- **Dias** es texto libre y solo se muestra ("llega en 2 a 3 días hábiles"; con
+  `1` dice "1 día hábil").
+- Los encabezados se leen sin acentos ni mayúsculas: `Días`, `dias` o `DIAS` son
+  lo mismo.
+- Agregar un transporte es agregar filas. No hay que tocar código ni la base.
+
+### Quién decide el precio
+
+La tabla viaja con `/api/products` para que las opciones aparezcan apenas se
+escribe el código postal, sin otra consulta. Pero **el que se cobra lo calcula
+el servidor** en `resolverEnvio()` al confirmar, y verifica que esa combinación
+de transporte y modalidad exista para ese CP. Si no fuera así, alcanzaría con
+editar el pedido para elegir el precio del transporte más barato y hacerse
+despachar por el más caro.
+
+El envío sigue siendo sin cargo desde `ENVIO_GRATIS_DESDE`.
+
+### Qué se guarda
+
+`pedidos.entrega` dice la modalidad (`envio` a domicilio, `envio_sucursal`) y
+`pedidos.transporte` guarda cuál eligió, como texto. Es texto y no un enum
+justamente porque los transportes se agregan y se sacan desde el Sheet.
+
+### Andreani en vivo
+
+El cotizador de Andreani ya está conectado, apagado hasta que haya contrato:
+
+```
+ANDREANI_CONTRATO_DOMICILIO=...   # envío a domicilio
+ANDREANI_CONTRATO_SUCURSAL=...    # envío a sucursal
+```
+
+Son dos contratos distintos —Andreani cobra los servicios por separado— y salen
+de la cuenta comercial. Con uno cargado, las filas del Sheet cuyo transporte sea
+Andreani dejan de usar el precio de la planilla y se cotizan contra la API por
+código postal, peso y valor declarado; el resultado se redondea a la centena de
+arriba. Sin contrato, o si la API falla o tarda más de 6 segundos, queda el
+precio del Sheet: nadie se queda sin poder comprar por esto.
+
+El peso se estima en 150 g de base más 60 g por pieza, en una caja de 10 × 10 ×
+10. Para joyería el cobro es por peso aforado mínimo, así que alcanza.
+
+`GET /api/envio?cp=6300&piezas=2&valor=57400` devuelve las opciones ya con el
+precio final. El carrito muestra al instante los precios de la tabla y lo llama
+en segundo plano para confirmarlos; el que se cobra se recalcula igual al
+confirmar el pedido.
+
+El listado de sucursales (`/v2/sucursales`) es público y no necesita contrato:
+son 317 sucursales que atienden público, cacheadas 12 horas.
+
+### Correo Argentino e Integral Pack
+
+Correo Argentino tiene API pero pide cuenta empresa; Integral Pack no tiene API
+pública. Sus precios salen de la tabla del Sheet.
 
 ## Modo mantenimiento
 

@@ -12,6 +12,7 @@
 
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { SITE_URL, formatPrice } from './_catalog.js'
+import { ENTREGAS } from './_pedidos.js'
 
 const API = 'https://api.mercadopago.com'
 
@@ -66,7 +67,7 @@ export async function crearPreferencia({ pedido, datos, items }) {
   if (Number(pedido.costo_envio) > 0) {
     lineas.push({
       id: 'envio',
-      title: 'Envío a domicilio',
+      title: [ENTREGAS[datos.entrega]?.etiqueta || 'Envío', datos.transporte].filter(Boolean).join(' · '),
       quantity: 1,
       unit_price: Number(pedido.costo_envio),
       currency_id: 'ARS',
@@ -74,6 +75,13 @@ export async function crearPreferencia({ pedido, datos, items }) {
   }
 
   const [nombre, ...resto] = String(datos.nombre || '').trim().split(' ')
+
+  // La pantalla de vuelta no sabe nada del pedido salvo lo que le
+  // pasemos: con esto puede hablar de coordinar el retiro en vez de la
+  // entrega. No decide nada, es solo el texto que lee la clienta.
+  const esRetiro = !ENTREGAS[datos.entrega]?.envio
+  const vuelta = estado =>
+    `${SITE_URL}/pago?estado=${estado}&pedido=${encodeURIComponent(pedido.numero)}${esRetiro ? '&retiro=1' : ''}`
 
   const cuerpo = {
     items: lineas,
@@ -87,9 +95,9 @@ export async function crearPreferencia({ pedido, datos, items }) {
     external_reference: pedido.id,
     statement_descriptor: 'LUNARE ACCESORIOS',
     back_urls: {
-      success: `${SITE_URL}/pago?estado=exito&pedido=${encodeURIComponent(pedido.numero)}`,
-      pending: `${SITE_URL}/pago?estado=pendiente&pedido=${encodeURIComponent(pedido.numero)}`,
-      failure: `${SITE_URL}/pago?estado=error&pedido=${encodeURIComponent(pedido.numero)}`,
+      success: vuelta('exito'),
+      pending: vuelta('pendiente'),
+      failure: vuelta('error'),
     },
     auto_return: 'approved',
     notification_url: `${SITE_URL}/api/mp-webhook`,

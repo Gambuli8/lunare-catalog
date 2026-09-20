@@ -35,7 +35,8 @@ function jsonLd(p, url) {
     name: p.name,
     sku: p.id,
     description: description(p),
-    image: p.image ? [ogImage(p.image)] : undefined,
+    // Todas las fotos de la pieza: Google usa varias en los resultados.
+    image: (p.images?.length ? p.images : [p.image].filter(Boolean)).map(ogImage),
     category: p.category,
     material: p.material,
     brand: { '@type': 'Brand', name: 'Lunare Accesorios' },

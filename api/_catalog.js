@@ -111,6 +111,33 @@ function correctName(raw = '') {
   return NAME_CORRECTIONS[key] || toTitleCase(raw.trim())
 }
 
+// ── Fotos ─────────────────────────────────────────────────────
+// La pieza puede tener varias: "Imagen" es la principal y después van
+// "Imagen 2", "Imagen 3"... Se aceptan con o sin espacio, en mayúscula o
+// minúscula, y también en inglés, porque la planilla la edita una
+// persona y nadie se acuerda del formato exacto.
+//
+// El orden lo dan los números de las columnas, no el orden en que vengan.
+const NUMERO_DE_FOTO = /^(imagen|image|foto)\s*(\d*)$/
+
+function fotosDeLaFila(row) {
+  const encontradas = []
+
+  for (const [columna, valor] of Object.entries(row)) {
+    const limpio = String(valor || '').trim()
+    if (!limpio) continue
+
+    const m = stripAccents(String(columna).trim().toLowerCase()).match(NUMERO_DE_FOTO)
+    if (!m) continue
+
+    encontradas.push({ orden: Number(m[2] || 1), url: limpio })
+  }
+
+  encontradas.sort((a, b) => a.orden - b.orden)
+  // Repetir la misma foto dos veces es un error de copiado, no una foto más.
+  return [...new Set(encontradas.map(f => f.url))]
+}
+
 function normalizeCategory(raw = '') {
   const s = raw.trim().toLowerCase()
   if (!s) return 'Otros'
@@ -163,6 +190,7 @@ function rowToProduct(row) {
   const category = normalizeCategory(rawCategory)
   const destacado = (row['Destacado'] || row['destacado'] || '').trim().toLowerCase()
   const name = correctName(row['Nombre'] || '')
+  const fotos = fotosDeLaFila(row)
 
   return {
     id,
@@ -174,7 +202,9 @@ function rowToProduct(row) {
     pricePromo: promo && promo < price ? promo : null,
     priceNote: pricePar ? 'par' : 'und',
     stock,
-    image: (row['Imagen'] || row['imagen'] || row['Image'] || '').trim(),
+    image: fotos[0] || '',
+    // Las demás fotos de la pieza, en el orden de las columnas.
+    images: fotos,
     featured: ['si', 'sí', 'yes', '1', 'true'].includes(destacado),
     emoji: CATEGORY_EMOJI[category] || '✦',
     slug: slugify(rawCategory ? `${name} ${rawCategory}` : name),

@@ -83,7 +83,8 @@ export default defineConfig(({ mode }) => {
     'SHEET_CSV_URL', 'SITE_URL',
     'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
     'RESEND_API_KEY', 'AVISO_EMAIL_DESTINO', 'AVISO_EMAIL_FROM',
-    'PANEL_PASSWORD',
+    'PANEL_PASSWORD', 'SHEET_ENVIOS_CSV_URL',
+    'ANDREANI_CONTRATO_DOMICILIO', 'ANDREANI_CONTRATO_SUCURSAL',
     'MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET',
   ]) {
     if (env[key]) process.env[key] = env[key]

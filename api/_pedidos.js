@@ -5,6 +5,7 @@
 // Los archivos de api/ que empiezan con "_" no son endpoints.
 
 import { rpc, supabaseConfigurado } from './_supabase.js'
+import { cotizar } from './_envios.js'
 
 export const pedidosConfigurados = supabaseConfigurado
 
@@ -12,12 +13,21 @@ export const pedidosConfigurados = supabaseConfigurado
 // El costo se decide acá, en el servidor. Si viniera del navegador,
 // cualquiera podría mandar un envío de $0.
 //
-// ⚠️ Tarifas provisorias hasta conectar la API del correo, que las
-// calcula por código postal y peso. Ver README → "Pedidos y pagos".
+// El precio del envío sale de la pestaña "Envios" del Sheet, por código
+// postal y por transporte. Ver _envios.js.
+//
+// Acá está solo la modalidad; qué transporte eligió la clienta
+// —Andreani, Correo Argentino, Integral Pack— se guarda aparte, en la
+// columna "transporte" del pedido, porque los transportes se agregan y
+// se sacan desde el Sheet.
+//
+// "envio" es a domicilio y se llama así desde el principio: los pedidos
+// viejos ya guardados con ese valor siguen siendo válidos.
 export const ENTREGAS = {
   retiro_santa_rosa: { etiqueta: 'Retiro en Santa Rosa, La Pampa', costo: 0, envio: false },
   retiro_cordoba:    { etiqueta: 'Retiro en Nueva Córdoba', costo: 0, envio: false },
-  envio:             { etiqueta: 'Envío a domicilio', costo: 6800, envio: true },
+  envio:             { etiqueta: 'Envío a domicilio', envio: true, modo: 'domicilio' },
+  envio_sucursal:    { etiqueta: 'Envío a sucursal', envio: true, modo: 'sucursal' },
 }
 
 export const PAGOS = {
@@ -28,10 +38,27 @@ export const PAGOS = {
 
 export const ENVIO_GRATIS_DESDE = 60000
 
-export function costoEnvio(entrega, subtotal) {
+// Devuelve qué se cobra de envío, o por qué no se puede cobrar. El
+// navegador muestra un precio, pero el que vale es este: si viniera del
+// carrito, cualquiera podría mandar un envío de $0 o elegir el precio de
+// Integral Pack y hacerse despachar por Andreani.
+export async function resolverEnvio({ entrega, transporte, subtotal, cp, piezas = 1 }) {
   const def = ENTREGAS[entrega]
-  if (!def || !def.envio) return 0
-  return subtotal >= ENVIO_GRATIS_DESDE ? 0 : def.costo
+  if (!def) return { ok: false, codigo: 'ENTREGA_INVALIDA' }
+  if (!def.envio) return { ok: true, costo: 0 }
+
+  const opciones = await cotizar(cp, { piezas, valorDeclarado: subtotal })
+  if (!opciones.length) return { ok: false, codigo: 'CP_SIN_COBERTURA' }
+
+  // Tiene que existir esa combinación de transporte y modalidad para ese
+  // código postal, no alcanza con que el transporte exista.
+  const elegida = opciones.find(o => o.entrega === entrega && o.transporte === transporte)
+  if (!elegida) return { ok: false, codigo: 'ENVIO_NO_DISPONIBLE' }
+
+  const datos = { transporte: elegida.transporte, zona: elegida.zona, dias: elegida.dias }
+  if (subtotal >= ENVIO_GRATIS_DESDE) return { ok: true, costo: 0, gratis: true, ...datos }
+
+  return { ok: true, costo: elegida.costo, ...datos }
 }
 
 // Arma los ítems del pedido con los datos del catálogo, no con los que
