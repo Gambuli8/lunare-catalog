@@ -291,7 +291,7 @@ function mailClienta({ pedido, datos, items }) {
     </table>
 
     <div style="margin-top:26px;font-size:14px;color:${GRIS};line-height:1.7">
-      Cualquier cosa, escribinos por WhatsApp y te respondemos.
+      Si tenés alguna duda, escribinos por WhatsApp.
     </div>
     <div style="padding-top:14px">${boton(`https://wa.me/${WHATSAPP_LUNARE}`, 'Escribirnos por WhatsApp')}</div>`
 
@@ -308,7 +308,7 @@ function mailClienta({ pedido, datos, items }) {
     `${esEnvio ? 'Enviamos a' : 'Retirás en'}: ${lineaEntrega(datos)}`,
     `Pago: ${etiquetaPago(datos.pago)}`,
     '',
-    `Cualquier cosa escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
+    `Si tenés alguna duda, escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
   ].join('\n')
 
   return {
@@ -432,7 +432,7 @@ export async function avisarPagoAprobado({ pedido, pago }) {
 
     const cuerpoClienta = `
       <div style="font-size:15px;color:#2b2621;line-height:1.7">
-        Nos llegaron ${esc(pago.monto_texto)}. Ya estamos preparando tu pedido y te
+        Se acreditaron ${esc(pago.monto_texto)}. Ya estamos preparando tu pedido y te
         escribimos por WhatsApp para coordinar ${esEnvio ? 'el envío' : 'el retiro'}.
       </div>
 
@@ -464,7 +464,7 @@ export async function avisarPagoAprobado({ pedido, pago }) {
           `Pago Nº: ${pago.id}`,
           `${esEnvio ? 'Enviamos a' : 'Retirás en'}: ${lineaEntrega(pedido)}`,
           '',
-          `Cualquier cosa escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
+          `Si tenés alguna duda, escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
         ].filter(Boolean).join('\n'),
       })
       salida.clienta = true
@@ -518,7 +518,7 @@ function mailDespacho({ pedido }) {
 
     <div style="margin-top:26px;font-size:14px;color:${GRIS};line-height:1.7">
       Puede tardar unas horas en aparecer en la página del transporte, recién
-      cargado a veces no figura. Si algo no cierra, escribinos con tu número de pedido.
+      cargado a veces no figura. Si necesitás consultarnos algo, escribinos con tu número de pedido.
     </div>
     <div style="padding-top:14px">${boton(`https://wa.me/${WHATSAPP_LUNARE}?text=${encodeURIComponent(`¡Hola! Te escribo por el pedido ${pedido.numero}.`)}`, 'Escribirnos por WhatsApp')}</div>`
 
@@ -532,7 +532,7 @@ function mailDespacho({ pedido }) {
     donde ? `Va a: ${donde}` : '',
     '',
     'Puede tardar unas horas en aparecer en la página del transporte.',
-    `Cualquier cosa escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
+    `Si tenés alguna duda, escribinos: https://wa.me/${WHATSAPP_LUNARE}`,
   ].filter(Boolean).join('\n')
 
   return {

@@ -125,8 +125,8 @@ function Conjunto({ product, products, enCarrito, onArmar }) {
 
       <p className='text-[12px] text-[#5f574e]'>
         {enCarrito
-          ? 'Tocá la pieza que quieras y la sumamos al carrito.'
-          : 'Tocá la pieza que quieras y sumamos las dos al carrito.'}
+          ? 'Elegí la pieza que quieras y la sumamos al carrito.'
+          : 'Elegí la pieza que quieras y sumamos las dos al carrito.'}
       </p>
     </section>
   )
