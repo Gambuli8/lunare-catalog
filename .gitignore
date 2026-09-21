@@ -8,9 +8,7 @@ dist/
 .vercel/
 
 # Dependencias
-# ⚠️ node_modules ya está trackeado en este repo desde antes. Agregarlo acá
-# no lo destrackea: para eso hay que correr `git rm -r --cached node_modules`
-# en un commit aparte.
+# Se instalan desde package-lock.json; no van al repo.
 node_modules/
 
 # Sistema

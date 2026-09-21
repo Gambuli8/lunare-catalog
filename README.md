@@ -11,45 +11,72 @@
 ```
 lunare-catalog/
 ├── index.html
-├── vite.config.js            ← incluye el middleware que sirve /api en dev
+├── vite.config.js         ← incluye el middleware que sirve /api en dev
 ├── tailwind.config.js
 ├── postcss.config.js
+├── package.json
+├── package-lock.json      ← de acá se instalan las dependencias
 ├── .env.example
-├── vercel.json               ← reescrituras: /producto/:slug y /sitemap.xml
-├── middleware.js             ← modo mantenimiento (corre antes que todo)
+├── vercel.json            ← reescrituras: /producto/:slug, /tienda, /sitemap.xml
+├── middleware.js          ← modo mantenimiento (corre antes que todo)
 ├── public/
 │   └── robots.txt
-├── api/
-│   ├── _catalog.js           ← lee el Sheet en el servidor y normaliza (no es endpoint)
-│   ├── _html.js              ← utilidades del prerender (no es endpoint)
-│   ├── products.js           ← el catálogo que consume el navegador
-│   ├── page.js               ← HTML de la ficha con meta y datos estructurados
-│   ├── shop.js               ← HTML de /tienda y /tienda/:categoria
-│   ├── pagina.js             ← HTML de /cuidados, /cambios y /contacto
-│   └── sitemap.js            ← sitemap.xml generado del catálogo
+├── api/                   ← los que empiezan con "_" no son endpoints
+│   ├── _catalog.js          ← lee el Sheet y normaliza el catálogo
+│   ├── _conjunto.js         ← precio de dije + cadena; lo que se cobra
+│   ├── _pedidos.js          ← entregas, pagos y validación de los ítems
+│   ├── _envios.js           ← tarifas por CP, de otra pestaña del Sheet
+│   ├── _andreani.js         ← cotización en vivo de Andreani
+│   ├── _micorreo.js         ← cotización en vivo de Correo Argentino
+│   ├── _mp.js               ← preferencias de Mercado Pago y firma del webhook
+│   ├── _supabase.js         ← habla con la base con la service role key
+│   ├── _aviso.js            ← mails de pedido nuevo y de despacho
+│   ├── _panel.js            ← clave y cookie de sesión del panel
+│   ├── _html.js             ← utilidades del prerender
+│   ├── products.js          ← el catálogo que consume el navegador
+│   ├── page.js              ← HTML de la ficha, con meta y datos estructurados
+│   ├── shop.js              ← HTML de /tienda y /tienda/:categoria
+│   ├── pagina.js            ← HTML de /cuidados, /cambios y /contacto
+│   ├── sitemap.js           ← sitemap.xml generado del catálogo
+│   ├── pedido.js            ← crea el pedido; precios y envío los pone el servidor
+│   ├── pedido-estado.js     ← si un pedido sigue esperando el pago
+│   ├── envio.js             ← opciones de envío de un CP, con el precio final
+│   ├── mp-webhook.js        ← donde Mercado Pago avisa que se pagó
+│   ├── panel-login.js       ← entrar y salir del panel
+│   └── panel.js             ← los datos del panel
 └── src/
     ├── main.jsx
     ├── App.jsx
     ├── index.css
+    ├── image/
+    │   └── logo.jpeg
     ├── context/
-    │   └── CartContext.jsx   ← carrito global, persistido en localStorage
+    │   └── CartContext.jsx     ← carrito global, persistido en localStorage
     ├── lib/
-    │   └── track.js          ← eventos de analítica
+    │   ├── conjunto.js         ← copia navegador de api/_conjunto.js
+    │   ├── envios.js           ← copia navegador de api/_envios.js
+    │   ├── fiscal.js           ← datos fiscales que la ley pide mostrar
+    │   ├── pagoPendiente.js    ← recuerda el pedido de quien volvió sin pagar
+    │   └── track.js            ← eventos de analítica
     ├── hooks/
-    │   ├── useProducts.js    ← store compartido; pide /api/products
-    │   └── useRoute.js       ← router sobre la History API
+    │   ├── useProducts.js      ← store compartido; pide /api/products
+    │   └── useRoute.js         ← router sobre la History API
     └── components/
         ├── Navbar.jsx
         ├── Hero.jsx
         ├── Categories.jsx
         ├── Trust.jsx
-        ├── Icon.jsx
+        ├── Icon.jsx            ← íconos de trazo, en una sola familia
         ├── FeaturedProducts.jsx
-        ├── Catalog.jsx
+        ├── Catalog.jsx         ← la tienda, con buscador y filtros
         ├── ProductCard.jsx
-        ├── ProductPage.jsx
+        ├── ProductPage.jsx     ← la ficha: galería, conjuntos y barra de compra
         ├── CloudinaryImage.jsx
-        ├── CartSidebar.jsx
+        ├── CartSidebar.jsx     ← el carrito y el checkout en tres pasos
+        ├── Copiable.jsx        ← copiar un código de un toque
+        ├── Pago.jsx            ← la vuelta de Mercado Pago
+        ├── PagoPendiente.jsx   ← aviso a quien volvió sin pagar
+        ├── Panel.jsx           ← el panel de pedidos
         ├── Contact.jsx
         ├── Cuidados.jsx
         ├── Politicas.jsx
