@@ -205,6 +205,7 @@ function rowToProduct(row) {
   if (!price) return null
 
   const promo = toNumber(row['Precio promo'] || row['precio promo'] || row['Promo'])
+  const conjunto = toNumber(row['Precio conjunto'] || row['precio conjunto'] || row['Precio Conjunto'])
   const rawCategory = (row['Categoría'] || row['Categoria'] || '').trim()
   const category = normalizeCategory(rawCategory)
   const destacado = (row['Destacado'] || row['destacado'] || '').trim().toLowerCase()
@@ -225,6 +226,9 @@ function rowToProduct(row) {
     material: normalizeMaterial(row['Material']),
     price,
     pricePromo: promo && promo < price ? promo : null,
+    // Precio de esta pieza cuando va en conjunto con un dije. Que la celda
+    // tenga número es lo que la ofrece como cadena para armar conjunto.
+    priceCombo: conjunto && conjunto < price ? conjunto : null,
     priceNote: pricePar ? 'par' : 'und',
     stock,
     image: fotos[0] || '',
