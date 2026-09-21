@@ -110,12 +110,16 @@ Destacado | Precio promo
 ```
 
 - **Stock ≤ 0** → el producto no aparece.
-- **`Imagen 2` en adelante** son opcionales: si están, la ficha muestra una
-  galería con miniaturas y la tarjeta del catálogo cambia a la segunda foto al
-  pasar el mouse. El orden lo dan los números de las columnas, no el orden en
-  que estén en la planilla. Se aceptan `Imagen 2`, `imagen2`, `Foto 2` o
-  `Image 2`: los encabezados se leen sin acentos ni mayúsculas. Una foto
-  repetida se ignora.
+- **Las fotos de más son opcionales.** Si están, la ficha muestra una galería
+  con miniaturas y la tarjeta del catálogo cambia a la segunda foto al pasar el
+  mouse. Se reconocen de dos formas, y las dos valen:
+  - **Numeradas**: `Imagen 2`, `Imagen 3`, `imagen2`, `Foto 2`, `Image 2`.
+  - **Con nombre**, como las llama la guía de fotos: `Imagen Puesto`,
+    `Imagen Medida`, `Imagen Detalle`.
+
+  El orden es: la principal, después las numeradas por su número, y al final las
+  que tienen nombre en el orden en que estén las columnas en la planilla. Los
+  encabezados se leen sin acentos ni mayúsculas, y una foto repetida se ignora.
 - **Sin `Id`** → el producto no aparece (el código va en el mensaje de WhatsApp
   y es lo que identifica cada ítem del carrito).
 - **`Precio promo`** solo se usa si es menor al precio normal.

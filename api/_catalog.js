@@ -112,25 +112,38 @@ function correctName(raw = '') {
 }
 
 // ── Fotos ─────────────────────────────────────────────────────
-// La pieza puede tener varias: "Imagen" es la principal y después van
-// "Imagen 2", "Imagen 3"... Se aceptan con o sin espacio, en mayúscula o
-// minúscula, y también en inglés, porque la planilla la edita una
-// persona y nadie se acuerda del formato exacto.
+// La pieza puede tener varias. "Imagen" es la principal, y las demás se
+// reconocen por el nombre de la columna:
 //
-// El orden lo dan los números de las columnas, no el orden en que vengan.
-const NUMERO_DE_FOTO = /^(imagen|image|foto)\s*(\d*)$/
+//   Imagen 2, Imagen 3...              numeradas
+//   Imagen Puesto, Imagen Detalle...   con nombre, como las llama la guía
+//
+// Las dos formas valen, porque la planilla la edita una persona: se leen
+// sin acentos ni mayúsculas, con o sin espacio, y también en inglés.
+//
+// El orden: primero la principal, después las numeradas por su número, y
+// al final las que tienen nombre, en el orden en que estén las columnas
+// en la planilla.
+const COLUMNA_DE_FOTO = /^(imagen|image|foto)\s*(\d*)\s*([a-z]*)$/
 
 function fotosDeLaFila(row) {
   const encontradas = []
+  let posicion = 0
 
   for (const [columna, valor] of Object.entries(row)) {
+    posicion += 1
     const limpio = String(valor || '').trim()
     if (!limpio) continue
 
-    const m = stripAccents(String(columna).trim().toLowerCase()).match(NUMERO_DE_FOTO)
+    const m = stripAccents(String(columna).trim().toLowerCase()).match(COLUMNA_DE_FOTO)
     if (!m) continue
 
-    encontradas.push({ orden: Number(m[2] || 1), url: limpio })
+    const [, , numero, nombre] = m
+    // Sin número ni nombre es la principal; con número manda el número;
+    // con nombre van al final, respetando el orden de las columnas.
+    const orden = nombre ? 1000 + posicion : Number(numero || 0)
+
+    encontradas.push({ orden, url: limpio })
   }
 
   encontradas.sort((a, b) => a.orden - b.orden)
