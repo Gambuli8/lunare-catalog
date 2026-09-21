@@ -5,6 +5,7 @@ import CloudinaryImage from './CloudinaryImage'
 import ProductCard from './ProductCard'
 import { trackProductView } from '../lib/track'
 import Copiable from './Copiable'
+import { esDije, esCadenaDeConjunto, precioBase } from '../lib/conjunto'
 
 // El servidor inyecta la pieza en el HTML (ver api/page.js) para que la
 // ficha se pinte de una sin esperar al fetch del catálogo.
@@ -52,6 +53,82 @@ function Accordion({ sections }) {
         </div>
       ))}
     </div>
+  )
+}
+
+// ── Armá tu conjunto ──────────────────────────────────────────
+// La clienta se lleva un dije y la cadena le sale más barata. Se ofrece
+// en las dos direcciones: desde el dije mostramos las cadenas, y desde la
+// cadena, los dijes que le bajan el precio.
+//
+// Qué cadena entra lo decide la planilla, con la columna "Precio
+// conjunto". Mientras no haya ninguna cargada, el bloque no aparece.
+function Conjunto({ product, products, enCarrito, onArmar }) {
+  const desdeDije = esDije(product)
+  if (!desdeDije && !esCadenaDeConjunto(product)) return null
+
+  const opciones = (desdeDije ? products.filter(esCadenaDeConjunto) : products.filter(esDije))
+    .filter(p => p.id !== product.id)
+    .slice(0, 8)
+
+  if (!opciones.length) return null
+
+  return (
+    <section
+      aria-labelledby='conjunto-titulo'
+      className='flex flex-col gap-3 p-5 bg-white border border-[#c8b58a]'
+    >
+      <div className='flex flex-col gap-1'>
+        <h2 id='conjunto-titulo' className='text-xs tracking-[0.16em] uppercase text-[#8f7647] font-medium'>
+          Armá tu conjunto
+        </h2>
+        <p className='text-[13px] leading-relaxed text-[#5f574e]'>
+          {desdeDije ? (
+            'Sumale una cadena y te la llevás a precio de conjunto.'
+          ) : (
+            <>
+              Con cualquier dije, esta cadena te sale{' '}
+              <b className='font-medium text-[#0e0d0c]'>{formatPrice(product.priceCombo)}</b>
+              {' '}en vez de {formatPrice(precioBase(product))}.
+            </>
+          )}
+        </p>
+      </div>
+
+      <div className='flex gap-3 pb-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+        {opciones.map(o => (
+          <button
+            key={o.id}
+            type='button'
+            onClick={() => onArmar(o)}
+            aria-label={`Armar el conjunto con ${o.name}`}
+            className='flex-shrink-0 w-[104px] text-left group'
+          >
+            <CloudinaryImage
+              src={o.image}
+              alt=''
+              className='w-[104px] h-[104px] object-cover bg-[#f0ece6] border border-[#e8e2da] group-hover:border-[#8f7647] transition-colors'
+              fallback={<span className='block w-[104px] h-[104px] bg-[#f0ece6]' />}
+            />
+            <span className='block mt-1.5 text-[12px] leading-tight line-clamp-2'>{o.name}</span>
+            {desdeDije ? (
+              <span className='flex flex-wrap items-baseline gap-1.5 text-[12px]'>
+                <b className='font-medium text-[#0f7a41]'>{formatPrice(o.priceCombo)}</b>
+                <span className='line-through text-[#8f877e]'>{formatPrice(precioBase(o))}</span>
+              </span>
+            ) : (
+              <span className='block text-[12px] text-[#5f574e]'>{formatPrice(precioBase(o))}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <p className='text-[12px] text-[#5f574e]'>
+        {enCarrito
+          ? 'Tocá la pieza que quieras y la sumamos al carrito.'
+          : 'Tocá la pieza que quieras y sumamos las dos al carrito.'}
+      </p>
+    </section>
   )
 }
 
@@ -136,6 +213,14 @@ export default function ProductPage({ slug }) {
 
   const handleAdd = () => {
     for (let i = 0; i < qty; i++) addItem({ ...product, price: effective })
+  }
+
+  // Armar el conjunto es llevarse las dos piezas: si la que está mirando
+  // todavía no está en el carrito, el precio de conjunto no se aplicaría
+  // y el bloque habría prometido un descuento que no aparece.
+  const armarConjunto = otra => {
+    if (!inCart) addItem({ ...product, price: effective })
+    addItem({ ...otra, price: otra.pricePromo ?? otra.price })
   }
 
 
@@ -247,9 +332,11 @@ export default function ProductPage({ slug }) {
 
           <div className='flex items-center gap-2.5 text-sm'>
             <span className='w-2 h-2 rounded-full bg-[#0f7a41]' />
-            {product.stock <= 5
-              ? `Últimas ${product.stock} ${product.stock === 1 ? 'unidad disponible' : 'unidades disponibles'}`
-              : 'Disponible para retirar'}
+            {product.stock > 5
+              ? 'Disponible para retirar'
+              : product.stock === 1
+                ? 'Última unidad disponible'
+                : `Últimas ${product.stock} unidades disponibles`}
           </div>
 
           <div className='flex flex-wrap items-stretch gap-3'>
@@ -280,6 +367,13 @@ export default function ProductPage({ slug }) {
               {inCart ? 'Agregar otra vez' : 'Agregar al pedido'}
             </button>
           </div>
+
+          <Conjunto
+            product={product}
+            products={products}
+            enCarrito={Boolean(inCart)}
+            onArmar={armarConjunto}
+          />
 
           <div className='flex flex-wrap gap-6 p-5 bg-white border border-[#e8e2da]'>
             <div className='flex items-start gap-3'>
