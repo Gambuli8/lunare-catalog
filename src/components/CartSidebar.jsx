@@ -706,8 +706,8 @@ export default function CartSidebar() {
                 // un bloque verde, que competía con el checkout de verdad.
                 <>
                   <p className='text-[12.5px] leading-relaxed text-muted'>
-                    El pedido online no está disponible en este momento. Mandanos
-                    tu pedido por WhatsApp y lo cerramos ahí.
+                    Cerramos el pedido por WhatsApp: te respondemos al toque y
+                    coordinamos el pago y la entrega. Va con tus piezas ya escritas.
                   </p>
                   <a
                     href={linkWhatsApp}
