@@ -19,16 +19,16 @@ const WHATSAPP = '542954476558'
 const ESTADOS = {
   exito: {
     icono: 'check',
-    titulo: 'Listo, el pago salió bien',
+    titulo: 'Listo, tu pago se confirmó',
     texto: 'Estamos preparando tu pedido. Te escribimos por WhatsApp para coordinar la entrega.',
     // Quien retira no espera un envío: espera que lo llamen.
-    textoRetiro: 'Ya está todo pago. Te escribimos por WhatsApp dentro de las 24 horas para coordinar el día y el punto de retiro.',
+    textoRetiro: 'Tu pedido ya está pagado. Te escribimos por WhatsApp dentro de las 24 horas para coordinar el día y el punto de retiro.',
     tono: 'text-gold',
   },
   pendiente: {
     icono: 'reloj',
     titulo: 'El pago quedó en camino',
-    texto: 'Mercado Pago todavía lo está procesando. Puede tardar un rato, sobre todo si pagaste con efectivo o transferencia. Te avisamos apenas se acredite.',
+    texto: 'Mercado Pago todavía lo está procesando. Puede demorar unos minutos, sobre todo si pagaste con efectivo o transferencia. Te avisamos apenas se acredite.',
     textoRetiro: 'Mercado Pago todavía lo está procesando. Apenas se acredite te escribimos por WhatsApp, dentro de las 24 horas, para coordinar el retiro.',
     tono: 'text-gold',
   },
@@ -123,8 +123,8 @@ export default function Pago({ route }) {
         </div>
 
         <p className='mt-10 text-[12.5px] leading-relaxed text-soft'>
-          Guardá el número del pedido. Si algo no cierra, escribinos con ese número
-          y lo miramos.
+          Guardá el número del pedido. Si necesitás consultarnos algo, escribinos con
+          ese número y lo revisamos.
         </p>
       </div>
     </section>
