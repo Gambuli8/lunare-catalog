@@ -363,7 +363,7 @@ export default function CartSidebar() {
               Cuando termines de pagar, volvés a la tienda.
             </p>
             <a href={redirigiendo.url} className='min-h-[44px] inline-flex items-center text-[13px] text-muted underline underline-offset-4 hover:text-dark'>
-              Si no se abre, tocá acá
+              Si no se abre solo, abrilo desde acá
             </a>
           </div>
         ) : confirmado ? (
