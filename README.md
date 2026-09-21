@@ -106,7 +106,7 @@ publicar siguen siendo accesibles con la URL vieja.
 ```
 Id | Nombre | Categoría | Material | Precio costo | Precio individual |
 Precio Par | Stock | Imagen | Imagen 2 | Imagen 3 | Imagen 4 |
-Destacado | Precio promo
+Destacado | Precio promo | Precio conjunto
 ```
 
 - **Stock ≤ 0** → el producto no aparece.
@@ -123,10 +123,43 @@ Destacado | Precio promo
 - **Sin `Id`** → el producto no aparece (el código va en el mensaje de WhatsApp
   y es lo que identifica cada ítem del carrito).
 - **`Precio promo`** solo se usa si es menor al precio normal.
+- **`Precio conjunto`** es lo que sale **esa cadena** cuando se la lleva junto a
+  un dije. Solo se carga en las cadenas, y solo vale si es menor al precio
+  normal. Ver [Conjuntos](#conjuntos-dije--cadena).
 - **`Destacado`** acepta `si`, `sí`, `yes`, `1` o `true`.
 
 El endpoint cachea la respuesta 60 s en el CDN de Vercel y revalida por atrás,
 así que una visita nunca espera a Google Sheets.
+
+## Conjuntos: dije + cadena
+
+La clienta se lleva un dije y la cadena le sale más barata. Se ofrece en las dos
+direcciones: en la ficha de un dije aparecen las cadenas, y en la de una cadena,
+los dijes que le bajan el precio.
+
+**Qué pieza es qué lo decide la planilla, no el código:**
+
+- **Dije** → la categoría es `Dije`.
+- **Cadena de conjunto** → tiene `Precio conjunto` cargado.
+
+Que esa celda tenga un número es lo único que convierte a una pieza en cadena de
+conjunto. Así son cuatro celdas y no las veintiocho combinaciones de siete dijes
+por cuatro cadenas, y la dueña lo maneja desde el Sheet sin pedir cambios de
+código. Mientras no haya ninguna cargada, el bloque no aparece en ningún lado.
+
+**La regla: una cadena en promo por cada dije.** Dos dijes y dos cadenas, las dos
+en promo; dos cadenas y un solo dije, una sola —la de menor cantidad, así entran
+más líneas—. Una línea entra entera o no entra: con un dije y dos unidades de la
+*misma* cadena, esa línea no entra en promo. Partirla obligaría a mandar el mismo
+producto dos veces en el pedido y el control de stock los contaría por separado,
+que es como se vende algo que no está.
+
+**Dónde vive:** en `api/_conjunto.js`, y repetida en `src/lib/conjunto.js` para
+que el carrito muestre los precios mientras la clienta arma el pedido. Son
+treinta líneas; compartirlas entre el servidor y el navegador costaría más que
+repetirlas. **Lo que se cobra lo decide siempre la del servidor**, en
+`validarItems`: si las dos se separaran, el peor caso es que el navegador muestre
+un precio que el servidor después corrige.
 
 ## Direcciones y SEO
 
