@@ -741,7 +741,7 @@ export default function CartSidebar() {
                 // un bloque verde, que competía con el checkout de verdad.
                 <>
                   <p className='text-[12.5px] leading-relaxed text-muted'>
-                    Cerramos el pedido por WhatsApp: te respondemos al toque y
+                    Cerramos el pedido por WhatsApp: te respondemos enseguida y
                     coordinamos el pago y la entrega. Va con tus piezas ya escritas.
                   </p>
                   <a
