@@ -61,8 +61,17 @@ export default function Copiable({ valor, etiqueta = 'código', className = '', 
     reloj.current = setTimeout(() => setEstado(''), 2500)
   }
 
+  // El aviso va fuera del flujo, no debajo del botón.
+  //
+  // Antes era una fila más de la columna, así que el componente medía 60 px
+  // —los 44 del área táctil más el aviso— y el texto quedaba 8 px por
+  // encima del centro: al lado del material, en la ficha, el código
+  // aparecía levantado respecto de "PLATA".
+  //
+  // Sacándolo del flujo, el alto lo da el botón y el texto queda centrado
+  // como cualquier otro hermano de la fila.
   return (
-    <span className='inline-flex flex-col items-center gap-0.5'>
+    <span className='relative inline-flex'>
       <button
         type='button'
         onClick={copiar}
@@ -78,11 +87,17 @@ export default function Copiable({ valor, etiqueta = 'código', className = '', 
         />
       </button>
 
-      {/* Lo lee el lector de pantalla y lo ve quien mira: sin esto, el
-          único aviso de que se copió sería un cambio de ícono. */}
-      <span aria-live='polite' className='text-[11px] tracking-[0.08em] uppercase h-3.5'>
-        {estado === 'copiado' && <span className='text-wa'>Copiado</span>}
-        {estado === 'error' && <span className='text-muted'>Copialo a mano</span>}
+      {/* El aviso solo se escucha; lo que se ve es el ícono, que pasa de
+          las dos hojas al tilde.
+          Antes también se leía, en una línea debajo del botón, y esa línea
+          era el problema: ocupaba lugar siempre, descentraba el código y,
+          al sacarla del flujo, se le montaba al título del producto. No hay
+          un lugar libre que sirva en los dos usos —el código de la ficha y
+          el número de pedido del carrito—, y el cambio de ícono ya avisa
+          sin depender del color. */}
+      <span aria-live='polite' className='sr-only'>
+        {estado === 'copiado' && 'Copiado'}
+        {estado === 'error' && 'No se pudo copiar, copialo a mano'}
       </span>
     </span>
   )
