@@ -79,9 +79,12 @@ export default async function handler(req, res) {
 
   const desc = category
     ? `${products.length} ${label.toLowerCase()} de ${materiales} con stock. ` +
-      `Retiro sin cargo en Santa Rosa (La Pampa) y Nueva Córdoba. Lunare Accesorios.`
-    : `Argollas, collares, pulseras y dijes de plata de ley 925, plata dorada y acero blanco. ` +
-      `${all.length} piezas con stock. Retiro en Santa Rosa (La Pampa) y Nueva Córdoba.`
+      `Retiro sin cargo en Santa Rosa (La Pampa) y Nueva Córdoba (Córdoba).`
+    // Sin repetir el conteo de piezas, que ya está en el título: así la
+    // descripción entra entera en el resultado de Google y no se come el
+    // lugar del retiro, que es lo que la clienta necesita saber.
+    : `Argollas, collares, pulseras y dijes de plata 925, plata dorada y acero blanco. ` +
+      `Retiro en Santa Rosa (La Pampa) y Nueva Córdoba (Córdoba).`
 
   // La foto de la primera pieza representa la categoría al compartir.
   const cover = products.find(p => p.image)
