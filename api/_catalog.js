@@ -282,7 +282,7 @@ export const formatPrice = n => '$' + Number(n).toLocaleString('es-AR')
 // el cliente; para compartir hace falta un JPG de 1200x630.
 export function ogImage(url) {
   if (!url || !url.includes('/upload/')) return `${SITE_URL}/og-default.jpg`
-  return url.replace('/upload/', '/upload/f_jpg,q_auto:good,w_1200,h_630,c_fill,g_auto/')
+  return url.replace('/upload/', '/upload/f_jpg,q_auto:good,w_1200,h_630,c_fill,g_center/')
 }
 
 export function productImage(url, w = 900) {

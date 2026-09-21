@@ -63,7 +63,7 @@ function waLink(telefono) {
 
 const miniatura = url =>
   url && url.includes('/upload/')
-    ? url.replace('/upload/', '/upload/f_auto,q_auto,w_120,h_120,c_fill,g_auto/')
+    ? url.replace('/upload/', '/upload/f_auto,q_auto,w_120,h_120,c_fill,g_center/')
     : url
 
 function Etiqueta({ estado, mapa = ESTADOS }) {
