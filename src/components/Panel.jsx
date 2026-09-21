@@ -30,7 +30,7 @@ const ESTADOS_ARR = {
 
 const ENTREGAS = {
   retiro_santa_rosa: 'Retira en Santa Rosa',
-  retiro_cordoba: 'Retira en Nueva Córdoba',
+  retiro_cordoba: 'Retira en Nueva Córdoba (Córdoba)',
   envio: 'Envío a domicilio',
   envio_sucursal: 'Envío a sucursal',
 }

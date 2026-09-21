@@ -35,8 +35,8 @@ export const pedidosConfigurados = () => supabaseConfigurado() && checkoutOnline
 // "envio" es a domicilio y se llama así desde el principio: los pedidos
 // viejos ya guardados con ese valor siguen siendo válidos.
 export const ENTREGAS = {
-  retiro_santa_rosa: { etiqueta: 'Retiro en Santa Rosa, La Pampa', costo: 0, envio: false },
-  retiro_cordoba:    { etiqueta: 'Retiro en Nueva Córdoba', costo: 0, envio: false },
+  retiro_santa_rosa: { etiqueta: 'Retiro en Santa Rosa (La Pampa)', costo: 0, envio: false },
+  retiro_cordoba:    { etiqueta: 'Retiro en Nueva Córdoba (Córdoba)', costo: 0, envio: false },
   envio:             { etiqueta: 'Envío a domicilio', envio: true, modo: 'domicilio' },
   envio_sucursal:    { etiqueta: 'Envío a sucursal', envio: true, modo: 'sucursal' },
 }

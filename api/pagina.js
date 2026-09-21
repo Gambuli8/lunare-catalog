@@ -28,7 +28,7 @@ const PAGINAS = {
     ruta: '/contacto',
     title: 'Contacto y preguntas frecuentes | Lunare Accesorios',
     desc: 'Escribinos por WhatsApp al +54 2954 476558 o seguinos en Instagram ' +
-      '@lunare.acc. Retiro coordinado en Santa Rosa (La Pampa) y Nueva Córdoba.',
+      '@lunare.acc. Retiro en Santa Rosa (La Pampa) y Nueva Córdoba (Córdoba).',
   },
 }
 
@@ -36,7 +36,7 @@ const PAGINAS = {
 // las preguntas desplegables en los resultados.
 const FAQ = [
   ['¿Hacen envíos a todo el país?',
-   'Por el momento no. Podés retirar tu pedido coordinando previamente en Santa Rosa (La Pampa) o en Nueva Córdoba.'],
+   'Por el momento no. Podés retirar tu pedido coordinando previamente en Santa Rosa (La Pampa) o en Nueva Córdoba (Córdoba).'],
   ['¿Los accesorios se oxidan?',
    'Están hechos con materiales de buena calidad, pero conviene evitar el contacto con agua, perfumes o cremas para prolongar su duración.'],
   ['¿Puedo cambiar una pieza si no me queda bien?',

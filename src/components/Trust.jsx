@@ -9,7 +9,7 @@ const PUNTOS = [
   {
     icono: 'pin',
     titulo: 'Retiro coordinado',
-    texto: 'Santa Rosa (La Pampa) y Nueva Córdoba. Coordinamos día y punto de encuentro por WhatsApp.',
+    texto: 'Santa Rosa (La Pampa) y Nueva Córdoba (Córdoba). Coordinamos día y punto de encuentro por WhatsApp.',
   },
   {
     icono: 'cambio',

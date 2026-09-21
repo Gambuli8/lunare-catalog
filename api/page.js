@@ -15,7 +15,7 @@ import { esc, loadShell, inject, notFound } from './_html.js'
 const MATERIAL_COPY = {
   'Plata': 'Plata de ley 925, con 92,5 % de plata pura.',
   'Plata Dorada': 'Plata de ley 925 con baño de oro.',
-  'Acero Blanco': 'Acero quirúrgico con baño blanco, resistente e hipoalergénico.',
+  'Acero Blanco': 'Acero quirúrgico 316L con baño plateado, hipoalergénico y resistente al uso diario.',
   'Bijou': 'Accesorio de bijouterie de alta calidad.',
 }
 

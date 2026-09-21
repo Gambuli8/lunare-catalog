@@ -26,7 +26,7 @@ export default function Navbar() {
       {/* Announcement bar */}
       <div className='flex items-center justify-center gap-2.5 h-11 bg-dark text-[#eae4dc] text-xs tracking-wide'>
         <Icon name='pin' size={14} strokeWidth={1.6} className='flex-shrink-0 text-gold-lt' />
-        <span>Retiro coordinado en Santa Rosa, La Pampa y Nueva Córdoba</span>
+        <span>Retiro en Santa Rosa (La Pampa) y Nueva Córdoba (Córdoba)</span>
       </div>
 
       <header className={`sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-[72px] bg-cream/90 backdrop-blur-md border-b border-border transition-shadow duration-300 ${scrolled ? 'shadow-md' : ''}`}>

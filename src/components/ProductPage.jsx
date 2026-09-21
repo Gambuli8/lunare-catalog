@@ -14,7 +14,7 @@ const injected = typeof window !== 'undefined' ? window.__PRODUCT__ : null
 const MATERIAL_COPY = {
   'Plata': 'Plata de ley 925 — 92,5 % de plata pura y 7,5 % de otros metales, generalmente cobre.',
   'Plata Dorada': 'Plata de ley 925 con baño de oro.',
-  'Acero Blanco': 'Acero quirúrgico con baño blanco. Resistente e hipoalergénico, ideal para uso diario.',
+  'Acero Blanco': 'Acero quirúrgico 316L con baño plateado. Hipoalergénico, resistente al agua, sudor y uso diario. No se mancha ni se pone negro fácilmente.',
   'Bijou': 'Accesorio de bijouterie de alta calidad.',
 }
 
@@ -382,7 +382,7 @@ export default function ProductPage({ slug }) {
               </svg>
               <div>
                 <span className='block text-[13px] font-medium'>Retiro coordinado</span>
-                <span className='text-[13px] text-[#5f574e]'>Santa Rosa (LP) y Nueva Córdoba</span>
+                <span className='text-[13px] text-[#5f574e]'>Santa Rosa (LP) y Nueva Córdoba (Cba.)</span>
               </div>
             </div>
             <div className='flex items-start gap-3'>

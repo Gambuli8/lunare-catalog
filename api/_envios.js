@@ -49,7 +49,7 @@ export const ZONAS_POR_DEFECTO = [
     transporte: 'A coordinar',
     zona: 'Todo el país',
     desde: 1000, hasta: 9999,
-    domicilio: 6800, sucursal: null,
+    domicilio: 10000, sucursal: 10000,
     dias: '',
   },
 ]

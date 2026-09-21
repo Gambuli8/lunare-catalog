@@ -182,7 +182,7 @@ function envoltorio({ titulo, encabezado, cuerpo }) {
     ${cuerpo}
   </td></tr>
   <tr><td style="padding:16px 28px 24px;border-top:1px solid #ece7e0;font-size:12px;color:${GRIS};line-height:1.6">
-    Lunare Accesorios · Santa Rosa, La Pampa y Nueva Córdoba<br>
+    Lunare Accesorios · Santa Rosa (La Pampa) y Nueva Córdoba (Córdoba)<br>
     <a href="${SITE_URL}" style="color:${ORO};text-decoration:none">lunareacc.com</a>
   </td></tr>
 </table>
