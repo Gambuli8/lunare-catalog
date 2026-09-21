@@ -7,7 +7,17 @@
 import { rpc, supabaseConfigurado } from './_supabase.js'
 import { cotizar } from './_envios.js'
 
-export const pedidosConfigurados = supabaseConfigurado
+// El pedido online se puede apagar sin tocar ninguna clave:
+//
+//   CHECKOUT_ONLINE=0  -> el carrito termina en WhatsApp, como antes
+//   sin definir, o 1   -> checkout completo con Mercado Pago
+//
+// Sirve para abrir la tienda mientras se termina de probar el cobro:
+// la clienta compra igual, por WhatsApp, y no hay que sacar las claves
+// de Supabase --que además romperían el panel y los avisos--.
+const checkoutOnline = () => process.env.CHECKOUT_ONLINE !== '0'
+
+export const pedidosConfigurados = () => supabaseConfigurado() && checkoutOnline()
 
 // ── Entregas ──────────────────────────────────────────────────
 // El costo se decide acá, en el servidor. Si viniera del navegador,

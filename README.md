@@ -427,6 +427,26 @@ para que las solicitudes ya recibidas se sigan viendo.
 Para reponerlo alcanza con revertir el commit "Sacar el botón de arrepentimiento
 del sitio público".
 
+## Abrir la tienda en modo WhatsApp
+
+El pedido online se puede apagar sin tocar ninguna clave:
+
+```
+CHECKOUT_ONLINE=0    # el carrito termina en WhatsApp
+CHECKOUT_ONLINE=1    # o sin definir: checkout completo con Mercado Pago
+```
+
+Sirve para abrir la tienda mientras se termina de probar el cobro: la clienta
+compra igual, por WhatsApp, con sus piezas ya escritas en el mensaje. La
+alternativa --sacar las claves de Supabase-- rompería además el panel y los
+avisos por mail, que no tienen nada que ver.
+
+Con el interruptor apagado, el carrito no muestra los tres pasos: muestra el
+botón de WhatsApp y el mensaje armado. `/api/pedido` también rechaza pedidos,
+así que nadie puede colarse por atrás.
+
+Para prender el cobro online: `CHECKOUT_ONLINE=1` y un deploy.
+
 ## Envíos por zona
 
 El precio del envío sale del código postal. La clienta escribe el suyo y ve
