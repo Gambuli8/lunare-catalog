@@ -6,6 +6,7 @@
 
 import { rpc, supabaseConfigurado } from './_supabase.js'
 import { cotizar } from './_envios.js'
+import { aplicarConjunto } from './_conjunto.js'
 
 // El pedido online se puede apagar sin tocar ninguna clave:
 //
@@ -78,6 +79,7 @@ export async function resolverEnvio({ entrega, transporte, subtotal, cp, piezas 
 export function validarItems(carrito, catalogo) {
   const errores = []
   const items = []
+  const lineas = []
 
   if (!Array.isArray(carrito) || carrito.length === 0) {
     return { errores: [{ codigo: 'PEDIDO_VACIO' }], items: [] }
@@ -98,16 +100,24 @@ export function validarItems(carrito, catalogo) {
     const p = catalogo.find(x => x.id === id)
     if (!p) { errores.push({ codigo: 'SIN_STOCK', producto_id: id }); continue }
 
+    lineas.push({ producto: p, cantidad })
+  }
+
+  // El precio de conjunto se decide acá, mirando el pedido entero: si hay
+  // un dije, la cadena baja de precio. El navegador muestra lo mismo,
+  // pero el que cobra es este.
+  for (const l of aplicarConjunto(lineas)) {
     items.push({
-      producto_id: p.id,
-      slug: p.slug,
-      nombre: p.name,
-      subcategoria: p.subcategory,
-      material: p.material,
-      imagen: p.image,
-      precio_unitario: p.pricePromo ?? p.price,
-      cantidad,
-      stock_actual: p.stock,
+      producto_id: l.producto.id,
+      slug: l.producto.slug,
+      nombre: l.producto.name,
+      subcategoria: l.producto.subcategory,
+      material: l.producto.material,
+      imagen: l.producto.image,
+      precio_unitario: l.precio,
+      cantidad: l.cantidad,
+      stock_actual: l.producto.stock,
+      en_conjunto: l.enConjunto,
     })
   }
 

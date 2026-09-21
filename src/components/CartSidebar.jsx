@@ -81,7 +81,7 @@ function Campo({ label, hint, ...props }) {
 }
 
 export default function CartSidebar() {
-  const { items, removeItem, changeQty, total, isOpen, setIsOpen, clear } = useCart()
+  const { items, removeItem, changeQty, total, ahorroConjunto, isOpen, setIsOpen, clear } = useCart()
   const { checkout } = useProducts()
 
   const [paso, setPaso] = useState(1)
@@ -183,7 +183,10 @@ export default function CartSidebar() {
 
   const textoWhatsApp = () => {
     let m = `¡Hola! Soy ${datos.nombre.trim() || '[tu nombre]'} y quiero hacer este pedido:\n\n`
-    items.forEach(i => { m += `• [${i.id}] ${i.name} — ${i.qty} x ${formatPrice(i.price)}\n` })
+    items.forEach(i => {
+      m += `• [${i.id}] ${i.name} — ${i.qty} x ${formatPrice(i.precio)}`
+      m += i.enConjunto ? ' (precio de conjunto)\n' : '\n'
+    })
     m += `\nSubtotal: ${formatPrice(total)}`
     if (entregaDef) {
       const como = transporte ? `${entregaDef.etiqueta} — ${transporte}` : entregaDef.etiqueta
@@ -470,7 +473,16 @@ export default function CartSidebar() {
                       </div>
                       <span className='text-[12px] text-muted'>{item.material} · {item.subcategory}</span>
                       <div className='flex flex-col items-start gap-2.5 mt-2 sm:flex-row sm:items-center sm:justify-between'>
-                        <span className='text-[15px] font-medium'>{formatPrice(item.price * item.qty)}</span>
+                        <span className='flex flex-wrap items-baseline gap-2'>
+                          <span className={`text-[15px] font-medium ${item.enConjunto ? 'text-wa' : ''}`}>
+                            {formatPrice(item.precio * item.qty)}
+                          </span>
+                          {item.enConjunto && (
+                            <span className='text-[13px] line-through text-soft'>
+                              {formatPrice(item.precioLista * item.qty)}
+                            </span>
+                          )}
+                        </span>
                         <div className='flex items-stretch border border-border bg-paper sm:h-9'>
                           <button
                             onClick={() => changeQty(item.id, -1)}
@@ -490,6 +502,9 @@ export default function CartSidebar() {
                           </button>
                         </div>
                       </div>
+                      {item.enConjunto && (
+                        <span className='text-[11px] text-wa mt-0.5'>Precio de conjunto, por llevarla con el dije</span>
+                      )}
                       {tope && <span className='text-[11px] text-gold mt-0.5'>Es el último que queda</span>}
                     </div>
                   </div>
@@ -587,8 +602,9 @@ export default function CartSidebar() {
                       <div key={i.id} className='flex items-baseline justify-between gap-3 text-[13px]'>
                         <span className='min-w-0 text-dark'>
                           <span className='text-muted'>{i.qty}×</span> {i.name}
+                          {i.enConjunto && <span className='text-wa'> · conjunto</span>}
                         </span>
-                        <span className='whitespace-nowrap text-dark'>{formatPrice(i.price * i.qty)}</span>
+                        <span className='whitespace-nowrap text-dark'>{formatPrice(i.precio * i.qty)}</span>
                       </div>
                     ))}
 
@@ -596,6 +612,11 @@ export default function CartSidebar() {
                       <span>Subtotal</span>
                       <span>{formatPrice(total)}</span>
                     </div>
+
+                    {/* Debajo del total y sin signo menos: puesto entre el
+                        subtotal y el total se leía como un descuento que
+                        todavía faltaba aplicar, y ya está aplicado. */}
+
 
                     <div className='flex items-baseline justify-between gap-3 text-[13px] text-muted'>
                       <span className='min-w-0'>
@@ -618,6 +639,12 @@ export default function CartSidebar() {
                       <span className='text-[13px] text-dark'>Total</span>
                       <span className='font-serif text-[22px] text-dark'>{formatPrice(totalFinal)}</span>
                     </div>
+
+                    {ahorroConjunto > 0 && (
+                      <p className='text-[12px] text-wa'>
+                        Ya está aplicado el conjunto: te ahorrás {formatPrice(ahorroConjunto)}.
+                      </p>
+                    )}
                   </div>
 
                   <Campo
@@ -678,6 +705,14 @@ export default function CartSidebar() {
                 <span className='font-serif text-[24px] font-light'>Total</span>
                 <span className='font-serif text-[30px] font-medium'>{formatPrice(paso > 1 ? totalFinal : total)}</span>
               </div>
+
+              {/* Debajo del total: arriba parecía un descuento pendiente de
+                  restar, y en el total ya está restado. */}
+              {ahorroConjunto > 0 && (
+                <p className='-mt-1 text-[12.5px] text-wa'>
+                  Ya está aplicado el conjunto: te ahorrás {formatPrice(ahorroConjunto)}.
+                </p>
+              )}
 
               {checkout.activo ? (
                 <div className='flex gap-2.5'>

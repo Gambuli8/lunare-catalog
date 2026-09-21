@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useProducts } from '../hooks/useProducts'
 import { showToast } from '../components/Toast'
 import { trackAddToCart } from '../lib/track'
+import { aplicarConjunto, precioBase } from '../lib/conjunto'
 
 const CartContext = createContext(null)
 
@@ -117,11 +118,39 @@ export function CartProvider({ children }) {
 
   const clear = useCallback(() => setItems([]), [])
 
-  const total = items.reduce((s, i) => s + i.price * i.qty, 0)
+  // El precio de conjunto no se puede calcular pieza por pieza: depende de
+  // qué más haya en el carrito. Por eso cada pieza se queda con su precio
+  // de lista en `price` y acá sale `precio`, que es el que se cobra.
+  //
+  // Lo mismo lo vuelve a calcular el servidor al confirmar el pedido; esto
+  // es solo para que la clienta vea el conjunto mientras lo arma.
+  const lineas = useMemo(
+    () => aplicarConjunto(items.map(i => ({ producto: i, cantidad: i.qty }))),
+    [items]
+  )
+
+  const conPrecio = useMemo(
+    () => lineas.map(l => ({
+      ...l.producto,
+      precio: l.precio,
+      precioLista: precioBase(l.producto),
+      enConjunto: l.enConjunto,
+    })),
+    [lineas]
+  )
+
+  const total = conPrecio.reduce((s, i) => s + i.precio * i.qty, 0)
+  const ahorroConjunto = conPrecio.reduce(
+    (s, i) => s + (i.enConjunto ? (i.precioLista - i.precio) * i.qty : 0),
+    0
+  )
   const count = items.reduce((s, i) => s + i.qty, 0)
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, changeQty, clear, total, count, isOpen, setIsOpen }}>
+    <CartContext.Provider value={{
+      items: conPrecio, addItem, removeItem, changeQty, clear,
+      total, ahorroConjunto, count, isOpen, setIsOpen,
+    }}>
       {children}
     </CartContext.Provider>
   )
