@@ -286,9 +286,44 @@ export async function getCatalog({ force = false } = {}) {
   })
   if (!res.ok) throw new Error(`Sheet respondió ${res.status}`)
 
-  const products = ensureUniqueSlugs(parseCSV(await res.text()).map(rowToProduct).filter(Boolean))
+  const filas = parseCSV(await res.text())
+  const products = ensureUniqueSlugs(filas.map(rowToProduct).filter(Boolean))
+
+  avisarDeLoQueSeDescarto(filas, products)
+
   cache = { at: Date.now(), products }
   return products
+}
+
+// La planilla puede quedar de una forma que no rompe nada pero tampoco
+// hace lo que la dueña espera. Sin estos avisos hay que salir a buscar
+// por qué el sitio no muestra lo que ella ve cargado.
+function avisarDeLoQueSeDescarto(filas, products) {
+  if (!products.length) {
+    console.error(
+      `[catalogo] el Sheet trajo ${filas.length} filas y ninguna quedó publicable. ` +
+      'Revisar que la pestaña publicada sea la del catálogo y que haya stock, Id y precio.'
+    )
+    return
+  }
+
+  // Un precio de conjunto que no es menor al de lista no es promo, así que
+  // se descarta. Cargado así, la columna parece completa y el conjunto no
+  // aparece en ningún lado.
+  const sinDescuento = filas.filter(row => {
+    const conjunto = toNumber(row['Precio conjunto'] || row['precio conjunto'] || row['Precio Conjunto'])
+    if (!conjunto) return false
+    const precio = toNumber(row['Precio Par']) || toNumber(row['Precio individual'])
+    return precio && conjunto >= precio
+  })
+
+  if (sinDescuento.length) {
+    console.warn(
+      `[catalogo] ${sinDescuento.length} pieza(s) tienen "Precio conjunto" igual o mayor al precio de lista, ` +
+      'así que no se ofrecen en conjunto: ' +
+      sinDescuento.map(r => (r['Id'] || '').trim()).join(', ')
+    )
+  }
 }
 
 export const SITE_URL = process.env.SITE_URL || 'https://www.lunareacc.com'
