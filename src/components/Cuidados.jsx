@@ -7,7 +7,7 @@ const MATERIALES = [
   },
   {
     titulo: 'Acero blanco',
-    texto: 'Tiene un baño que le da su brillo característico. Cuanto más lo cuides, más dura ese color: evitá mojarlo y los abrasivos.',
+    texto: 'Acero quirúrgico 316L con baño plateado. Aguanta el agua, el sudor y el uso diario sin mancharse ni ponerse negro. El baño dura más si evitás los abrasivos.',
   },
 ]
 

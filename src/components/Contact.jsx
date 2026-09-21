@@ -7,7 +7,7 @@ const INSTAGRAM = 'https://instagram.com/lunare.acc'
 const FAQS = [
   {
     q: '¿Hacen envíos a todo el país?',
-    a: 'Por el momento no. Podés retirar tu pedido coordinando previamente en Santa Rosa (La Pampa) o en Nueva Córdoba.',
+    a: 'Por el momento no. Podés retirar tu pedido coordinando previamente en Santa Rosa (La Pampa) o en Nueva Córdoba (Córdoba).',
   },
   {
     q: '¿Los accesorios se oxidan?',
