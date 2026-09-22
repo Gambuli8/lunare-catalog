@@ -31,7 +31,7 @@ export default function Categories() {
     <section className='px-6 py-20 md:px-12 bg-cream'>
       <div className='max-w-screen-xl mx-auto'>
         <div className='flex flex-wrap items-baseline justify-between gap-4 mb-9'>
-          <h2 className='font-serif text-[clamp(30px,4vw,42px)] font-light text-dark'>Comprá por categoría</h2>
+          <h2 className='font-serif text-[clamp(30px,4vw,42px)] font-light text-dark'>Elegí por categoría</h2>
           <a
             href='/tienda'
             className='inline-flex min-h-[44px] items-center gap-2 py-2 text-xs tracking-[0.12em] uppercase text-muted hover:text-gold transition-colors group'

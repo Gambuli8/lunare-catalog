@@ -81,13 +81,21 @@ export default function Hero() {
           </h1>
 
           {/* En mobile el titular ya dice lo suyo y el espacio vale oro:
-              el párrafo aparece recién en pantallas grandes. */}
+              el párrafo aparece recién en pantallas grandes.
+
+              Antes cerraba con "sin formularios ni esperas". Se fue por dos
+              motivos: el checkout online SÍ pide un formulario —nombre,
+              teléfono, código postal, dirección—, así que dejaba de ser
+              cierto apenas se prenda; y definía la tienda por lo que no
+              tiene, metiendo la palabra "formulario" en la cabeza de quien
+              lee. Lo reemplaza algo que sí es verdad y además vende: 78 de
+              las 103 piezas tienen una sola unidad. */}
           <p
             className='hidden md:block max-w-md text-[17px] leading-relaxed text-muted animate-fade-up'
             style={{ animationDelay: '.3s' }}
           >
             Argollas, collares y pulseras de plata de ley, elegidas de a una.
-            Coordinamos el retiro por WhatsApp, sin formularios ni esperas.
+            De la mayoría hay una sola, y el retiro lo coordinamos por WhatsApp.
           </p>
 
           <div
