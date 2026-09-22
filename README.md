@@ -154,6 +154,16 @@ Destacado | Precio promo | Precio conjunto
   un dije. Solo se carga en las cadenas, y solo vale si es menor al precio
   normal. Ver [Conjuntos](#conjuntos-dije--cadena).
 - **`Destacado`** acepta `si`, `sí`, `yes`, `1` o `true`.
+- **`Categoría`** es lo que se lee debajo del nombre —"Argolla 9mm", "Collar
+  gamuza"—, así que se muestra siempre con mayúscula inicial aunque en la
+  planilla esté en minúscula, y se le saca la anotación interna `IND`. La
+  dirección de la pieza no sale de acá, así que corregir la celda no rompe
+  ningún link.
+- **`Nombre` vacío** → la pieza se llama por su categoría más el código
+  ("Pulsera pa1381/1"). Sin el código, ocho pulseras se llamaban todas
+  "Pulsera" y eran imposibles de distinguir en la grilla y en el carrito.
+- **Los aritos** —argollas, pasantes y abridores— toman el precio solo de
+  `Precio Par`, nunca de `Precio individual`: se venden únicamente de a dos.
 
 El endpoint cachea la respuesta 60 s en el CDN de Vercel y revalida por atrás,
 así que una visita nunca espera a Google Sheets.

@@ -26,6 +26,7 @@ const PATHS = {
   paño: <><path d='M3 7l4-3 5 2 5-2 4 3-3 4v9H6v-9z' /><path d='M9 6a3 3 0 006 0' /></>,
   reloj: <><circle cx='12' cy='12' r='9' /><path d='M12 7v5l3 2' /></>,
   alerta: <><path d='M12 3.5L2.5 20h19z' /><path d='M12 10v4' /><circle cx='12' cy='17' r='.6' fill='currentColor' stroke='none' /></>,
+  compartir: <><path d='M12 15V3' /><path d='M8 6.5L12 2.5l4 4' /><path d='M5 13v6.5a1.5 1.5 0 001.5 1.5h11a1.5 1.5 0 001.5-1.5V13' /></>,
 }
 
 export default function Icon({ name, size = 20, className = '', strokeWidth = 1.5, ...rest }) {

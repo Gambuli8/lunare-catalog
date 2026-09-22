@@ -20,6 +20,13 @@ function matchesMaterial(product, key) {
   return product.material === key
 }
 
+// Para buscar: sin acentos y en minúscula.
+//
+// Nadie escribe "Ámbar" con tilde en el buscador de un celular, y sin esto
+// "ambar" no encontraba nada. Lo mismo con "Tourbillón".
+const paraBuscar = texto =>
+  String(texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
 const PAGE_SIZE = 20
 
 function SkeletonCard() {
@@ -97,7 +104,7 @@ function SearchBar({ value, onChange }) {
         type='text'
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder='Buscar por nombre...'
+        placeholder='Buscar por nombre o código...'
         className='w-full h-11 pl-10 pr-10 bg-paper border border-border rounded-full text-sm text-dark placeholder-[#a89f95] outline-none focus:border-gold transition-colors duration-200'
       />
       {value && (
@@ -315,11 +322,16 @@ export default function Catalog({ route, standalone = false }) {
   const resetFilters = useCallback(() => navigate('/tienda'), [])
 
   const filtered = useMemo(() => {
-    const q = urlSearch.trim().toLowerCase()
+    // También por código: la ficha le da a la clienta un botón para
+    // copiarlo, así que lo mínimo es que después el buscador lo acepte.
+    const q = paraBuscar(urlSearch.trim())
     const list = products.filter(p =>
       (activeCategory === 'all' || p.category === activeCategory) &&
       matchesMaterial(p, activeMaterial) &&
-      (!q || p.name.toLowerCase().includes(q) || p.subcategory.toLowerCase().includes(q))
+      (!q ||
+        paraBuscar(p.name).includes(q) ||
+        paraBuscar(p.subcategory).includes(q) ||
+        paraBuscar(p.id).includes(q))
     )
     if (activeSort === 'menor') return [...list].sort((a, b) => (a.pricePromo ?? a.price) - (b.pricePromo ?? b.price))
     if (activeSort === 'mayor') return [...list].sort((a, b) => (b.pricePromo ?? b.price) - (a.pricePromo ?? a.price))

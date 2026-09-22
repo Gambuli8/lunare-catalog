@@ -125,6 +125,15 @@ export default function ProductCard({ product, index }) {
           <p className='text-[10px] tracking-[0.2em] uppercase text-[#8f7647] font-sans mb-1.5'>{product.category}</p>
           <h3 className='font-serif text-[20px] font-light leading-snug text-[#0e0d0c] mb-1'>{product.name}</h3>
           <p className='text-[12px] text-[#5f574e] tracking-wide'>{product.subcategory}</p>
+          {/* Casi todas las piezas son únicas, así que esto va discreto y no
+              como cartel: gritarlo en tres de cada cuatro tarjetas deja de
+              querer decir algo. Lo que importa es que se sepa antes de
+              entrar a la ficha, no después. */}
+          {product.stock <= 2 && (
+            <p className='text-[11px] tracking-wide text-[#8f7647] mt-1'>
+              {product.stock === 1 ? 'Última unidad' : 'Quedan 2'}
+            </p>
+          )}
         </div>
       </a>
 
