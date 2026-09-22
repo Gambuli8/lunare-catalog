@@ -164,6 +164,20 @@ const titulo = texto => {
   return limpio ? limpio[0].toUpperCase() + limpio.slice(1) : ''
 }
 
+// Lo que se ve debajo del nombre: "Argolla 9mm", "Collar gamuza".
+//
+// Sale de la columna "Categoría", que la escribe una persona y viene como
+// venga: un tercio del catálogo la tenía en minúscula y se leía "pulsera"
+// abajo del título, en la pestaña del navegador y en el carrito.
+//
+// "IND" es una anotación interna —la pieza se vende individual— que no
+// significa nada para quien compra y aparecía tal cual en dos cuffs.
+//
+// Ojo: la dirección de la pieza NO sale de acá sino de la columna cruda,
+// así que esto no cambia ningún link que ya esté dando vueltas.
+const subcategoriaVisible = raw =>
+  titulo(String(raw || '').replace(/\bIND\b/g, '').replace(/\s+/g, ' ').trim())
+
 function normalizeCategory(raw = '') {
   const s = raw.trim().toLowerCase()
   if (!s) return 'Otros'
@@ -227,15 +241,20 @@ function rowToProduct(row) {
 
   // Red de seguridad: si la planilla no trae nombre, la pieza aparecía en
   // blanco en la grilla, en el carrito y en el título de su propia ficha.
-  // Mejor mostrar de qué es que no mostrar nada. Se sigue viendo el
-  // código al lado, así que se distinguen entre sí.
-  const nombreVisible = name || titulo(rawCategory) || titulo(category) || `Pieza ${id}`
+  //
+  // Va con el código pegado porque si no ocho pulseras se llamaban todas
+  // "Pulsera": cuatro tarjetas idénticas al mismo precio, imposibles de
+  // distinguir en la grilla y peor en el carrito, donde decía "1x Pulsera".
+  //
+  // La dirección de la pieza se arma con el nombre de la planilla, no con
+  // este, así que ponerle el código no le cambia el link a nadie.
+  const nombreVisible = name || `${subcategoriaVisible(rawCategory) || titulo(category) || 'Pieza'} ${id}`
 
   return {
     id,
     name: nombreVisible,
     category,
-    subcategory: rawCategory,
+    subcategory: subcategoriaVisible(rawCategory),
     material: normalizeMaterial(row['Material']),
     price,
     pricePromo: promo && promo < price ? promo : null,

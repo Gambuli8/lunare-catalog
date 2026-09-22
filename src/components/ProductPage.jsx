@@ -5,6 +5,7 @@ import CloudinaryImage from './CloudinaryImage'
 import ProductCard from './ProductCard'
 import { trackProductView } from '../lib/track'
 import Copiable from './Copiable'
+import Icon from './Icon'
 import { esDije, esCadenaDeConjunto, precioBase } from '../lib/conjunto'
 
 // El servidor inyecta la pieza en el HTML (ver api/page.js) para que la
@@ -24,6 +25,18 @@ const CARE = 'Guardala en un lugar fresco, seco y hermético, y por separado de 
 
 const EXCHANGE = 'Por respeto a la higiene, los aros y cuffs a presión no tienen cambio. ' +
   'El resto del catálogo se puede cambiar dentro de los 10 días corridos, sin uso y en las mismas condiciones en que se recibió.'
+
+// La medida sale de la subcategoría, que es donde la escribe la dueña:
+// "Argolla 9mm", "Collar 45-50cm", "Choker ajustable". Se saca de ahí para
+// mostrarla aparte; si no hay ninguna, se devuelve null y la ficha no
+// promete medidas que no tiene.
+const MEDIDA = /(\d+(?:\s*[-–]\s*\d+)?)\s*(mm|cm)\b/i
+
+function medidaDe(subcategoria = '') {
+  const m = String(subcategoria).match(MEDIDA)
+  if (m) return `${m[1].replace(/\s+/g, '')} ${m[2].toLowerCase()}`
+  return /ajustable|regulable/i.test(subcategoria) ? 'Ajustable' : null
+}
 
 function Accordion({ sections }) {
   const [open, setOpen] = useState(0)
@@ -53,6 +66,72 @@ function Accordion({ sections }) {
         </div>
       ))}
     </div>
+  )
+}
+
+// ── Compartir la pieza ────────────────────────────────────────
+// Que una clienta le pase una pieza a una amiga es el canal de venta más
+// barato que tiene la tienda, y hasta acá había que copiar la dirección a
+// mano desde la barra del navegador.
+//
+// En el celular abre el menú del sistema, con WhatsApp arriba de todo. En
+// la computadora ese menú no existe, así que copia el link.
+function Compartir({ product }) {
+  const [estado, setEstado] = useState('') // '' | 'copiado' | 'error'
+  const reloj = useRef(null)
+
+  useEffect(() => () => clearTimeout(reloj.current), [])
+
+  const avisar = resultado => {
+    setEstado(resultado)
+    clearTimeout(reloj.current)
+    reloj.current = setTimeout(() => setEstado(''), 2500)
+  }
+
+  const compartir = async () => {
+    const url = window.location.href
+
+    if (navigator.share) {
+      // Si cierra el menú sin elegir nada, no hay que hacer nada más:
+      // copiarle el link igual sería contestarle que no.
+      try {
+        await navigator.share({
+          title: `${product.name} · Lunare Accesorios`,
+          text: `Mirá esta pieza de Lunare: ${product.name}`,
+          url,
+        })
+      } catch { /* cancelado */ }
+      return
+    }
+
+    // Siempre contesta algo. Hay navegadores que niegan el portapapeles sin
+    // avisar, y ahí el botón parecía roto: se tocaba y no pasaba nada.
+    try {
+      await navigator.clipboard.writeText(url)
+      avisar('copiado')
+    } catch {
+      avisar('error')
+    }
+  }
+
+  return (
+    <button
+      type='button'
+      onClick={compartir}
+      className='inline-flex items-center self-start gap-2 min-h-[44px] -my-2 text-[13px] text-[#5f574e] transition-colors hover:text-[#8f7647]'
+    >
+      <Icon
+        name={estado === 'copiado' ? 'check' : 'compartir'}
+        size={15}
+        strokeWidth={estado === 'copiado' ? 2.4 : 1.7}
+        className={estado === 'copiado' ? 'text-wa' : ''}
+      />
+      <span aria-live='polite'>
+        {estado === 'copiado' ? 'Link copiado'
+          : estado === 'error' ? 'Copialo de la barra de arriba'
+            : 'Compartir esta pieza'}
+      </span>
+    </button>
   )
 }
 
@@ -224,9 +303,17 @@ export default function ProductPage({ slug }) {
   }
 
 
+  // La medida está adentro de la subcategoría —"Argolla 9mm", "Pulsera
+  // 18-20cm"— y no llegaba a la sección que la promete en el título.
+  const medida = medidaDe(product.subcategory)
+
   const sections = [
     { title: 'Descripción', body: `${product.subcategory || product.category} de ${product.material.toLowerCase()}.${product.priceNote === 'par' ? ' Se vende por par.' : ''}` },
-    { title: 'Material y medidas', body: MATERIAL_COPY[product.material] || product.material },
+    {
+      // Sin medida cargada, la sección no la promete.
+      title: medida ? 'Material y medidas' : 'Material',
+      body: (MATERIAL_COPY[product.material] || product.material) + (medida ? `\n\nMedida: ${medida}` : ''),
+    },
     { title: 'Cuidados', body: CARE },
     { title: 'Cambios', body: EXCHANGE },
   ]
@@ -367,6 +454,8 @@ export default function ProductPage({ slug }) {
               {inCart ? 'Agregar otra vez' : 'Agregar al pedido'}
             </button>
           </div>
+
+          <Compartir product={product} />
 
           <Conjunto
             product={product}
