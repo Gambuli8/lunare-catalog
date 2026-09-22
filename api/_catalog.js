@@ -280,9 +280,13 @@ function rowToProduct(row) {
     material: normalizeMaterial(row['Material']),
     price,
     pricePromo: promo && promo < price ? promo : null,
-    // Precio de esta pieza cuando va en conjunto con un dije. Que la celda
-    // tenga número es lo que la ofrece como cadena para armar conjunto.
-    priceCombo: conjunto && conjunto < price ? conjunto : null,
+    // Precio de esta pieza cuando va en conjunto con un dije.
+    //
+    // Que la celda tenga un número es lo que la marca como cadena para
+    // armar conjunto, aunque el número sea el mismo que el de lista: los
+    // dijes no se venden solos, así que la cadena tiene que aparecer como
+    // opción igual. Que además sea menor es lo que le pone el descuento.
+    priceCombo: conjunto || null,
     // La foto del dije y la cadena juntos, si está cargada.
     imageCombo: fotoDelConjunto(row),
     priceNote: esDeAPares(category) ? 'par' : 'und',
@@ -363,9 +367,9 @@ function avisarDeLoQueSeDescarto(filas, products) {
     return
   }
 
-  // Un precio de conjunto que no es menor al de lista no es promo, así que
-  // se descarta. Cargado así, la columna parece completa y el conjunto no
-  // aparece en ningún lado.
+  // La cadena se ofrece igual, pero sin descuento: el conjunto sale lo
+  // mismo que comprar las dos piezas por separado. Casi siempre es que se
+  // copió el precio de lista en vez del de promo.
   const sinDescuento = filas.filter(row => {
     const conjunto = toNumber(row['Precio conjunto'] || row['precio conjunto'] || row['Precio Conjunto'])
     if (!conjunto) return false
@@ -376,7 +380,7 @@ function avisarDeLoQueSeDescarto(filas, products) {
   if (sinDescuento.length) {
     console.warn(
       `[catalogo] ${sinDescuento.length} pieza(s) tienen "Precio conjunto" igual o mayor al precio de lista, ` +
-      'así que no se ofrecen en conjunto: ' +
+      'así que se ofrecen en conjunto pero sin descuento: ' +
       sinDescuento.map(r => (r['Id'] || '').trim()).join(', ')
     )
   }

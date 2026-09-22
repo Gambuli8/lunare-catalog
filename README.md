@@ -151,8 +151,11 @@ Destacado | Precio promo | Precio conjunto | Imagen conjunto
   y es lo que identifica cada ítem del carrito).
 - **`Precio promo`** solo se usa si es menor al precio normal.
 - **`Precio conjunto`** es lo que sale **esa cadena** cuando se la lleva junto a
-  un dije. Solo se carga en las cadenas, y solo vale si es menor al precio
-  normal. Ver [Conjuntos](#conjuntos-dije--cadena).
+  un dije. Solo se carga en las cadenas, y **tener la celda cargada es lo que
+  marca a esa pieza como cadena de conjunto**, aunque el número sea el mismo que
+  el de lista: los dijes no se venden solos, así que la cadena tiene que
+  aparecer como opción igual. Que además sea menor es lo que le pone el
+  descuento. Ver [Conjuntos](#conjuntos-dije--cadena).
 - **`Imagen conjunto`** es opcional y va también en la cadena: la foto del dije
   y la cadena puestos juntos, para ofrecer el conjunto con la imagen de lo que
   se lleva. **No entra en la galería de la pieza**, sale solo donde se ofrece el
@@ -188,12 +191,17 @@ conjunto. Así son cuatro celdas y no las veintiocho combinaciones de siete dije
 por cuatro cadenas, y la dueña lo maneja desde el Sheet sin pedir cambios de
 código. Mientras no haya ninguna cargada, el bloque no aparece en ningún lado.
 
-**Dónde se ofrece.** En la ficha de un dije, al tocar "Agregar al pedido" sale
-un cuadro con las cadenas antes de que el dije entre al carrito: es el momento
-en que la clienta está decidiendo. No es una tranquera —se puede seguir sin
-cadena, y el dije entra igual—. Más abajo en la misma ficha queda el bloque
-"Armá tu conjunto", que también funciona al revés: desde una cadena, ofrece los
-dijes.
+**Los dijes no se venden solos.** En la ficha de un dije, al tocar "Agregar al
+pedido" sale un cuadro para elegir con qué cadena, antes de que el dije entre al
+carrito. Cerrar sin elegir cancela: no tendría sentido dejar en el carrito algo
+que no se puede comprar así.
+
+La excepción es la red de seguridad: **si ninguna cadena tiene `Precio conjunto`
+cargado, el cuadro no aparece y el dije se agrega solo.** Sin esa salida, un
+descuido en la planilla dejaría los siete dijes sin poder venderse.
+
+Más abajo en la misma ficha queda el bloque "Armá tu conjunto", que también
+funciona al revés: desde una cadena, ofrece los dijes.
 
 Los precios que se muestran son **los de las dos piezas juntas**, no el de la
 cadena sola: es lo que la clienta va a pagar.
