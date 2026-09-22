@@ -6,7 +6,7 @@ import ProductCard from './ProductCard'
 import { trackProductView } from '../lib/track'
 import Copiable from './Copiable'
 import Icon from './Icon'
-import { esDije, esCadenaDeConjunto, precioBase } from '../lib/conjunto'
+import { esDije, esCadenaDeConjunto, conjuntoConDescuento, precioBase } from '../lib/conjunto'
 
 // El servidor inyecta la pieza en el HTML (ver api/page.js) para que la
 // ficha se pinte de una sin esperar al fetch del catálogo.
@@ -135,22 +135,24 @@ function Compartir({ product }) {
   )
 }
 
-// ── El cuadro que ofrece la cadena ────────────────────────────
-// Sale al tocar "agregar al pedido" en un dije, antes de que el dije
-// entre al carrito: es el único momento en que la clienta está decidiendo
-// y todavía se la puede ayudar. El bloque de más abajo en la ficha sigue
-// estando, pero abajo se lo pierde quien compra de un toque.
+// ── Elegir la cadena del conjunto ─────────────────────────────
+// Los dijes no se venden solos: van con una cadena, y la clienta elige
+// con cuál. Por eso esto sale al tocar "agregar al pedido", antes de que
+// el dije entre al carrito, y no como sugerencia más abajo en la ficha,
+// donde se lo pierde quien compra de un toque.
 //
-// No es una tranquera: se puede seguir sin cadena desde el botón o
-// cerrando, y en los dos casos el dije entra igual.
-function CuadroDeCadenas({ dije, precioDije, cadenas, onElegir, onSeguir }) {
+// Cerrar sin elegir cancela: no tendría sentido dejar en el carrito algo
+// que no se puede comprar así. Si no hubiera ninguna cadena cargada, el
+// cuadro no aparece y el dije se agrega solo, para que la tienda nunca
+// quede sin poder vender.
+function CuadroDeCadenas({ dije, precioDije, cadenas, onElegir, onCancelar }) {
   const caja = useRef(null)
 
   useEffect(() => {
     const antes = document.activeElement
     caja.current?.focus()
 
-    const tecla = e => { if (e.key === 'Escape') onSeguir() }
+    const tecla = e => { if (e.key === 'Escape') onCancelar() }
     document.addEventListener('keydown', tecla)
 
     const overflow = document.body.style.overflow
@@ -163,12 +165,12 @@ function CuadroDeCadenas({ dije, precioDije, cadenas, onElegir, onSeguir }) {
       // la página, que es donde cae si no se lo devuelve.
       if (antes instanceof HTMLElement) antes.focus()
     }
-  }, [onSeguir])
+  }, [onCancelar])
 
   return (
     <div className='fixed inset-0 z-[70] flex items-end justify-center sm:items-center'>
       <div
-        onClick={onSeguir}
+        onClick={onCancelar}
         aria-hidden='true'
         className='absolute inset-0 bg-black/40 backdrop-blur-sm'
       />
@@ -183,11 +185,11 @@ function CuadroDeCadenas({ dije, precioDije, cadenas, onElegir, onSeguir }) {
       >
         <div className='flex flex-col gap-1.5'>
           <h2 id='cuadro-cadenas-titulo' className='font-serif text-[24px] font-light leading-tight'>
-            ¿Le sumás una cadena?
+            Elegí la cadena
           </h2>
           <p className='text-[13px] leading-relaxed text-[#5f574e]'>
-            Llevando {dije.name} con una de estas cadenas, la cadena te sale a precio
-            de conjunto. Estos son los precios de las dos piezas juntas.
+            {dije.name} va con cadena, y elegís vos con cuál. Los precios son de las
+            dos piezas juntas, que es lo que se suma al carrito.
           </p>
         </div>
 
@@ -209,10 +211,16 @@ function CuadroDeCadenas({ dije, precioDije, cadenas, onElegir, onSeguir }) {
                 <span className='flex flex-col flex-grow min-w-0 gap-0.5'>
                   <span className='text-[15px] leading-tight truncate'>Con {c.name}</span>
                   <span className='flex flex-wrap items-baseline gap-2 text-[13px]'>
-                    <b className='font-medium text-[#0f7a41]'>{formatPrice(precioDije + c.priceCombo)}</b>
-                    <span className='line-through text-[#8f877e]'>
-                      {formatPrice(precioDije + precioBase(c))}
-                    </span>
+                    {/* El tachado solo cuando el conjunto cuesta menos. Con
+                        las dos cifras iguales parecía una promo que no es. */}
+                    <b className={`font-medium ${conjuntoConDescuento(c) ? 'text-[#0f7a41]' : 'text-[#0e0d0c]'}`}>
+                      {formatPrice(precioDije + c.priceCombo)}
+                    </b>
+                    {conjuntoConDescuento(c) && (
+                      <span className='line-through text-[#8f877e]'>
+                        {formatPrice(precioDije + precioBase(c))}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <Icon name='mas' size={16} strokeWidth={2} className='flex-shrink-0 text-[#8f7647]' />
@@ -223,10 +231,10 @@ function CuadroDeCadenas({ dije, precioDije, cadenas, onElegir, onSeguir }) {
 
         <button
           type='button'
-          onClick={onSeguir}
-          className='min-h-[48px] text-xs tracking-[0.14em] uppercase border border-[#0e0d0c] transition-colors hover:bg-[#0e0d0c] hover:text-white'
+          onClick={onCancelar}
+          className='min-h-[48px] text-xs tracking-[0.14em] uppercase text-[#5f574e] transition-colors hover:text-[#0e0d0c]'
         >
-          Seguir solo con el dije
+          Ahora no
         </button>
       </div>
     </div>
@@ -258,6 +266,9 @@ function Conjunto({ product, products, enCarrito, onArmar }) {
 
   const totalDeLista = otra => precioBase(product) + precioBase(otra)
 
+  // La cadena del par es la que tiene el precio de conjunto cargado.
+  const hayDescuento = otra => conjuntoConDescuento(desdeDije ? otra : product)
+
   return (
     <section
       aria-labelledby='conjunto-titulo'
@@ -269,13 +280,15 @@ function Conjunto({ product, products, enCarrito, onArmar }) {
         </h2>
         <p className='text-[13px] leading-relaxed text-[#5f574e]'>
           {desdeDije ? (
-            'Sumale una cadena y te la llevás a precio de conjunto. Los precios son de las dos piezas juntas.'
-          ) : (
+            'Elegí con qué cadena lo querés. Los precios son de las dos piezas juntas.'
+          ) : conjuntoConDescuento(product) ? (
             <>
               Con cualquier dije, esta cadena te sale{' '}
               <b className='font-medium text-[#0e0d0c]'>{formatPrice(product.priceCombo)}</b>
               {' '}en vez de {formatPrice(precioBase(product))}. Los precios son de las dos piezas juntas.
             </>
+          ) : (
+            'Elegí el dije que quieras. Los precios son de las dos piezas juntas.'
           )}
         </p>
       </div>
@@ -299,8 +312,12 @@ function Conjunto({ product, products, enCarrito, onArmar }) {
             />
             <span className='block mt-1.5 text-[12px] leading-tight line-clamp-2'>Con {o.name}</span>
             <span className='flex flex-wrap items-baseline gap-1.5 text-[12px]'>
-              <b className='font-medium text-[#0f7a41]'>{formatPrice(totalDelConjunto(o))}</b>
-              <span className='line-through text-[#8f877e]'>{formatPrice(totalDeLista(o))}</span>
+              <b className={`font-medium ${hayDescuento(o) ? 'text-[#0f7a41]' : 'text-[#0e0d0c]'}`}>
+                {formatPrice(totalDelConjunto(o))}
+              </b>
+              {hayDescuento(o) && (
+                <span className='line-through text-[#8f877e]'>{formatPrice(totalDeLista(o))}</span>
+              )}
             </span>
           </button>
         ))}
@@ -402,15 +419,16 @@ export default function ProductPage({ slug }) {
   // lo del conjunto —el bloque y el cuadro— no existe.
   const cadenasDeConjunto = useMemo(() => products.filter(esCadenaDeConjunto), [products])
 
-  // Se pregunta una sola vez: si ya se llevó una cadena, volver a
-  // ofrecerle otra cada vez que suma un dije es molestar.
+  // Se pregunta una sola vez: si ya se lleva una cadena, el dije que suma
+  // después va con esa y no hay nada que elegir.
   const ofrecerCadena =
     esDije(product) && cadenasDeConjunto.length > 0 && !items.some(esCadenaDeConjunto)
 
   const [eligiendoCadena, setEligiendoCadena] = useState(false)
 
-  // El dije no entra al carrito hasta que conteste: la idea es que vea la
-  // promo antes de decidir, no después de que ya sumó la pieza.
+  // El dije no entra al carrito hasta que elija la cadena. Si no hubiera
+  // ninguna cargada, ofrecerCadena es falso y el dije se agrega solo: sin
+  // esa salida, un descuido en la planilla dejaría los dijes sin vender.
   const handleAdd = () => {
     if (ofrecerCadena) { setEligiendoCadena(true); return }
     agregarLaPieza()
@@ -422,13 +440,9 @@ export default function ProductPage({ slug }) {
     setEligiendoCadena(false)
   }
 
-  // Cerrar el cuadro no cancela la compra: ya tocó "agregar", así que la
-  // pieza entra igual. Dejarla afuera sería contestarle que no a algo que
-  // pidió, y el cuadro es una oferta, no una tranquera.
-  const sinCadena = () => {
-    agregarLaPieza()
-    setEligiendoCadena(false)
-  }
+  // Cerrar sin elegir no agrega nada: el dije no se vende solo, así que
+  // dejarlo en el carrito sería armarle un pedido que no se puede cerrar.
+  const cancelarConjunto = () => setEligiendoCadena(false)
 
   // Armar el conjunto es llevarse las dos piezas: si la que está mirando
   // todavía no está en el carrito, el precio de conjunto no se aplicaría
@@ -597,7 +611,7 @@ export default function ProductPage({ slug }) {
               precioDije={effective * qty}
               cadenas={cadenasDeConjunto.slice(0, 6)}
               onElegir={conCadena}
-              onSeguir={sinCadena}
+              onCancelar={cancelarConjunto}
             />
           )}
 

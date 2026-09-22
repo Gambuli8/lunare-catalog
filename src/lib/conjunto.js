@@ -15,6 +15,12 @@ export const esDije = p => p?.category === 'Dije'
 export const esCadenaDeConjunto = p =>
   Number.isFinite(p?.priceCombo) && p.priceCombo > 0
 
+// Y si además cuesta menos que suelta, el conjunto es promo. Hay cadenas
+// que se ofrecen en conjunto al mismo precio: el dije no se vende solo,
+// así que la cadena tiene que estar igual.
+export const conjuntoConDescuento = p =>
+  esCadenaDeConjunto(p) && p.priceCombo < precioBase(p)
+
 // Recibe las líneas del pedido con su pieza del catálogo y devuelve, para
 // cada una, qué precio unitario le toca.
 //
