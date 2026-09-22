@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { WHATSAPP } from '../lib/contacto'
 import { leerPagoPendiente, borrarPagoPendiente } from '../lib/pagoPendiente'
 import Icon from './Icon'
 import Copiable from './Copiable'
@@ -14,7 +15,6 @@ import Copiable from './Copiable'
 // Por eso el texto de éxito habla de que el pago salió bien, no de que
 // el pedido esté confirmado como pagado en la base.
 
-const WHATSAPP = '542954476558'
 
 const ESTADOS = {
   exito: {

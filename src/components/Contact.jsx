@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { WHATSAPP_URL, INSTAGRAM_URL } from '../lib/contacto'
 import Icon, { WhatsAppIcon } from './Icon'
 
-const WHATSAPP = 'https://wa.me/542954476558'
-const INSTAGRAM = 'https://instagram.com/lunare.acc'
+const WHATSAPP = WHATSAPP_URL
+const INSTAGRAM = INSTAGRAM_URL
 
 const FAQS = [
   {

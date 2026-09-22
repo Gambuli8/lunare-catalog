@@ -7,8 +7,9 @@ import { opcionesDeEnvio, cpValido, MODOS } from '../lib/envios'
 import CloudinaryImage from './CloudinaryImage'
 import Icon, { WhatsAppIcon } from './Icon'
 import Copiable from './Copiable'
+import { WHATSAPP } from '../lib/contacto'
 
-const WHATSAPP = '542954476558'
+
 
 const MENSAJES = {
   NOMBRE_REQUERIDO: 'Contanos tu nombre.',

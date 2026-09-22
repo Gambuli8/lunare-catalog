@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { WHATSAPP } from '../lib/contacto'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../hooks/useProducts'
 import {
@@ -6,7 +7,6 @@ import {
 } from '../lib/pagoPendiente'
 import Icon, { WhatsAppIcon } from './Icon'
 
-const WHATSAPP = '542954476558'
 
 // Aparece cuando alguien vuelve a la tienda con un pedido de Mercado Pago
 // sin pagar: tocó "atrás" en Mercado Pago, cerró la pestaña o lo dejó
