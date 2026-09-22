@@ -356,6 +356,25 @@ function avisarDeLoQueSeDescarto(filas, products) {
       sinDescuento.map(r => (r['Id'] || '').trim()).join(', ')
     )
   }
+
+  // "Material" se traduce contra una lista corta y lo que no está en ella
+  // cae en Bijou. Hoy la planilla trae solo Plata, Plata Dorada, Acero
+  // Blanco y bijou, y las cuatro salen bien; pero el día que alguien
+  // escriba "Acero quirúrgico" o "Plata 925", esa pieza pasa a ser bijou
+  // sin que nadie se entere: mal cartel, mal filtro y mal el texto del
+  // material en la ficha.
+  const materialesRaros = [...new Set(
+    filas
+      .map(r => (r['Material'] || '').trim())
+      .filter(m => m && normalizeMaterial(m) === 'Bijou' && m.toLowerCase() !== 'bijou')
+  )]
+
+  if (materialesRaros.length) {
+    console.warn(
+      '[catalogo] la columna "Material" trae valores que no se reconocen y quedan como bijou: ' +
+      materialesRaros.map(m => `"${m}"`).join(', ')
+    )
+  }
 }
 
 export const SITE_URL = process.env.SITE_URL || 'https://www.lunareacc.com'
