@@ -135,6 +135,104 @@ function Compartir({ product }) {
   )
 }
 
+// ── El cuadro que ofrece la cadena ────────────────────────────
+// Sale al tocar "agregar al pedido" en un dije, antes de que el dije
+// entre al carrito: es el único momento en que la clienta está decidiendo
+// y todavía se la puede ayudar. El bloque de más abajo en la ficha sigue
+// estando, pero abajo se lo pierde quien compra de un toque.
+//
+// No es una tranquera: se puede seguir sin cadena desde el botón o
+// cerrando, y en los dos casos el dije entra igual.
+function CuadroDeCadenas({ dije, precioDije, cadenas, onElegir, onSeguir }) {
+  const caja = useRef(null)
+
+  useEffect(() => {
+    const antes = document.activeElement
+    caja.current?.focus()
+
+    const tecla = e => { if (e.key === 'Escape') onSeguir() }
+    document.addEventListener('keydown', tecla)
+
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', tecla)
+      document.body.style.overflow = overflow
+      // El foco vuelve al botón que abrió el cuadro y no al principio de
+      // la página, que es donde cae si no se lo devuelve.
+      if (antes instanceof HTMLElement) antes.focus()
+    }
+  }, [onSeguir])
+
+  return (
+    <div className='fixed inset-0 z-[70] flex items-end justify-center sm:items-center'>
+      <div
+        onClick={onSeguir}
+        aria-hidden='true'
+        className='absolute inset-0 bg-black/40 backdrop-blur-sm'
+      />
+      <div
+        ref={caja}
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby='cuadro-cadenas-titulo'
+        tabIndex={-1}
+        className='relative flex flex-col w-full gap-4 p-6 max-h-[85vh] overflow-y-auto bg-[#F9F5F2] sm:max-w-md sm:rounded-sm focus:outline-none'
+        style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className='flex flex-col gap-1.5'>
+          <h2 id='cuadro-cadenas-titulo' className='font-serif text-[24px] font-light leading-tight'>
+            ¿Le sumás una cadena?
+          </h2>
+          <p className='text-[13px] leading-relaxed text-[#5f574e]'>
+            Llevando {dije.name} con una de estas cadenas, la cadena te sale a precio
+            de conjunto. Estos son los precios de las dos piezas juntas.
+          </p>
+        </div>
+
+        <ul className='flex flex-col gap-2'>
+          {cadenas.map(c => (
+            <li key={c.id}>
+              <button
+                type='button'
+                onClick={() => onElegir(c)}
+                className='flex items-center w-full gap-3 p-3 text-left transition-colors bg-white border border-[#e8e2da] hover:border-[#8f7647]'
+              >
+                {/* La foto del conjunto si la hay; si no, la de la cadena. */}
+                <CloudinaryImage
+                  src={c.imageCombo || c.image}
+                  alt=''
+                  className='flex-shrink-0 w-14 h-14 object-cover bg-[#f0ece6]'
+                  fallback={<span className='block w-14 h-14 bg-[#f0ece6]' />}
+                />
+                <span className='flex flex-col flex-grow min-w-0 gap-0.5'>
+                  <span className='text-[15px] leading-tight truncate'>Con {c.name}</span>
+                  <span className='flex flex-wrap items-baseline gap-2 text-[13px]'>
+                    <b className='font-medium text-[#0f7a41]'>{formatPrice(precioDije + c.priceCombo)}</b>
+                    <span className='line-through text-[#8f877e]'>
+                      {formatPrice(precioDije + precioBase(c))}
+                    </span>
+                  </span>
+                </span>
+                <Icon name='mas' size={16} strokeWidth={2} className='flex-shrink-0 text-[#8f7647]' />
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          type='button'
+          onClick={onSeguir}
+          className='min-h-[48px] text-xs tracking-[0.14em] uppercase border border-[#0e0d0c] transition-colors hover:bg-[#0e0d0c] hover:text-white'
+        >
+          Seguir solo con el dije
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Armá tu conjunto ──────────────────────────────────────────
 // La clienta se lleva un dije y la cadena le sale más barata. Se ofrece
 // en las dos direcciones: desde el dije mostramos las cadenas, y desde la
@@ -152,6 +250,14 @@ function Conjunto({ product, products, enCarrito, onArmar }) {
 
   if (!opciones.length) return null
 
+  // Lo que se muestra es lo que cuesta llevarse las dos. La cadena es la
+  // que tiene el precio de conjunto: desde el dije es la otra pieza, y
+  // desde la cadena es esta.
+  const totalDelConjunto = otra =>
+    desdeDije ? precioBase(product) + otra.priceCombo : product.priceCombo + precioBase(otra)
+
+  const totalDeLista = otra => precioBase(product) + precioBase(otra)
+
   return (
     <section
       aria-labelledby='conjunto-titulo'
@@ -163,12 +269,12 @@ function Conjunto({ product, products, enCarrito, onArmar }) {
         </h2>
         <p className='text-[13px] leading-relaxed text-[#5f574e]'>
           {desdeDije ? (
-            'Sumale una cadena y te la llevás a precio de conjunto.'
+            'Sumale una cadena y te la llevás a precio de conjunto. Los precios son de las dos piezas juntas.'
           ) : (
             <>
               Con cualquier dije, esta cadena te sale{' '}
               <b className='font-medium text-[#0e0d0c]'>{formatPrice(product.priceCombo)}</b>
-              {' '}en vez de {formatPrice(precioBase(product))}.
+              {' '}en vez de {formatPrice(precioBase(product))}. Los precios son de las dos piezas juntas.
             </>
           )}
         </p>
@@ -183,21 +289,19 @@ function Conjunto({ product, products, enCarrito, onArmar }) {
             aria-label={`Armar el conjunto con ${o.name}`}
             className='flex-shrink-0 w-[104px] text-left group'
           >
+            {/* La foto del conjunto la carga la cadena, así que sale de la
+                otra pieza cuando lo que se mira es el dije. */}
             <CloudinaryImage
-              src={o.image}
+              src={(desdeDije ? o.imageCombo : product.imageCombo) || o.image}
               alt=''
               className='w-[104px] h-[104px] object-cover bg-[#f0ece6] border border-[#e8e2da] group-hover:border-[#8f7647] transition-colors'
               fallback={<span className='block w-[104px] h-[104px] bg-[#f0ece6]' />}
             />
-            <span className='block mt-1.5 text-[12px] leading-tight line-clamp-2'>{o.name}</span>
-            {desdeDije ? (
-              <span className='flex flex-wrap items-baseline gap-1.5 text-[12px]'>
-                <b className='font-medium text-[#0f7a41]'>{formatPrice(o.priceCombo)}</b>
-                <span className='line-through text-[#8f877e]'>{formatPrice(precioBase(o))}</span>
-              </span>
-            ) : (
-              <span className='block text-[12px] text-[#5f574e]'>{formatPrice(precioBase(o))}</span>
-            )}
+            <span className='block mt-1.5 text-[12px] leading-tight line-clamp-2'>Con {o.name}</span>
+            <span className='flex flex-wrap items-baseline gap-1.5 text-[12px]'>
+              <b className='font-medium text-[#0f7a41]'>{formatPrice(totalDelConjunto(o))}</b>
+              <span className='line-through text-[#8f877e]'>{formatPrice(totalDeLista(o))}</span>
+            </span>
           </button>
         ))}
       </div>
@@ -290,8 +394,40 @@ export default function ProductPage({ slug }) {
   const maxQty = product.stock ?? 1
   const related = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4)
 
-  const handleAdd = () => {
+  const agregarLaPieza = () => {
     for (let i = 0; i < qty; i++) addItem({ ...product, price: effective })
+  }
+
+  // Cadenas que hoy tienen precio de conjunto cargado. Sin ninguna, todo
+  // lo del conjunto —el bloque y el cuadro— no existe.
+  const cadenasDeConjunto = useMemo(() => products.filter(esCadenaDeConjunto), [products])
+
+  // Se pregunta una sola vez: si ya se llevó una cadena, volver a
+  // ofrecerle otra cada vez que suma un dije es molestar.
+  const ofrecerCadena =
+    esDije(product) && cadenasDeConjunto.length > 0 && !items.some(esCadenaDeConjunto)
+
+  const [eligiendoCadena, setEligiendoCadena] = useState(false)
+
+  // El dije no entra al carrito hasta que conteste: la idea es que vea la
+  // promo antes de decidir, no después de que ya sumó la pieza.
+  const handleAdd = () => {
+    if (ofrecerCadena) { setEligiendoCadena(true); return }
+    agregarLaPieza()
+  }
+
+  const conCadena = cadena => {
+    agregarLaPieza()
+    addItem({ ...cadena, price: cadena.pricePromo ?? cadena.price })
+    setEligiendoCadena(false)
+  }
+
+  // Cerrar el cuadro no cancela la compra: ya tocó "agregar", así que la
+  // pieza entra igual. Dejarla afuera sería contestarle que no a algo que
+  // pidió, y el cuadro es una oferta, no una tranquera.
+  const sinCadena = () => {
+    agregarLaPieza()
+    setEligiendoCadena(false)
   }
 
   // Armar el conjunto es llevarse las dos piezas: si la que está mirando
@@ -454,6 +590,16 @@ export default function ProductPage({ slug }) {
               {inCart ? 'Agregar otra vez' : 'Agregar al pedido'}
             </button>
           </div>
+
+          {eligiendoCadena && (
+            <CuadroDeCadenas
+              dije={product}
+              precioDije={effective * qty}
+              cadenas={cadenasDeConjunto.slice(0, 6)}
+              onElegir={conCadena}
+              onSeguir={sinCadena}
+            />
+          )}
 
           <Compartir product={product} />
 

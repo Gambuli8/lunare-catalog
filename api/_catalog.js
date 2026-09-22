@@ -131,7 +131,12 @@ function correctName(raw = '') {
 // El orden: primero la principal, después las numeradas por su número, y
 // al final las que tienen nombre, en el orden en que estén las columnas
 // en la planilla.
+//
+// "Imagen conjunto" es la excepción: no es una foto más de la pieza sino
+// la del dije y la cadena puestos juntos, así que no entra en la galería
+// y sale aparte, en imageCombo. Ver fotoDelConjunto.
 const COLUMNA_DE_FOTO = /^(imagen|image|foto)\s*(\d*)\s*([a-z]*)$/
+const ES_FOTO_DE_CONJUNTO = /^(imagen|image|foto)\s*conjunto$/
 
 function fotosDeLaFila(row) {
   const encontradas = []
@@ -142,7 +147,10 @@ function fotosDeLaFila(row) {
     const limpio = String(valor || '').trim()
     if (!limpio) continue
 
-    const m = stripAccents(String(columna).trim().toLowerCase()).match(COLUMNA_DE_FOTO)
+    const nombreColumna = stripAccents(String(columna).trim().toLowerCase())
+    if (ES_FOTO_DE_CONJUNTO.test(nombreColumna)) continue
+
+    const m = nombreColumna.match(COLUMNA_DE_FOTO)
     if (!m) continue
 
     const [, , numero, nombre] = m
@@ -156,6 +164,20 @@ function fotosDeLaFila(row) {
   encontradas.sort((a, b) => a.orden - b.orden)
   // Repetir la misma foto dos veces es un error de copiado, no una foto más.
   return [...new Set(encontradas.map(f => f.url))]
+}
+
+// La foto del dije y la cadena puestos juntos, para ofrecer el conjunto
+// con la imagen de lo que se lleva y no con la de la cadena sola.
+//
+// Va en la fila de la cadena, al lado de su "Precio conjunto". Es
+// opcional: sin ella se muestra la foto de la cadena, como hasta ahora.
+function fotoDelConjunto(row) {
+  for (const [columna, valor] of Object.entries(row)) {
+    const limpio = String(valor || '').trim()
+    if (!limpio) continue
+    if (ES_FOTO_DE_CONJUNTO.test(stripAccents(String(columna).trim().toLowerCase()))) return limpio
+  }
+  return ''
 }
 
 // "pulsera" -> "Pulsera". La planilla mezcla mayúsculas y minúsculas.
@@ -261,6 +283,8 @@ function rowToProduct(row) {
     // Precio de esta pieza cuando va en conjunto con un dije. Que la celda
     // tenga número es lo que la ofrece como cadena para armar conjunto.
     priceCombo: conjunto && conjunto < price ? conjunto : null,
+    // La foto del dije y la cadena juntos, si está cargada.
+    imageCombo: fotoDelConjunto(row),
     priceNote: esDeAPares(category) ? 'par' : 'und',
     stock,
     image: fotos[0] || '',

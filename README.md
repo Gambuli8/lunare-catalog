@@ -133,7 +133,7 @@ publicar siguen siendo accesibles con la URL vieja.
 ```
 Id | Nombre | Categoría | Material | Precio costo | Precio individual |
 Precio Par | Stock | Imagen | Imagen 2 | Imagen 3 | Imagen 4 |
-Destacado | Precio promo | Precio conjunto
+Destacado | Precio promo | Precio conjunto | Imagen conjunto
 ```
 
 - **Stock ≤ 0** → el producto no aparece.
@@ -153,6 +153,10 @@ Destacado | Precio promo | Precio conjunto
 - **`Precio conjunto`** es lo que sale **esa cadena** cuando se la lleva junto a
   un dije. Solo se carga en las cadenas, y solo vale si es menor al precio
   normal. Ver [Conjuntos](#conjuntos-dije--cadena).
+- **`Imagen conjunto`** es opcional y va también en la cadena: la foto del dije
+  y la cadena puestos juntos, para ofrecer el conjunto con la imagen de lo que
+  se lleva. **No entra en la galería de la pieza**, sale solo donde se ofrece el
+  conjunto. Sin ella se muestra la foto de la cadena.
 - **`Destacado`** acepta `si`, `sí`, `yes`, `1` o `true`.
 - **`Categoría`** es lo que se lee debajo del nombre —"Argolla 9mm", "Collar
   gamuza"—, así que se muestra siempre con mayúscula inicial aunque en la
@@ -183,6 +187,16 @@ Que esa celda tenga un número es lo único que convierte a una pieza en cadena 
 conjunto. Así son cuatro celdas y no las veintiocho combinaciones de siete dijes
 por cuatro cadenas, y la dueña lo maneja desde el Sheet sin pedir cambios de
 código. Mientras no haya ninguna cargada, el bloque no aparece en ningún lado.
+
+**Dónde se ofrece.** En la ficha de un dije, al tocar "Agregar al pedido" sale
+un cuadro con las cadenas antes de que el dije entre al carrito: es el momento
+en que la clienta está decidiendo. No es una tranquera —se puede seguir sin
+cadena, y el dije entra igual—. Más abajo en la misma ficha queda el bloque
+"Armá tu conjunto", que también funciona al revés: desde una cadena, ofrece los
+dijes.
+
+Los precios que se muestran son **los de las dos piezas juntas**, no el de la
+cadena sola: es lo que la clienta va a pagar.
 
 **La regla: una cadena en promo por cada dije.** Dos dijes y dos cadenas, las dos
 en promo; dos cadenas y un solo dije, una sola —la de menor cantidad, así entran
