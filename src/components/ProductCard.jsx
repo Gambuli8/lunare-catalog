@@ -39,9 +39,11 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
           {formatPrice(price)}
         </div>
       )}
-      <div className={`${noteSize} text-[#5f574e] tracking-wide mt-1`}>
-        {priceNote === 'par' ? 'el par' : 'por unidad'}
-      </div>
+      {/* Solo en los aritos, que se venden de a dos. En el resto "por
+          unidad" era ruido: nadie piensa que una pulsera viene de a pares. */}
+      {priceNote === 'par' && (
+        <div className={`${noteSize} text-[#5f574e] tracking-wide mt-1`}>el par</div>
+      )}
     </div>
   )
 }
