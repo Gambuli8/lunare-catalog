@@ -94,6 +94,13 @@ const CATEGORY_MAP = [
   { keys: ['abridor'], canonical: 'Abridor' },
 ]
 
+// Los aritos se venden de a pares y no por unidad. Es una propiedad de la
+// pieza, no de qué celda de la planilla esté cargada: por eso la lista va
+// acá y no se deduce de "Precio Par".
+const DE_A_PARES = ['Argolla', 'Pasante', 'Abridor']
+
+export const esDeAPares = category => DE_A_PARES.includes(category)
+
 const CATEGORY_EMOJI = {
   Argolla: '💍', Pasante: '✨', Cuff: '⛓️',
   Collar: '🔗', Dije: '⭐', Pulsera: '💎', Anillo: '💍',
@@ -199,15 +206,21 @@ function rowToProduct(row) {
   const id = (row['Id'] || '').trim()
   if (!id) return null // sin código no se puede pedir por WhatsApp ni deduplicar el carrito
 
+  const rawCategory = (row['Categoría'] || row['Categoria'] || '').trim()
+  const category = normalizeCategory(rawCategory)
+
+  // Los aritos se venden solo de a pares, así que su precio sale siempre de
+  // "Precio Par" y nunca de "Precio individual": si un día esa celda
+  // quedara cargada por error, cobraríamos un par al precio de uno.
+  //
+  // Al revés no aplica: todo lo demás —collares, pulseras, dijes— se vende
+  // por unidad y usa "Precio individual", que son 82 de las 103 piezas.
   const pricePar = toNumber(row['Precio Par'])
-  const priceInd = toNumber(row['Precio individual'])
-  const price = pricePar || priceInd
+  const price = esDeAPares(category) ? pricePar : (pricePar || toNumber(row['Precio individual']))
   if (!price) return null
 
   const promo = toNumber(row['Precio promo'] || row['precio promo'] || row['Promo'])
   const conjunto = toNumber(row['Precio conjunto'] || row['precio conjunto'] || row['Precio Conjunto'])
-  const rawCategory = (row['Categoría'] || row['Categoria'] || '').trim()
-  const category = normalizeCategory(rawCategory)
   const destacado = (row['Destacado'] || row['destacado'] || '').trim().toLowerCase()
   const name = correctName(row['Nombre'] || '')
   const fotos = fotosDeLaFila(row)
@@ -229,7 +242,7 @@ function rowToProduct(row) {
     // Precio de esta pieza cuando va en conjunto con un dije. Que la celda
     // tenga número es lo que la ofrece como cadena para armar conjunto.
     priceCombo: conjunto && conjunto < price ? conjunto : null,
-    priceNote: pricePar ? 'par' : 'und',
+    priceNote: esDeAPares(category) ? 'par' : 'und',
     stock,
     image: fotos[0] || '',
     // Las demás fotos de la pieza, en el orden de las columnas.

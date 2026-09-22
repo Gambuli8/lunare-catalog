@@ -225,7 +225,7 @@ export default function ProductPage({ slug }) {
 
 
   const sections = [
-    { title: 'Descripción', body: `${product.subcategory || product.category} de ${product.material.toLowerCase()}. ${product.priceNote === 'par' ? 'Se vende por par.' : 'Se vende por unidad.'}` },
+    { title: 'Descripción', body: `${product.subcategory || product.category} de ${product.material.toLowerCase()}.${product.priceNote === 'par' ? ' Se vende por par.' : ''}` },
     { title: 'Material y medidas', body: MATERIAL_COPY[product.material] || product.material },
     { title: 'Cuidados', body: CARE },
     { title: 'Cambios', body: EXCHANGE },
@@ -325,9 +325,9 @@ export default function ProductPage({ slug }) {
                 </span>
               )}
             </div>
-            <span className='text-[13px] text-[#5f574e]'>
-              {product.priceNote === 'par' ? 'el par — el precio ya incluye las dos piezas' : 'precio por unidad'}
-            </span>
+            {product.priceNote === 'par' && (
+              <span className='text-[13px] text-[#5f574e]'>el par</span>
+            )}
           </div>
 
           <div className='flex items-center gap-2.5 text-sm'>

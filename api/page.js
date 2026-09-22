@@ -20,10 +20,14 @@ const MATERIAL_COPY = {
 }
 
 function description(p) {
-  const venta = p.priceNote === 'par' ? 'Se vende por par.' : 'Se vende por unidad.'
-  const material = MATERIAL_COPY[p.material] || ''
-  return `${p.name} — ${p.subcategory || p.category} de ${p.material.toLowerCase()}. ` +
-    `${material} ${venta} ${formatPrice(p.pricePromo || p.price)} en Lunare Accesorios.`
+  // Se arma con las partes que existen: "Se vende por par" solo lo llevan
+  // los aritos, y unirlas a mano dejaba dos espacios seguidos en el resto.
+  return [
+    `${p.name} — ${p.subcategory || p.category} de ${p.material.toLowerCase()}.`,
+    MATERIAL_COPY[p.material],
+    p.priceNote === 'par' ? 'Se vende por par.' : null,
+    `${formatPrice(p.pricePromo || p.price)} en Lunare Accesorios.`,
+  ].filter(Boolean).join(' ')
 }
 
 // Schema.org Product: es lo que hace que Google muestre precio y
