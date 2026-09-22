@@ -181,6 +181,11 @@ export default function CartSidebar() {
     if (confirmado) { setConfirmado(null); setPaso(1) }
   }
 
+  // De la pieza del carrito a su ficha. La navegación la resuelve el router
+  // —son <a href> de verdad, así que también se abren en otra pestaña—; acá
+  // solo cerramos el panel, que si no queda tapando la ficha.
+  const irALaFicha = () => setIsOpen(false)
+
   const textoWhatsApp = () => {
     let m = `¡Hola! Soy ${datos.nombre.trim() || '[tu nombre]'} y quiero hacer este pedido:\n\n`
     items.forEach(i => {
@@ -452,17 +457,40 @@ export default function CartSidebar() {
 
               {paso === 1 && items.map(item => {
                 const tope = item.qty >= (item.stock ?? Infinity)
+                // La ficha de la pieza, para poder volver a mirarla desde el
+                // carrito. Un carrito guardado hace mucho puede no tener el
+                // slug: ahí la foto y el nombre quedan como texto.
+                const ficha = item.slug ? `/producto/${item.slug}` : null
+                const foto = (
+                  <CloudinaryImage
+                    src={item.image}
+                    alt={item.name}
+                    className='flex-shrink-0 object-cover w-[74px] h-[74px]'
+                    fallback={<div className='w-[74px] h-[74px] bg-line' />}
+                  />
+                )
                 return (
                   <div key={item.id} className='flex gap-4 p-3.5 bg-paper border border-border'>
-                    <CloudinaryImage
-                      src={item.image}
-                      alt={item.name}
-                      className='flex-shrink-0 object-cover w-[74px] h-[74px]'
-                      fallback={<div className='w-[74px] h-[74px] bg-line' />}
-                    />
+                    {/* El robot y el lector de pantalla ven un solo link por
+                        pieza: este repite el de al lado y no aporta nada. */}
+                    {ficha ? (
+                      <a href={ficha} onClick={irALaFicha} tabIndex={-1} aria-hidden='true' className='flex-shrink-0'>
+                        {foto}
+                      </a>
+                    ) : foto}
                     <div className='flex flex-col flex-grow min-w-0 gap-1'>
                       <div className='flex items-start justify-between gap-2'>
-                        <span className='font-serif text-[19px] leading-tight'>{item.name}</span>
+                        {ficha ? (
+                          <a
+                            href={ficha}
+                            onClick={irALaFicha}
+                            className='font-serif text-[19px] leading-tight transition-colors hover:text-gold'
+                          >
+                            {item.name}
+                          </a>
+                        ) : (
+                          <span className='font-serif text-[19px] leading-tight'>{item.name}</span>
+                        )}
                         <button
                           onClick={() => removeItem(item.id)}
                           aria-label={`Quitar ${item.name} del pedido`}
