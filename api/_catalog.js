@@ -19,7 +19,7 @@
 // Los archivos de api/ que empiezan con "_" no son endpoints: Vercel
 // los ignora al armar las rutas.
 
-import { rpc } from './_supabase.js'
+import { rpc, supabaseConfigurado } from './_supabase.js'
 
 // Se lee dentro de la función y no al cargar el módulo: así, si la
 // variable se carga en Vercel después del build, alcanza con redeployar
@@ -396,6 +396,17 @@ const TTL = 60_000
 // esa: mejor un catálogo de hace un rato que una tienda vacía.
 export async function getCatalog({ force = false } = {}) {
   if (!force && cache && Date.now() - cache.at < TTL) return cache.products
+
+  // Sin Supabase configurado (una vista previa sin las variables, o
+  // `npm run dev` sin claves) la tienda sigue con la planilla: mejor eso
+  // que una tienda vacía.
+  if (!supabaseConfigurado()) {
+    if (!csvUrl()) throw new Error('Faltan las variables de Supabase y SHEET_CSV_URL')
+    console.warn('[catalogo] Supabase no está configurado: se lee la planilla')
+    const products = await catalogoDeLaPlanilla()
+    cache = { at: Date.now(), products }
+    return products
+  }
 
   let r
   try {
