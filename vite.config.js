@@ -88,6 +88,7 @@ export default defineConfig(({ mode }) => {
     'MICORREO_USUARIO', 'MICORREO_PASSWORD', 'MICORREO_CLIENTE',
     'MICORREO_CP_ORIGEN', 'MICORREO_AMBIENTE',
     'MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET', 'CRON_SECRET',
+    'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET',
   ]) {
     if (env[key]) process.env[key] = env[key]
   }

@@ -458,7 +458,15 @@ export default function ProductPage({ slug }) {
   const medida = medidaDe(product.subcategory)
 
   const sections = [
-    { title: 'Descripción', body: `${product.subcategory || product.category} de ${product.material.toLowerCase()}.${product.priceNote === 'par' ? ' Se vende por par.' : ''}` },
+    {
+      title: 'Descripción',
+      // La que cargó la dueña en el panel va primero; la armada con la
+      // categoría y el material queda abajo, que es lo que había antes.
+      body: [
+        product.description,
+        `${product.subcategory || product.category} de ${product.material.toLowerCase()}.${product.priceNote === 'par' ? ' Se vende por par.' : ''}`,
+      ].filter(Boolean).join('\n\n'),
+    },
     {
       // Sin medida cargada, la sección no la promete.
       title: medida ? 'Material y medidas' : 'Material',

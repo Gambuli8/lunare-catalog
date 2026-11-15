@@ -22,7 +22,8 @@ lunare-catalog/
 ├── public/
 │   └── robots.txt
 ├── api/                   ← los que empiezan con "_" no son endpoints
-│   ├── _catalog.js          ← lee el Sheet y normaliza el catálogo
+│   ├── _catalog.js          ← el catálogo desde la base; la planilla, solo para importar
+│   ├── _productos.js        ← el catálogo en el panel: validar, guardar, importar, fotos
 │   ├── _conjunto.js         ← precio de dije + cadena; lo que se cobra
 │   ├── _pedidos.js          ← entregas, pagos y validación de los ítems
 │   ├── _envios.js           ← tarifas por CP, de otra pestaña del Sheet
@@ -38,12 +39,13 @@ lunare-catalog/
 │   ├── shop.js              ← HTML de /tienda y /tienda/:categoria
 │   ├── pagina.js            ← HTML de /cuidados, /cambios y /contacto
 │   ├── sitemap.js           ← sitemap.xml generado del catálogo
-│   ├── pedido.js            ← crea el pedido; precios y envío los pone el servidor
-│   ├── pedido-estado.js     ← si un pedido sigue esperando el pago
+│   ├── pedido.js            ← POST crea el pedido; GET ?id= dice si sigue esperando el pago
 │   ├── envio.js             ← opciones de envío de un CP, con el precio final
 │   ├── mp-webhook.js        ← donde Mercado Pago avisa que se pagó
-│   ├── panel-login.js       ← entrar y salir del panel
-│   └── panel.js             ← los datos del panel
+│   ├── cron-vencidos.js     ← cancela los pedidos de Mercado Pago que nadie pagó
+│   └── panel.js             ← todo el panel: sesión, pedidos y catálogo
+├── supabase/
+│   └── migrations/          ← el SQL de la base
 └── src/
     ├── main.jsx
     ├── App.jsx
@@ -76,7 +78,8 @@ lunare-catalog/
         ├── Copiable.jsx        ← copiar un código de un toque
         ├── Pago.jsx            ← la vuelta de Mercado Pago
         ├── PagoPendiente.jsx   ← aviso a quien volvió sin pagar
-        ├── Panel.jsx           ← el panel de pedidos
+        ├── Panel.jsx           ← el panel: pedidos y arrepentimientos
+        ├── PanelProductos.jsx  ← el panel: el catálogo
         ├── Contact.jsx
         ├── Cuidados.jsx
         ├── Politicas.jsx
@@ -103,9 +106,77 @@ npm run build
 `npm run dev` sirve `/api/products` con un middleware de Vite, así que no hace
 falta la CLI de Vercel. En producción lo sirve Vercel como función serverless.
 
-## Catálogo y precios
+## Catálogo en el panel
 
-El catálogo sale de un Google Sheet publicado como CSV. **La URL del Sheet la
+**El catálogo vive en Supabase (tabla `productos`) y se maneja solo desde
+`/panel` → Productos.** La planilla quedó únicamente para la importación
+inicial. El SQL está en `supabase/migrations/20261115_catalogo_en_supabase.sql`.
+
+Desde el panel la dueña puede:
+
+- **Ver** todas las piezas, con buscador, filtro por categoría y por estado
+  (en venta, sin stock, ocultas).
+- **Cambiar el stock** con + y − desde la lista, sin abrir la ficha.
+- **Crear y editar**: nombre, código, categoría, medida, material, precio,
+  promo, costo (solo lo ve ella), stock, fotos, descripción, precio y foto de
+  conjunto, visible y destacada.
+- **Subir fotos** desde el celular, que van directo a Cloudinary (ver abajo),
+  o pegar el link de una. La primera es la principal y se reordenan con ‹ ›.
+- **Ocultar** una pieza sin borrarla, o **borrarla** si nunca estuvo en un
+  pedido.
+- **Importar desde la planilla** las piezas que falten. Nunca pisa una que ya
+  esté cargada, así que se puede correr más de una vez.
+
+### El stock
+
+`stock` es **lo que queda para vender**. Un pedido lo descuenta al crearse,
+dentro de la transacción y con la fila bloqueada, y cancelarlo lo devuelve
+(trigger `pedidos_stock_segun_estado`). Ya no hay que descontar nada a mano.
+Una venta por WhatsApp sí se descuenta a mano, con el − de la lista.
+
+Al guardar desde el panel **se aplica la diferencia**, no el número: si la
+dueña abrió la ficha con 3, mientras tanto se vendió una y guarda 5, queda 4.
+Así una ficha abierta hace rato no "des-vende" lo que entró en el medio.
+
+### El pase desde la planilla
+
+Mientras la tabla esté vacía la tienda sigue leyendo la planilla, así que se
+puede desplegar antes de importar sin dejar la tienda sin productos. Apenas hay
+una fila, la planilla no se mira más.
+
+La importación respeta **el slug de cada pieza publicada**: ningún link que ya
+esté dando vueltas cambia. Las piezas sin stock entran con stock 0 y quedan en
+el panel para reponerlas.
+
+Si la planilla tiene **códigos repetidos**, entra una sola pieza por código (la
+que estaba publicada) y el panel avisa cuáles eran. Cuando son dos piezas
+distintas con el mismo código, la otra hay que cargarla con "+ Nueva pieza" y
+un código nuevo.
+
+### Cuánto tarda en verse un cambio
+
+Hasta un par de minutos: el catálogo se cachea un minuto en memoria y las
+páginas uno o dos más en Vercel. Si la base no responde, la tienda sigue
+mostrando la última copia que tenía.
+
+### Fotos
+
+```
+CLOUDINARY_CLOUD_NAME=dtbasr3hw
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+El navegador sube la foto directo a Cloudinary, a la carpeta
+`lunare/productos`, con una firma que da `/api/panel`. El archivo no pasa por
+Vercel y el secreto no sale del servidor. Sin estas variables el botón de
+subir no aparece y se puede pegar el link de una foto.
+
+## Catálogo y precios (planilla, solo para importar)
+
+Lo que sigue describe la planilla vieja. Sirve para la importación inicial.
+
+El catálogo salía de un Google Sheet publicado como CSV. **La URL del Sheet la
 lee únicamente el servidor**, en `api/_catalog.js`, desde la variable de entorno
 `SHEET_CSV_URL`. El navegador solo habla con `/api/products`, que devuelve los
 productos ya normalizados y **sin la columna `Precio costo`**.
@@ -425,7 +496,7 @@ el link de pago, y vence a las 24 h junto con la preferencia:
 - **En `/pago?estado=error`** aparece *Intentar de nuevo* con el mismo link.
 - `exito` y `pendiente` lo borran.
 
-Antes de mostrarlo pregunta a `GET /api/pedido-estado?id=<uuid>` si el pedido
+Antes de mostrarlo pregunta a `GET /api/pedido?id=<uuid>` si el pedido
 sigue pendiente, para no pedirle que pague a alguien que ya pagó. Va por el
 uuid y no por el número —que es correlativo y se adivina— y devuelve solo el
 número y el estado. Si la consulta falla se muestra igual, con la aclaración de

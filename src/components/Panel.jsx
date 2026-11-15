@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { formatPrice } from '../hooks/useProducts'
 import Icon from './Icon'
 import { linkSeguimiento } from '../lib/envios'
+import PanelProductos from './PanelProductos'
 
 // ── Panel de pedidos ──────────────────────────────────────────
 // Hasta acá los pedidos solo se veían consultando la base. Esto es la
@@ -10,7 +11,7 @@ import { linkSeguimiento } from '../lib/envios'
 // Pensado para el celular, que es desde donde se va a mirar: tarjetas y
 // no una tabla, y los botones de estado a lo ancho.
 //
-// La sesión es una cookie httpOnly que deja /api/panel-login; acá nunca
+// La sesión es una cookie httpOnly que deja /api/panel; acá nunca
 // se guarda la clave.
 
 const ESTADOS = {
@@ -87,10 +88,10 @@ function Entrar({ onEntro }) {
     setYendo(true)
     setError('')
     try {
-      const res = await fetch('/api/panel-login', {
+      const res = await fetch('/api/panel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ accion: 'entrar', password }),
       })
       const data = await res.json().catch(() => null)
       if (res.ok && data?.ok) { setPassword(''); onEntro(); return }
@@ -355,7 +356,9 @@ function Arrepentido({ dato: a, onEstado, moviendo }) {
 
 export default function Panel() {
   const [sesion, setSesion] = useState(null) // null = todavía no sabemos
-  const [vista, setVista] = useState('pedidos')
+  // Arranca en productos: mientras la tienda venda por WhatsApp, el
+  // catálogo es lo que más se toca.
+  const [vista, setVista] = useState('productos')
   const [filtro, setFiltro] = useState('')
   const [pedidos, setPedidos] = useState([])
   const [arrepentimientos, setArrepentimientos] = useState([])
@@ -375,7 +378,7 @@ export default function Panel() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/panel-login', {
+    fetch('/api/panel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accion: 'estado' }),
@@ -385,7 +388,11 @@ export default function Panel() {
       .catch(() => setSesion(false))
   }, [])
 
+  // La pestaña de productos trae lo suyo sola.
+  const sinSesion = useCallback(() => setSesion(false), [])
+
   const cargar = useCallback(async () => {
+    if (vista === 'productos') return
     setCargando(true)
     setError('')
     try {
@@ -457,7 +464,7 @@ export default function Panel() {
   }
 
   const salir = async () => {
-    await fetch('/api/panel-login', {
+    await fetch('/api/panel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accion: 'salir' }),
@@ -477,14 +484,16 @@ export default function Panel() {
     <section className='px-4 pt-6 pb-24 md:px-8'>
       <div className='max-w-3xl mx-auto'>
         <header className='flex flex-wrap items-center gap-3 mb-5'>
-          <h1 className='font-serif text-[26px] font-light text-dark'>Pedidos</h1>
-          <button
-            onClick={cargar}
-            disabled={cargando}
-            className='px-3 py-1.5 text-[12px] tracking-wide uppercase border border-border text-muted hover:border-gold hover:text-gold transition-colors disabled:opacity-40'
-          >
-            {cargando ? 'Actualizando…' : 'Actualizar'}
-          </button>
+          <h1 className='font-serif text-[26px] font-light text-dark'>Panel</h1>
+          {vista !== 'productos' && (
+            <button
+              onClick={cargar}
+              disabled={cargando}
+              className='px-3 py-1.5 text-[12px] tracking-wide uppercase border border-border text-muted hover:border-gold hover:text-gold transition-colors disabled:opacity-40'
+            >
+              {cargando ? 'Actualizando…' : 'Actualizar'}
+            </button>
+          )}
           <button
             onClick={salir}
             className='ml-auto text-[12px] tracking-wide uppercase text-soft hover:text-gold transition-colors'
@@ -493,7 +502,7 @@ export default function Panel() {
           </button>
         </header>
 
-        {resumen && (
+        {resumen && vista !== 'productos' && (
           <div className='flex flex-wrap gap-x-5 gap-y-2 px-4 py-3 mb-5 text-[13px] border border-border bg-paper'>
             <span className='text-muted'>
               Pendientes <b className='text-dark'>{porEstado.pendiente || 0}</b>
@@ -513,7 +522,7 @@ export default function Panel() {
         )}
 
         <div className='flex gap-4 mb-4 border-b border-border'>
-          {[['pedidos', 'Pedidos'], ['arrepentimientos', 'Arrepentimientos']].map(([k, l]) => (
+          {[['productos', 'Productos'], ['pedidos', 'Pedidos'], ['arrepentimientos', 'Arrepentimientos']].map(([k, l]) => (
             <button
               key={k}
               onClick={() => setVista(k)}
@@ -542,9 +551,11 @@ export default function Panel() {
           </div>
         )}
 
-        {error && <p className='mb-4 text-[13px] text-sale'>{error}</p>}
+        {vista === 'productos' && <PanelProductos onSinSesion={sinSesion} />}
 
-        {lista.length === 0 && !cargando ? (
+        {vista !== 'productos' && error && <p className='mb-4 text-[13px] text-sale'>{error}</p>}
+
+        {vista === 'productos' ? null : lista.length === 0 && !cargando ? (
           <p className='py-16 text-center text-[14px] text-soft'>
             {vista === 'pedidos'
               ? (filtro ? 'No hay pedidos en ese estado.' : 'Todavía no entró ningún pedido.')
