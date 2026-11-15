@@ -199,7 +199,9 @@ export async function cotizar(cp, { piezas = 1, valorDeclarado = 0 } = {}) {
 // en el Sheet y no está acá, el aviso sale igual, solo sin botón.
 const SEGUIMIENTO = [
   [/andreani/i, 'https://www.andreani.com/?tab=seguir-envio'],
-  [/correo\s*argentino|oca|paq\.?ar/i, 'https://www.correoargentino.com.ar/seguimiento-de-envios'],
+  // OCA no va acá: es otra empresa, y "oca" suelto también aparece dentro
+  // de cualquier palabra ("local"). Sin link propio, su aviso sale sin botón.
+  [/correo\s*argentino|\bpaq\.?ar\b/i, 'https://www.correoargentino.com.ar/seguimiento-de-envios'],
   [/integral\s*pack/i, 'https://www.integralpack.com.ar/seguimiento'],
 ]
 
