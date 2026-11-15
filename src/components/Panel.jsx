@@ -29,6 +29,12 @@ const ESTADOS_ARR = {
   rechazado: { etiqueta: 'Rechazado', clase: 'bg-[#fbeceb] text-[#9d3227] border-[#eccbc7]' },
 }
 
+const VISTAS = [
+  ['productos', 'Productos'],
+  ['pedidos', 'Pedidos'],
+  ['arrepentimientos', 'Arrepentimientos'],
+]
+
 const ENTREGAS = {
   retiro_santa_rosa: 'Retira en Santa Rosa',
   retiro_cordoba: 'Retira en Nueva Córdoba (Córdoba)',
@@ -487,27 +493,73 @@ export default function Panel() {
   const porEstado = resumen?.por_estado || {}
   const lista = vista === 'pedidos' ? pedidos : arrepentimientos
 
+  const marca = (
+    <span className='flex flex-col leading-none'>
+      <span className='font-serif text-[22px] tracking-[0.22em] text-dark'>LUNARE</span>
+      <span className='text-[10px] tracking-[0.28em] uppercase text-gold mt-1'>Panel</span>
+    </span>
+  )
+
   return (
-    <section className='px-4 pt-6 pb-24 md:px-8'>
-      <div className='max-w-3xl mx-auto'>
-        <header className='flex flex-wrap items-center gap-3 mb-5'>
-          <h1 className='font-serif text-[26px] font-light text-dark'>Panel</h1>
-          {vista !== 'productos' && (
+    <div className='lg:flex lg:min-h-screen'>
+      {/* En la compu: barra lateral fija, como una aplicación. */}
+      <aside className='sticky top-0 flex-col hidden h-screen gap-7 px-5 border-r lg:flex w-[220px] shrink-0 py-7 border-border'>
+        {marca}
+        <nav className='flex flex-col gap-1'>
+          {VISTAS.map(([k, l]) => (
+            <button
+              key={k}
+              onClick={() => setVista(k)}
+              className={`flex items-center h-11 px-3 text-[14px] text-left transition-colors ${
+                vista === k ? 'bg-dark text-cream' : 'text-dark hover:bg-line'
+              }`}
+            >
+              {l}
+            </button>
+          ))}
+        </nav>
+        <button onClick={salir} className='mt-auto self-start h-11 text-[12px] tracking-[0.12em] uppercase text-muted hover:text-gold'>
+          Salir
+        </button>
+      </aside>
+
+      {/* En el celular: la marca arriba y las pestañas abajo de ella. */}
+      <header className='flex items-center justify-between px-5 pt-4 pb-2 lg:hidden'>
+        {marca}
+        <button onClick={salir} className='h-11 text-[12px] tracking-[0.12em] uppercase text-muted hover:text-gold'>
+          Salir
+        </button>
+      </header>
+      <nav className='flex gap-5 px-5 border-b lg:hidden border-border'>
+        {VISTAS.map(([k, l]) => (
+          <button
+            key={k}
+            onClick={() => setVista(k)}
+            className={`py-3 text-[14px] transition-colors border-b-2 -mb-px ${
+              vista === k ? 'border-gold text-dark' : 'border-transparent text-muted'
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </nav>
+
+    <main className='flex-1 min-w-0 px-5 pt-4 pb-28 lg:px-8 lg:pt-7'>
+      <div className={vista === 'productos' ? 'max-w-6xl' : 'max-w-3xl'}>
+        {vista !== 'productos' && (
+          <header className='flex flex-wrap items-center gap-3 mb-5'>
+            <h1 className='font-serif text-[30px] font-normal text-dark'>
+              {vista === 'pedidos' ? 'Pedidos' : 'Arrepentimientos'}
+            </h1>
             <button
               onClick={cargar}
               disabled={cargando}
-              className='px-3 py-1.5 text-[12px] tracking-wide uppercase border border-border text-muted hover:border-gold hover:text-gold transition-colors disabled:opacity-40'
+              className='ml-auto px-3 py-1.5 text-[12px] tracking-wide uppercase border border-border text-muted hover:border-gold hover:text-gold transition-colors disabled:opacity-40'
             >
               {cargando ? 'Actualizando…' : 'Actualizar'}
             </button>
-          )}
-          <button
-            onClick={salir}
-            className='ml-auto text-[12px] tracking-wide uppercase text-soft hover:text-gold transition-colors'
-          >
-            Salir
-          </button>
-        </header>
+          </header>
+        )}
 
         {resumen && vista !== 'productos' && (
           <div className='flex flex-wrap gap-x-5 gap-y-2 px-4 py-3 mb-5 text-[13px] border border-border bg-paper'>
@@ -527,20 +579,6 @@ export default function Panel() {
             )}
           </div>
         )}
-
-        <div className='flex gap-4 mb-4 border-b border-border'>
-          {[['productos', 'Productos'], ['pedidos', 'Pedidos'], ['arrepentimientos', 'Arrepentimientos']].map(([k, l]) => (
-            <button
-              key={k}
-              onClick={() => setVista(k)}
-              className={`pb-2.5 text-[13px] tracking-wide transition-colors border-b-2 -mb-px ${
-                vista === k ? 'border-gold text-dark' : 'border-transparent text-soft hover:text-muted'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
 
         {vista === 'pedidos' && (
           <div className='flex flex-wrap gap-2 mb-5'>
@@ -585,6 +623,7 @@ export default function Panel() {
           </div>
         )}
       </div>
-    </section>
+    </main>
+    </div>
   )
 }
