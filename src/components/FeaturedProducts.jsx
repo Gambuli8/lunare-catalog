@@ -25,7 +25,7 @@ export default function FeaturedProducts() {
       <div className='max-w-screen-xl mx-auto'>
         <div className='flex flex-wrap items-end justify-between gap-4 mb-9'>
           <div className='flex flex-col gap-2'>
-            <p className='text-[11px] tracking-[0.2em] uppercase text-gold font-medium'>Lo más nuevo</p>
+            <p className='text-[11px] tracking-[0.2em] uppercase text-gold font-medium'>Nuestra selección</p>
             <h2 className='font-serif text-[clamp(30px,4vw,42px)] font-light text-dark'>Destacados</h2>
           </div>
           <a
