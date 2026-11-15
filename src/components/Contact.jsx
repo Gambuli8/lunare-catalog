@@ -8,7 +8,7 @@ const INSTAGRAM = INSTAGRAM_URL
 const FAQS = [
   {
     q: '¿Hacen envíos a todo el país?',
-    a: 'Por el momento no. Podés retirar tu pedido coordinando previamente en Santa Rosa (La Pampa) o en Nueva Córdoba (Córdoba).',
+    a: 'Sí, a todo el país, a domicilio o a sucursal: el costo lo ves en el carrito con tu código postal. También podés retirar sin costo coordinando en Santa Rosa (La Pampa) o en Nueva Córdoba (Córdoba).',
   },
   {
     q: '¿Los accesorios se oxidan?',

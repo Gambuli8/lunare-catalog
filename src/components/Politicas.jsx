@@ -1,23 +1,38 @@
 import Icon from './Icon'
 
+// ⚠️ Antes esta página decía "no realizamos devoluciones" y "los
+// productos NO tienen garantía". En una compra a distancia las dos cosas
+// van contra la Ley 24.240: el derecho a arrepentirse no se puede
+// renunciar (art. 34) y la garantía legal no se puede excluir (art. 11).
+// Los cambios por gusto sí son política de la tienda y pueden tener sus
+// condiciones. Este texto lo tiene que validar quien asesore al negocio.
 const POLICIES = [
+  {
+    title: 'Arrepentimiento y devoluciones',
+    items: [
+      'Si compraste por la web, tenés 10 días corridos desde que recibiste el producto para arrepentirte de la compra, sin dar explicaciones y sin ningún costo (Ley 24.240, art. 34).',
+      'Lo pedís desde el Botón de arrepentimiento: te damos el código del trámite en el momento. El producto tiene que volver sin uso y en las mismas condiciones en que lo recibiste.',
+      'Te devolvemos el total de lo que pagaste por el mismo medio de pago. Los gastos de la devolución corren por nuestra cuenta.',
+    ],
+    link: { text: 'Ir al Botón de arrepentimiento', href: '/arrepentimiento' },
+  },
   {
     title: 'Cambios',
     items: [
-      'Podés realizar el cambio de todos los productos excepto el rubro aros (incluye cuff a presión), por respeto a la higiene y salud de cada persona.',
-      'El producto a cambiar debe encontrarse en las mismas condiciones en que se recibió. Tené en cuenta que contás con un plazo máximo de 10 días corridos desde la compra para solicitar el cambio; pasado ese tiempo no se aceptarán devoluciones.',
-      'Todos los productos son revisados completamente antes de realizar el envío del pedido, de esta forma aseguramos la calidad de los mismos.',
-      'Para realizar un cambio escribinos al WhatsApp (2954476558). En caso que necesites hacer un cambio con envío, el mismo debe ser abonado.'
-    ]
+      'Podés cambiar cualquier producto excepto los aros (incluye cuff a presión), por respeto a la higiene y salud de cada persona.',
+      'El producto a cambiar tiene que estar en las mismas condiciones en que se recibió. Tenés 10 días corridos desde la compra para pedir el cambio.',
+      'Se toma en cuenta el valor que pagaste el día de la compra. Si el cambio necesita un envío, lo abonás vos.',
+      'Para hacer un cambio escribinos por WhatsApp al 2954 476558.',
+    ],
   },
   {
-    title: 'Devoluciones',
-    items: ['No realizamos devoluciones, solo cambios por otros productos, donde se toma en cuenta el valor abonado en la fecha de compra.']
+    title: 'Garantía',
+    items: [
+      'Todos los productos se revisan uno por uno antes de despacharlos.',
+      'Si una pieza tiene un defecto de fabricación, te la cambiamos por otra igual o te devolvemos el dinero. La garantía legal es de 6 meses desde que la recibiste (Ley 24.240, art. 11).',
+      'La garantía no cubre el desgaste natural ni los daños por mal uso: golpes, contacto con agua, perfumes, cremas o productos de limpieza.',
+    ],
   },
-  {
-    title: 'Garantías',
-    items: ['Los productos NO tienen garantía. No realizamos cambios o reposiciones de productos por mal uso o desgaste natural de los mismos.']
-  }
 ]
 
 export default function Politicas() {
@@ -50,6 +65,15 @@ export default function Politicas() {
                   </li>
                 ))}
               </ul>
+              {block.link && (
+                <a
+                  href={block.link.href}
+                  className='inline-flex items-center gap-2 mt-6 min-h-[44px] px-6 text-xs tracking-[0.14em] uppercase border border-dark text-dark hover:bg-dark hover:text-cream transition-colors'
+                >
+                  {block.link.text}
+                  <Icon name='flecha' size={14} strokeWidth={1.8} />
+                </a>
+              )}
             </div>
           ))}
         </div>

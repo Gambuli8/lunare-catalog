@@ -21,8 +21,14 @@ const PAGINAS = {
   cambios: {
     ruta: '/cambios',
     title: 'Cambios y devoluciones | Lunare Accesorios',
-    desc: 'Podés cambiar dentro de los 10 días corridos, sin uso y en las mismas ' +
-      'condiciones. Por higiene, los aros y cuffs a presión no tienen cambio.',
+    desc: 'Tenés 10 días corridos para arrepentirte de tu compra, sin costo. ' +
+      'Cambios dentro de los 10 días y garantía legal de 6 meses por defectos de fabricación.',
+  },
+  privacidad: {
+    ruta: '/privacidad',
+    title: 'Política de privacidad | Lunare Accesorios',
+    desc: 'Qué datos pedimos al comprar, para qué los usamos, con quién se ' +
+      'comparten y cómo pedir que los corrijamos o borremos.',
   },
   contacto: {
     ruta: '/contacto',
@@ -30,13 +36,20 @@ const PAGINAS = {
     desc: 'Escribinos por WhatsApp al +54 2954 476558 o seguinos en Instagram ' +
       '@lunare.acc. Retiro en Santa Rosa (La Pampa) y Nueva Córdoba (Córdoba).',
   },
+  arrepentimiento: {
+    ruta: '/arrepentimiento',
+    title: 'Botón de arrepentimiento | Lunare Accesorios',
+    desc: 'Podés arrepentirte de tu compra dentro de los 10 días corridos, sin ' +
+      'costo y sin dar explicaciones. Completá el formulario y recibís el código ' +
+      'del trámite en el momento.',
+  },
 }
 
 // Las FAQ como datos estructurados: es lo que le permite a Google mostrar
 // las preguntas desplegables en los resultados.
 const FAQ = [
   ['¿Hacen envíos a todo el país?',
-   'Por el momento no. Podés retirar tu pedido coordinando previamente en Santa Rosa (La Pampa) o en Nueva Córdoba (Córdoba).'],
+   'Sí, a todo el país, a domicilio o a sucursal: el costo lo ves en el carrito con tu código postal. También podés retirar sin costo coordinando en Santa Rosa (La Pampa) o en Nueva Córdoba (Córdoba).'],
   ['¿Los accesorios se oxidan?',
    'Están hechos con materiales de buena calidad, pero conviene evitar el contacto con agua, perfumes o cremas para prolongar su duración.'],
   ['¿Puedo cambiar una pieza si no me queda bien?',
