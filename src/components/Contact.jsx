@@ -35,7 +35,7 @@ function FAQItem({ q, a, link, open, onToggle }) {
         <span className={`font-sans text-sm font-medium transition-colors duration-200 ${open ? 'text-[#b89a6a]' : 'text-[#0e0d0c] group-hover:text-[#b89a6a]'}`}>{q}</span>
         <span
           className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-300
-          ${open ? 'border-[#b89a6a] bg-[#b89a6a] text-white rotate-45' : 'border-[#e8e2da] text-[#7a7269]'}`}
+          ${open ? 'border-[#b89a6a] bg-[#b89a6a] text-white rotate-45' : 'border-[#e8e2da] text-[#6b6258]'}`}
         >
           <svg
             width='10'
@@ -50,7 +50,7 @@ function FAQItem({ q, a, link, open, onToggle }) {
         </span>
       </button>
       <div className={`overflow-hidden transition-all duration-500 ease-in-out ${open ? 'max-h-40 pb-4' : 'max-h-0'}`}>
-        <p className='font-sans text-sm text-[#7a7269] leading-relaxed'>{a}</p>
+        <p className='font-sans text-sm text-[#6b6258] leading-relaxed'>{a}</p>
         {link && (
           <a
             href={link.href}
@@ -95,7 +95,7 @@ export default function Contact() {
           <p className='text-[11px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-2'>Hablemos</p>
           <h2 className='font-serif text-[clamp(36px,5vw,52px)] font-light text-[#0e0d0c] mb-5'>Contacto</h2>
           <div className='w-px h-12 bg-[#e8e2da] mb-5' />
-          <p className='text-[#7a7269] text-[15px] leading-relaxed mb-10 font-sans'>Ante cualquier duda o consulta, escribinos por WhatsApp o seguinos en Instagram. </p>
+          <p className='text-[#6b6258] text-[15px] leading-relaxed mb-10 font-sans'>Ante cualquier duda o consulta, escribinos por WhatsApp o seguinos en Instagram. </p>
 
           <div className='flex flex-col gap-3'>
             {/* WhatsApp */}
@@ -165,7 +165,7 @@ export default function Contact() {
               </div>
               <div className='relative z-10'>
                 <p className='font-sans text-sm font-medium tracking-wide transition-colors duration-300 group-hover:text-white'>Instagram</p>
-                <p className='text-[11px] text-[#7a7269] group-hover:text-white/80 font-sans mt-0.5 transition-colors duration-300'>@lunare.acc</p>
+                <p className='text-[11px] text-[#6b6258] group-hover:text-white/80 font-sans mt-0.5 transition-colors duration-300'>@lunare.acc</p>
               </div>
               <svg
                 className='relative z-10 flex-shrink-0 ml-auto transition-all duration-300 opacity-30 group-hover:opacity-100 group-hover:translate-x-1 group-hover:text-white'
@@ -188,7 +188,7 @@ export default function Contact() {
           <h2 className='font-serif text-[clamp(28px,4vw,42px)] font-light text-[#0e0d0c] mb-5'>Todo lo que necesitás saber</h2>
           <div className='w-px h-12 bg-[#e8e2da] mb-5' />
           <FAQList />
-          <p className='text-sm text-[#7a7269] font-sans mt-6'>
+          <p className='text-sm text-[#6b6258] font-sans mt-6'>
             ¿No encontrás lo que buscás?{' '}
             <a
               href='https://wa.me/542954476558?text=Hola!%20Tengo%20una%20consulta%20sobre%20Lunare%20Accesorios'

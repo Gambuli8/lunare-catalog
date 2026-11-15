@@ -28,7 +28,7 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
             <span className={`font-serif ${mainSize} font-medium text-red-600 leading-none`}>
               {formatPrice(pricePromo)}
             </span>
-            <span className='font-serif text-[14px] text-[#b8b0a8] line-through leading-none'>
+            <span className='font-serif text-[14px] text-[#7f756c] line-through leading-none'>
               {formatPrice(price)}
             </span>
           </div>
@@ -38,7 +38,7 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
           {formatPrice(price)}
         </div>
       )}
-      <div className={`${noteSize} text-[#7a7269] tracking-widest mt-0.5`}>
+      <div className={`${noteSize} text-[#6b6258] tracking-widest mt-0.5`}>
         {priceNote === 'par' ? 'precio por par' : 'por unidad'}
       </div>
     </div>
@@ -103,7 +103,7 @@ export default function ProductCard({ product, index }) {
       <div className='flex flex-col flex-1 p-5'>
         <p className='text-[10px] tracking-[0.2em] uppercase text-[#b89a6a] font-sans mb-1.5'>{product.category}</p>
         <h3 className='font-serif text-[20px] font-light leading-snug text-[#0e0d0c] mb-1'>{product.name}</h3>
-        <p className='text-[11px] text-[#7a7269] tracking-wider mb-4'>{product.subcategory}</p>
+        <p className='text-[11px] text-[#6b6258] tracking-wider mb-4'>{product.subcategory}</p>
 
         <div className='flex items-end justify-between gap-2 mt-auto'>
           <PriceDisplay

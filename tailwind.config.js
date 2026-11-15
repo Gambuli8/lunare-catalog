@@ -8,7 +8,7 @@ export default {
         dark:   '#0e0d0c',
         gold:   '#b89a6a',
         'gold-lt': '#d4b98a',
-        muted:  '#7a7269',
+        muted:  '#6b6258',
         border: '#e8e2da',
         taupe:  '#7d6b5e',
       },

@@ -29,7 +29,7 @@ const NAME_CORRECTIONS = {
   'eclectic moon':'Eclectic Moon','shiny heart silver':'Shiny Heart Silver',
 }
 
-function correctName(raw = '') {
+export function correctName(raw = '') {
   const key = raw.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ')
   return NAME_CORRECTIONS[key] || toTitleCase(raw.trim())
 }
@@ -50,7 +50,7 @@ const CATEGORY_MAP = [
   { keys: ['broche'],                                    canonical: 'Broche'  },
 ]
 
-function normalizeCategory(raw = '') {
+export function normalizeCategory(raw = '') {
   const s = raw.trim().toLowerCase()
   if (!s) return 'Otros'
   for (const { keys, canonical } of CATEGORY_MAP) {
@@ -61,7 +61,7 @@ function normalizeCategory(raw = '') {
 
 export const KNOWN_MATERIALS = ['Plata', 'Plata Dorada', 'Acero Blanco']
 
-function normalizeMaterial(raw = '') {
+export function normalizeMaterial(raw = '') {
   const s = raw.trim().toLowerCase()
   if (s === 'plata')                         return 'Plata'
   if (s === 'plata dorada' || s === 'oro')   return 'Plata Dorada'
@@ -129,7 +129,7 @@ function tokenizeCSV(text) {
   return rows
 }
 
-function parseCSV(text) {
+export function parseCSV(text) {
   const rows = tokenizeCSV(text).filter(r => r.some(cell => cell.trim() !== ''))
   if (rows.length < 2) return []
   const headers = rows[0].map(h => h.trim())
@@ -143,7 +143,7 @@ function parseCSV(text) {
 // Genera un id estable a partir de un texto (sin acentos, minúsculas,
 // separado por guiones). Se usa como fallback cuando el Sheet no trae Id,
 // para que el mismo producto conserve su id entre renders y recargas.
-function slugify(str = '') {
+export function slugify(str = '') {
   return str
     .trim()
     .toLowerCase()
@@ -153,7 +153,7 @@ function slugify(str = '') {
 }
 
 // ⚠️ "Precio costo" se lee pero NUNCA se incluye en el objeto retornado
-function rowToProduct(row) {
+export function rowToProduct(row) {
   const stock = parseFloat(row['Stock']) || 0
   if (stock <= 0) return null
 

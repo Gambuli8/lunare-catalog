@@ -118,7 +118,7 @@ export default function ProductModal() {
             <div>
               <p className='text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1'>{p.category}</p>
               <h2 id='product-modal-title' className='font-serif text-3xl font-light text-[#0e0d0c] leading-tight'>{p.name}</h2>
-              <p className='text-[12px] text-[#7a7269] mt-1 tracking-wide'>{p.subcategory}</p>
+              <p className='text-[12px] text-[#6b6258] mt-1 tracking-wide'>{p.subcategory}</p>
             </div>
 
             <div className='border-t border-b border-[#e8e2da] py-4'>
@@ -127,17 +127,17 @@ export default function ProductModal() {
                   <span className='inline-block bg-red-500 text-white text-[9px] tracking-[0.15em] uppercase px-2.5 py-0.5 rounded-sm font-sans mb-2'>Oferta</span>
                   <div className='flex flex-wrap items-baseline gap-3'>
                     <span className='font-serif text-[32px] font-medium text-red-600 leading-none'>{formatPrice(p.pricePromo)}</span>
-                    <span className='font-serif text-[20px] text-[#b8b0a8] line-through leading-none'>{formatPrice(p.price)}</span>
+                    <span className='font-serif text-[20px] text-[#7f756c] line-through leading-none'>{formatPrice(p.price)}</span>
                   </div>
                 </>
               ) : (
                 <div className='font-serif text-[32px] font-medium text-[#0e0d0c] leading-none'>{formatPrice(p.price)}</div>
               )}
-              <div className='text-[11px] text-[#7a7269] tracking-widest mt-1'>{p.priceNote === 'par' ? 'precio por par' : 'precio por unidad'}</div>
+              <div className='text-[11px] text-[#6b6258] tracking-widest mt-1'>{p.priceNote === 'par' ? 'precio por par' : 'precio por unidad'}</div>
             </div>
 
             <div>
-              <p className='text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2'>Material</p>
+              <p className='text-[10px] tracking-[0.2em] uppercase text-[#6b6258] font-sans mb-2'>Material</p>
               <p className='text-sm text-[#0e0d0c] leading-relaxed'>
                 {p.material === 'Plata'
                   ? 'Plata de ley 925 — 92.5% plata pura, hipoalergénica y duradera.'
@@ -150,12 +150,12 @@ export default function ProductModal() {
             </div>
 
             <div>
-              <p className='text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-2'>Cuidados</p>
+              <p className='text-[10px] tracking-[0.2em] uppercase text-[#6b6258] font-sans mb-2'>Cuidados</p>
               <ul className='flex flex-col gap-1.5'>
                 {CARE_TIPS.map((tip, i) => (
                   <li
                     key={i}
-                    className='flex items-start gap-2 text-sm text-[#7a7269]'
+                    className='flex items-start gap-2 text-sm text-[#6b6258]'
                   >
                     <span className='text-[#b89a6a] mt-0.5 flex-shrink-0'>🌙</span>
                     {tip}

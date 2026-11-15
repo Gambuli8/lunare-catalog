@@ -21,7 +21,7 @@ export default function Hero() {
           <br />
           <em className='italic text-[#b89a6a]'>Accesorios</em>
         </h1>
-        <p className='max-w-sm text-base font-light tracking-wide text-[#7a7269] mb-9'>
+        <p className='max-w-sm text-base font-light tracking-wide text-[#6b6258] mb-9'>
           Cada joya, una expresión de tu estilo.
         </p>
         <div className='flex flex-wrap items-center gap-4'>
@@ -33,7 +33,7 @@ export default function Hero() {
           </a>
           <a
             href='#featured'
-            className='inline-flex items-center gap-1.5 text-xs tracking-[0.15em] uppercase font-sans text-[#7a7269] hover:text-[#b89a6a] transition-colors duration-300'
+            className='inline-flex items-center gap-1.5 text-xs tracking-[0.15em] uppercase font-sans text-[#6b6258] hover:text-[#b89a6a] transition-colors duration-300'
           >
             Ver destacados
             <svg width='14' height='14' fill='none' stroke='currentColor' strokeWidth='2' viewBox='0 0 24 24'>
@@ -70,7 +70,7 @@ export default function Hero() {
               />
             ))}
           </div>
-          <p className='font-serif text-[13px] text-[#7a7269] tracking-[0.15em]'>✦ Jewelry ✦</p>
+          <p className='font-serif text-[13px] text-[#6b6258] tracking-[0.15em]'>✦ Jewelry ✦</p>
         </div>
 
         {/* Floating labels */}
