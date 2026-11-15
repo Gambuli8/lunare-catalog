@@ -3,3 +3,6 @@ dist/
 
 # Logs
 *.log
+
+# Cache de Vite (generado)
+node_modules/.vite/
