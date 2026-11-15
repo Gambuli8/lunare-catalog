@@ -18,6 +18,7 @@ import { waitUntil } from '@vercel/functions'
 import { rpc, supabaseConfigurado } from './_supabase.js'
 import { firmaValida, firmaConfigurada, consultarPago, mpConfigurado, resumenPago } from './_mp.js'
 import { avisarPagoAprobado } from './_aviso.js'
+import { avisarCompraMeta } from './_meta.js'
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
@@ -129,9 +130,13 @@ export default async function handler(req, res) {
 
   // El mail solo la primera vez: Mercado Pago manda varios eventos por el
   // mismo pago y nadie quiere seis mails del mismo pedido.
+  // Lo mismo para Meta: la compra se le avisa una vez, la primera.
   if (cambio?.cambiado) {
-    const aviso = avisarPagoAprobado({ pedido, pago: r })
-    try { waitUntil(aviso) } catch { await aviso }
+    const avisos = Promise.all([
+      avisarPagoAprobado({ pedido, pago: r }),
+      avisarCompraMeta(pedido),
+    ])
+    try { waitUntil(avisos) } catch { await avisos }
   }
 
   return res.status(200).json({ ok: true, cambiado: Boolean(cambio?.cambiado) })

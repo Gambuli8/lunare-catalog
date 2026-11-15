@@ -6,10 +6,19 @@ import { getCatalog } from './_catalog.js'
 import { ENTREGAS, PAGOS, ENVIO_GRATIS_DESDE, pedidosConfigurados } from './_pedidos.js'
 import { getZonas } from './_envios.js'
 import { mpConfigurado } from './_mp.js'
+import { feedXML } from './_feed.js'
 
 export default async function handler(req, res) {
   try {
     const products = await getCatalog()
+
+    // /feed.xml: el mismo catálogo en el formato de Meta y Google. Vive
+    // acá para no gastar una función de Vercel en él.
+    if (req.query?.feed === 'xml') {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8')
+      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400')
+      return res.status(200).send(feedXML(products))
+    }
 
     // El catálogo se edita a mano y cambia pocas veces por día: el CDN
     // sirve la copia cacheada y revalida por atrás, así una visita nunca

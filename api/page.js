@@ -9,15 +9,8 @@
 //
 // vercel.json manda /producto/:slug a esta función.
 
-import { getCatalog, SITE_URL, formatPrice, ogImage } from './_catalog.js'
+import { getCatalog, SITE_URL, formatPrice, ogImage, MATERIAL_COPY } from './_catalog.js'
 import { esc, loadShell, inject, notFound } from './_html.js'
-
-const MATERIAL_COPY = {
-  'Plata': 'Plata de ley 925, con 92,5 % de plata pura.',
-  'Plata Dorada': 'Plata de ley 925 con baño de oro.',
-  'Acero Blanco': 'Acero quirúrgico 316L con baño plateado, hipoalergénico y resistente al uso diario.',
-  'Bijou': 'Accesorio de bijouterie de alta calidad.',
-}
 
 function description(p) {
   // Se arma con las partes que existen: "Se vende por par" solo lo llevan

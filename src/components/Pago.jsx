@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { WHATSAPP } from '../lib/contacto'
 import { leerPagoPendiente, borrarPagoPendiente } from '../lib/pagoPendiente'
+import { trackCompra } from '../lib/track'
 import Icon from './Icon'
 import Copiable from './Copiable'
 
@@ -61,11 +62,17 @@ export default function Pago({ route }) {
   // falló, se guarda el link para que pueda volver a intentar desde acá.
   useEffect(() => {
     const clave = route?.query?.estado
+    const p = leerPagoPendiente()
     if (clave === 'exito' || clave === 'pendiente') {
+      // La compra para el píxel de Meta, una sola vez: el pendiente se
+      // borra acá mismo, así recargar la página no la cuenta de nuevo.
+      // Es solo para medir anuncios: lo que da el pedido por pagado es el
+      // webhook, que además le avisa la misma compra a Meta desde el
+      // servidor con el mismo id.
+      if (clave === 'exito' && p && (!numero || p.numero === numero)) trackCompra({ id: p.id, total: p.total })
       borrarPagoPendiente()
       return
     }
-    const p = leerPagoPendiente()
     if (clave === 'error' && p && (!numero || p.numero === numero)) setReintento(p.url)
   }, [route?.query?.estado, numero])
 

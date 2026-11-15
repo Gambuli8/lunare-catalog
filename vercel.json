@@ -13,6 +13,7 @@
     { "source": "/arrepentimiento", "destination": "/api/pagina?pagina=arrepentimiento" },
     { "source": "/privacidad", "destination": "/api/pagina?pagina=privacidad" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/feed.xml", "destination": "/api/products?feed=xml" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
