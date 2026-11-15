@@ -4,19 +4,22 @@
 //
 // A diferencia de la cortina de mantenimiento —que es una cortina y así
 // está documentada—, acá sí hay datos que proteger: nombres, teléfonos y
-// direcciones de las clientas. Por eso la clave nunca viaja en la URL,
-// solo por POST, y el panel no anda si la clave es corta.
+// direcciones de las clientas, y el catálogo entero. Por eso la clave
+// nunca viaja en la URL, solo por POST, el panel no anda si la clave es
+// corta, y hay un límite de intentos (ver ipDelPedido y la migración
+// limite_de_intentos_del_panel).
 //
 // Los archivos de api/ que empiezan con "_" no son endpoints.
 
-import { createHash, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
 export const COOKIE = 'lunare_panel'
 const HORAS = 12
 
-// 16 caracteres no es un capricho: la única defensa contra que alguien
-// pruebe claves contra el endpoint es que adivinarla sea inviable.
-const MINIMO = 16
+// Con el límite de intentos (5 por conexión y 30 en total cada 15
+// minutos), 10 caracteres con mayúsculas, minúsculas y números ya no se
+// pueden adivinar probando. Sin ese límite harían falta muchos más.
+const MINIMO = 10
 
 const clave = () => process.env.PANEL_PASSWORD || ''
 
@@ -38,6 +41,19 @@ function igual(a, b) {
 }
 
 export const claveCorrecta = enviada => Boolean(clave()) && igual(enviada, clave())
+
+// De qué conexión viene el intento, para el límite de intentos. En Vercel
+// la IP real la pone la plataforma en x-real-ip / x-forwarded-for; quien
+// llama no la puede elegir.
+//
+// No se guarda la IP sino un HMAC con la clave del panel: la tabla no
+// dice desde dónde se conectó nadie, y si la clave cambia, los hashes
+// viejos dejan de servir para nada.
+export function ipDelPedido(req) {
+  const h = req.headers || {}
+  const ip = String(h['x-real-ip'] || String(h['x-forwarded-for'] || '').split(',')[0] || req.socket?.remoteAddress || 'desconocida').trim()
+  return createHmac('sha256', `lunare-panel-ip:${clave()}`).update(ip).digest('hex')
+}
 
 export function leerCookie(req, nombre) {
   const crudo = req.headers?.cookie || ''

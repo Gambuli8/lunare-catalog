@@ -95,9 +95,16 @@ function Entrar({ onEntro }) {
       })
       const data = await res.json().catch(() => null)
       if (res.ok && data?.ok) { setPassword(''); onEntro(); return }
-      setError(data?.error === 'PANEL_NO_CONFIGURADO'
-        ? 'El panel no está configurado todavía.'
-        : 'Esa clave no es.')
+      if (data?.error === 'DEMASIADOS_INTENTOS') {
+        const min = Math.max(1, Math.ceil((data.espera_seg || 900) / 60))
+        setError(`Hubo demasiados intentos con la clave equivocada. Probá de nuevo en ${min} ${min === 1 ? 'minuto' : 'minutos'}.`)
+      } else if (data?.error === 'PANEL_NO_CONFIGURADO' || data?.error === 'NO_CONFIGURADO') {
+        setError('El panel no está configurado todavía.')
+      } else if (data?.error === 'NO_SE_PUDO_VERIFICAR') {
+        setError('No pudimos conectarnos con la base. Probá de nuevo en un rato.')
+      } else {
+        setError('Esa clave no es.')
+      }
     } catch {
       setError('No pudimos conectarnos. Probá de nuevo.')
     } finally {

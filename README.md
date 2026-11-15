@@ -587,9 +587,15 @@ Una sola clave compartida, sin usuarios: del otro lado hay una persona.
   como seguridad; acá hay nombres, teléfonos y direcciones de las clientas.
 - **La cookie no guarda la clave** sino su hash, es `HttpOnly` y `SameSite=Strict`,
   y dura 12 horas.
-- **Mínimo 16 caracteres**, y el panel se niega a arrancar con menos. Contra un
-  endpoint serverless no hay mucho más que se pueda hacer sin agregar estado;
-  que adivinarla sea inviable es la defensa.
+- **Límite de intentos.** 5 claves mal en 15 minutos desde la misma conexión la
+  bloquean hasta que pasen los 15 minutos; 30 en 15 minutos sumando todas las
+  conexiones cierran el login para todos (quien ya tiene la sesión abierta sigue
+  adentro). Los intentos se cuentan en la tabla `panel_intentos`, con un HMAC de
+  la IP y nunca la IP. Sin Supabase no hay cómo contarlos, y el login no acepta
+  ninguna clave.
+- **Mínimo 10 caracteres**, y el panel se niega a arrancar con menos. Con el
+  límite de intentos, 10 caracteres con mayúsculas, minúsculas y números no se
+  pueden adivinar probando.
 - **Comparación de tiempo constante** y una espera de 700 ms antes de contestar
   que la clave está mal.
 - `noindex` por cabecera, `Disallow` en `robots.txt` y sin analítica.

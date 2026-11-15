@@ -23,7 +23,7 @@ import { waitUntil } from '@vercel/functions'
 import { rpc, supabaseConfigurado } from './_supabase.js'
 import { avisarDespacho } from './_aviso.js'
 import {
-  autorizado, panelConfigurado, cabeceras, claveCorrecta, cookieSesion, cookieVacia,
+  autorizado, panelConfigurado, cabeceras, claveCorrecta, cookieSesion, cookieVacia, ipDelPedido,
 } from './_panel.js'
 import { ACCIONES_PRODUCTOS, listarProductosPanel } from './_productos.js'
 
@@ -55,7 +55,7 @@ async function sesion(req, res, body) {
   }
 
   if (!panelConfigurado()) {
-    console.error('[panel] falta PANEL_PASSWORD, o tiene menos de 16 caracteres')
+    console.error('[panel] falta PANEL_PASSWORD, o tiene menos de 10 caracteres')
     return res.status(503).json({ ok: false, error: 'PANEL_NO_CONFIGURADO' })
   }
 
@@ -64,9 +64,31 @@ async function sesion(req, res, body) {
     return res.status(200).json({ ok: true, sesion: autorizado(req) })
   }
 
-  if (!claveCorrecta(body.password ?? '')) {
-    await frenar()
-    return res.status(401).json({ ok: false, error: 'CLAVE_INCORRECTA' })
+  // El límite de intentos vive en la base. Sin base no hay cómo contarlos,
+  // y entonces no se prueba ninguna clave: la clave es corta porque el
+  // límite existe.
+  if (!supabaseConfigurado()) {
+    console.error('[panel] sin Supabase no hay límite de intentos: no se acepta el login')
+    return res.status(503).json({ ok: false, error: 'NO_CONFIGURADO' })
+  }
+
+  const ip = ipDelPedido(req)
+  try {
+    const limite = await rpc('panel_puede_intentar', { p_ip_hash: ip })
+    if (!limite?.ok) {
+      return res.status(429).json({ ok: false, error: 'DEMASIADOS_INTENTOS', espera_seg: limite?.espera_seg ?? 900 })
+    }
+
+    if (!claveCorrecta(body.password ?? '')) {
+      await rpc('panel_registrar_intento', { p_ip_hash: ip, p_ok: false })
+      await frenar()
+      return res.status(401).json({ ok: false, error: 'CLAVE_INCORRECTA' })
+    }
+
+    await rpc('panel_registrar_intento', { p_ip_hash: ip, p_ok: true })
+  } catch (err) {
+    console.error('[panel] no se pudo verificar el límite de intentos', err)
+    return res.status(503).json({ ok: false, error: 'NO_SE_PUDO_VERIFICAR' })
   }
 
   res.setHeader('Set-Cookie', cookieSesion(req))
@@ -80,7 +102,7 @@ export default async function handler(req, res) {
   if (['entrar', 'salir', 'estado'].includes(body.accion)) return sesion(req, res, body)
 
   if (!panelConfigurado()) {
-    console.error('[panel] falta PANEL_PASSWORD, o tiene menos de 16 caracteres')
+    console.error('[panel] falta PANEL_PASSWORD, o tiene menos de 10 caracteres')
     return res.status(503).json({ ok: false, error: 'PANEL_NO_CONFIGURADO' })
   }
   if (!autorizado(req)) {
