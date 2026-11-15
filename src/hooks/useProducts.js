@@ -90,24 +90,66 @@ function toImageUrl(url = '') {
     .replace(/^(https?:\/\/)www\./, '$1dl.')
 }
 
-function parseCSV(text) {
-  const lines = text.trim().split('\n')
-  if (lines.length < 2) return []
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
-  return lines.slice(1).map(line => {
-    const values = []
-    let cur = '', inQuotes = false
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i]
-      if (ch === '"') { inQuotes = !inQuotes }
-      else if (ch === ',' && !inQuotes) { values.push(cur.trim()); cur = '' }
-      else { cur += ch }
+// Parser CSV robusto: recorre todo el texto en un solo paso y respeta
+// comillas, de modo que una celda puede contener comas y hasta saltos de
+// línea sin romper el resto del archivo. Las comillas escapadas ("") se
+// convierten en una comilla literal.
+function tokenizeCSV(text) {
+  const rows = []
+  let row = []
+  let cur = ''
+  let inQuotes = false
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++ } // comilla escapada
+        else inQuotes = false
+      } else {
+        cur += ch
+      }
+      continue
     }
-    values.push(cur.trim())
+
+    if (ch === '"') { inQuotes = true }
+    else if (ch === ',') { row.push(cur); cur = '' }
+    else if (ch === '\n' || ch === '\r') {
+      // fin de fila (soporta \n y \r\n); ignora \r suelto antes de \n
+      if (ch === '\r' && text[i + 1] === '\n') i++
+      row.push(cur); cur = ''
+      rows.push(row); row = []
+    } else {
+      cur += ch
+    }
+  }
+  // última celda/fila si el archivo no termina en salto de línea
+  if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row) }
+  return rows
+}
+
+function parseCSV(text) {
+  const rows = tokenizeCSV(text).filter(r => r.some(cell => cell.trim() !== ''))
+  if (rows.length < 2) return []
+  const headers = rows[0].map(h => h.trim())
+  return rows.slice(1).map(cells => {
     const row = {}
-    headers.forEach((h, i) => { row[h] = (values[i] || '').replace(/^"|"$/g, '').trim() })
+    headers.forEach((h, i) => { row[h] = (cells[i] || '').trim() })
     return row
   })
+}
+
+// Genera un id estable a partir de un texto (sin acentos, minúsculas,
+// separado por guiones). Se usa como fallback cuando el Sheet no trae Id,
+// para que el mismo producto conserve su id entre renders y recargas.
+function slugify(str = '') {
+  return str
+    .trim()
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 // ⚠️ "Precio costo" se lee pero NUNCA se incluye en el objeto retornado
@@ -142,7 +184,7 @@ function rowToProduct(row) {
   const pricePromo = (promoValue && promoValue > 0 && promoValue < price) ? promoValue : null
 
   return {
-    id: (row['Id'] || '').trim() || Math.random().toString(36).slice(2),
+    id: (row['Id'] || '').trim() || slugify(`${correctName(row['Nombre'] || '')}-${rawCategory}`) || slugify(row['Nombre'] || '') || 'item',
     name: correctName(row['Nombre'] || ''),
     category,
     subcategory: rawCategory.trim(),

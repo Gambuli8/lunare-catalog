@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useProducts } from '../hooks/useProducts'
 import ProductCard from './ProductCard'
+import ProductJsonLd from './ProductJsonLd'
 
 const MATERIALS = [
   { key: 'all', label: 'Todos' },
@@ -291,6 +292,8 @@ export default function Catalog() {
       id='catalogo'
       className='px-6 py-24 bg-white md:px-12'
     >
+      {!loading && !error && <ProductJsonLd products={products} />}
+
       <div className='mb-12 text-center'>
         <p className='text-[11px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-2'>Nuestra colección</p>
         <h2 className='font-serif text-[clamp(36px,5vw,52px)] font-light text-[#0e0d0c]'>Productos</h2>
