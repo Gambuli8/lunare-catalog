@@ -743,6 +743,18 @@ export default function CartSidebar() {
                 </p>
               )}
 
+              {/* La Ley 25.326 pide que quien deja sus datos sepa para qué se
+                  usan. Va en el último paso, al lado del botón, y abre en
+                  otra pestaña para no perder el pedido a medio hacer. */}
+              {checkout.activo && paso === 3 && (
+                <p className='text-[12px] leading-relaxed text-muted'>
+                  Al confirmar aceptás la{' '}
+                  <a href='/privacidad' target='_blank' rel='noopener' className='underline hover:text-gold'>política de privacidad</a>{' '}
+                  y las condiciones de{' '}
+                  <a href='/cambios' target='_blank' rel='noopener' className='underline hover:text-gold'>cambios y devoluciones</a>.
+                </p>
+              )}
+
               {checkout.activo ? (
                 <div className='flex gap-2.5'>
                   {paso > 1 && (

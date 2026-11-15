@@ -602,22 +602,60 @@ Una sola clave compartida, sin usuarios: del otro lado hay una persona.
 
 ⚠️ Que no sea la misma clave que `MANTENIMIENTO_PASSWORD`.
 
-## Botón de arrepentimiento — sacado
+## Lo legal
 
-Vender online en Argentina **obliga** a publicar un link llamado *Botón de
-arrepentimiento*, de acceso fácil y directo desde la home y en lugar destacado
-(Resolución 424/2020 de la Secretaría de Comercio Interior).
+⚠️ Esto implementa lo que piden las normas; los textos los tiene que validar
+quien asesore al negocio.
 
-**Se sacó del sitio por pedido expreso del dueño del proyecto**, avisado del
-riesgo: sin ese link la tienda incumple la Ley de Defensa del Consumidor y
-queda expuesta a multa. Salieron el link del footer, la página, el formulario,
-`api/arrepentimiento.js`, la entrada del sitemap, las reescrituras y los mails.
+### Botón de arrepentimiento
 
-Lo que quedó: la pestaña **Arrepentimientos** del panel y la tabla en Supabase,
-para que las solicitudes ya recibidas se sigan viendo.
+Vender online en Argentina obliga a tener publicado un link llamado
+**Botón de arrepentimiento**, de acceso fácil y directo desde la home y en un
+lugar destacado (Resolución 424/2020 de la Secretaría de Comercio Interior). Va
+en el footer, aparte del resto de los links y con borde, para que se vea.
 
-Para reponerlo alcanza con revertir el commit "Sacar el botón de arrepentimiento
-del sitio público".
+Se había sacado del sitio a pedido del dueño del proyecto y volvió: es
+obligatorio y sin él la tienda queda expuesta a multa.
+
+La norma prohíbe pedir registración previa o cualquier trámite extra, así que
+`/arrepentimiento` no tiene login y el número de pedido es opcional: alcanza con
+nombre y correo. La norma da 24 horas para entregar un código de identificación
+del trámite; lo genera la base en el insert (`ARR-1000`, `ARR-1001`…), así que
+sale en pantalla al enviar el formulario y por mail. Las solicitudes se ven en
+el panel, pestaña **Arrepentimientos**.
+
+### Cambios, devoluciones y garantía (`/cambios`)
+
+La página decía "no realizamos devoluciones" y "los productos NO tienen
+garantía". En una compra online las dos cosas van contra la Ley 24.240: el
+derecho a arrepentirse dentro de los 10 días no se puede renunciar (art. 34) y la
+garantía legal —6 meses para cosas nuevas— no se puede excluir (art. 11). Ahora
+dice eso, y los **cambios** por gusto quedan como política de la tienda, con sus
+condiciones (sin aros, 10 días, el envío del cambio lo paga la clienta).
+
+Pendiente de decidir con el asesor: si los aros, por higiene, pueden quedar
+fuera del arrepentimiento (el Código Civil y Comercial exceptúa los bienes que
+"por su naturaleza no pueden ser devueltos").
+
+### Política de privacidad (`/privacidad`)
+
+La pide la Ley 25.326: la tienda junta nombre, teléfono, correo y dirección.
+Dice qué se pide, para qué, con quién se comparte (Mercado Pago, el transporte,
+Vercel, Supabase, Resend), cuánto se guarda y cómo pedir acceso, corrección o
+borrado, con las dos leyendas textuales de la Disposición 10/2008. Hay link en el
+footer y un aviso al lado del botón de confirmar del checkout.
+
+⚠️ Describe lo que el sitio hace hoy. Antes de sumar un servicio que reciba
+datos —el píxel de Meta, Google Analytics, una lista de mails— hay que agregarlo
+en `src/components/Privacidad.jsx`.
+
+### Datos fiscales
+
+Van en `src/lib/fiscal.js`: `RAZON_SOCIAL`, `CUIT`, `DOMICILIO` y
+`DATA_FISCAL_URL` (el link de `qr.afip.gob.ar` que da el Formulario 960/D en
+ARCA). **Están vacíos**: mientras lo estén, el footer no muestra el bloque —es
+preferible a publicar un CUIT equivocado— y la política de privacidad nombra solo
+a "Lunare Accesorios". Los valores los confirma el contador.
 
 ## Abrir la tienda en modo WhatsApp
 

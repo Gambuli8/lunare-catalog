@@ -49,6 +49,17 @@ export default function Footer() {
           Retiro coordinado en {RETIROS}
         </p>
 
+        {/* La Resolución 424/2020 pide que este link sea de acceso fácil y
+            directo desde la home y que ocupe un lugar destacado en visibilidad
+            y tamaño. Por eso va aparte, con borde y con el nombre exacto que
+            nombra la norma. */}
+        <a
+          href='/arrepentimiento'
+          className='inline-flex items-center justify-center w-full px-6 py-4 mt-7 text-xs tracking-[0.14em] uppercase transition-colors duration-300 border sm:w-auto border-gold-lt text-gold-lt hover:bg-gold-lt hover:text-dark'
+        >
+          Botón de arrepentimiento
+        </a>
+
         <a
           href={DEFENSA_CONSUMIDOR_URL}
           target='_blank'
@@ -57,6 +68,15 @@ export default function Footer() {
         >
           Defensa de las y los Consumidores. Para reclamos, ingresá acá
         </a>
+
+        <div className='flex flex-wrap justify-center gap-x-6'>
+          <a href='/cambios' className='inline-flex items-center min-h-[44px] text-[11px] tracking-wider text-white/45 underline hover:text-gold-lt transition-colors'>
+            Cambios, devoluciones y garantía
+          </a>
+          <a href='/privacidad' className='inline-flex items-center min-h-[44px] text-[11px] tracking-wider text-white/45 underline hover:text-gold-lt transition-colors'>
+            Política de privacidad
+          </a>
+        </div>
 
         {fiscalCompleto() && (
           <div className='flex flex-col items-center gap-3 pt-8 mt-8 border-t border-white/10 w-full'>

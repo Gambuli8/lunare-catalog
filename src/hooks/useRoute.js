@@ -19,6 +19,8 @@ export function parsePath(pathname = window.location.pathname, search = window.l
   if (seg[0] === 'cuidados') return { name: 'care', query }
   if (seg[0] === 'cambios') return { name: 'policy', query }
   if (seg[0] === 'contacto') return { name: 'contact', query }
+  if (seg[0] === 'arrepentimiento') return { name: 'regret', query }
+  if (seg[0] === 'privacidad') return { name: 'privacy', query }
   // Adonde vuelve la clienta desde Mercado Pago.
   if (seg[0] === 'pago') return { name: 'pago', query }
   // El panel no es parte de la tienda: no lleva navbar, footer ni carrito.

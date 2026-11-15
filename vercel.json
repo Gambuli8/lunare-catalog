@@ -10,6 +10,8 @@
     { "source": "/cuidados", "destination": "/api/pagina?pagina=cuidados" },
     { "source": "/cambios", "destination": "/api/pagina?pagina=cambios" },
     { "source": "/contacto", "destination": "/api/pagina?pagina=contacto" },
+    { "source": "/arrepentimiento", "destination": "/api/pagina?pagina=arrepentimiento" },
+    { "source": "/privacidad", "destination": "/api/pagina?pagina=privacidad" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
