@@ -28,7 +28,7 @@ export default function PagoPendiente() {
       if (!p || estaPospuesto(p.numero)) return
 
       try {
-        const res = await fetch(`/api/pedido-estado?id=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
+        const res = await fetch(`/api/pedido?id=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
         if (res.status === 404) { borrarPagoPendiente(); return }
         const data = await res.json().catch(() => null)
         if (data?.ok && data.estado !== 'pendiente') { borrarPagoPendiente(); return }

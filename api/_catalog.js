@@ -1,8 +1,12 @@
 // ── Catálogo ──────────────────────────────────────────────────
-// Lee el CSV del Google Sheet DEL LADO DEL SERVIDOR y lo normaliza.
-// Lo usan /api/products, /api/page y /api/sitemap.
+// El catálogo vive en la tabla "productos" de Supabase y la dueña lo
+// maneja desde el panel (/panel → Productos). Lo usan /api/products,
+// /api/page, /api/shop, /api/sitemap y /api/pedido.
 //
-// Por qué vive en el servidor:
+// La planilla quedó solo para importar el catálogo la primera vez. Lo
+// que sigue sobre el CSV aplica a esa importación.
+//
+// Por qué la planilla se lee en el servidor:
 // la URL del Sheet publicado incluye la columna "Precio costo". Si el
 // navegador es quien la descarga, esa URL viaja en el bundle y
 // cualquiera puede abrirla y ver los márgenes, el stock y los
@@ -14,6 +18,8 @@
 //
 // Los archivos de api/ que empiezan con "_" no son endpoints: Vercel
 // los ignora al armar las rutas.
+
+import { rpc, supabaseConfigurado } from './_supabase.js'
 
 // Se lee dentro de la función y no al cargar el módulo: así, si la
 // variable se carga en Vercel después del build, alcanza con redeployar
@@ -209,6 +215,10 @@ function normalizeCategory(raw = '') {
   return toTitleCase(raw.trim())
 }
 
+// Los materiales que entiende la tienda: el filtro, el cartel de la
+// tarjeta y el texto de la ficha salen de esta lista.
+export const MATERIALES = ['Plata', 'Plata Dorada', 'Acero Blanco', 'Bijou']
+
 function normalizeMaterial(raw = '') {
   const s = raw.trim().toLowerCase()
   if (s === 'plata') return 'Plata'
@@ -235,9 +245,20 @@ export function slugify(str = '') {
 
 // ⚠️ "Precio costo" se lee del CSV pero NUNCA entra en el objeto que
 // se devuelve. Si agregás campos acá, revisá que no lo arrastres.
+//
+// Desde que el catálogo vive en Supabase, esto solo se usa para la
+// importación inicial desde la planilla (ver _productos.js).
 function rowToProduct(row) {
   const stock = parseFloat(row['Stock']) || 0
   if (stock <= 0) return null
+  return filaAProducto(row)
+}
+
+// Lo mismo, pero sin descartar las piezas sin stock: al importar entran
+// todas, con stock 0, para que la dueña las tenga en el panel y las
+// reponga cuando vuelvan.
+export function filaAProducto(row) {
+  const stock = Math.max(0, Math.floor(parseFloat(row['Stock']) || 0))
 
   const id = (row['Id'] || '').trim()
   if (!id) return null // sin código no se puede pedir por WhatsApp ni deduplicar el carrito
@@ -330,28 +351,115 @@ export function categoryFromSlug(slug, products) {
   return cats.find(c => categorySlug(c) === slug) || null
 }
 
+// ── De la base a la tienda ────────────────────────────────────
+// La fila de la tabla "productos" convertida en lo que espera el
+// navegador. Es la misma forma que salía de la planilla, así que nada
+// del frontend se enteró del cambio.
+//
+// ⚠️ "precio_costo" está en la tabla pero NUNCA entra acá: es para el
+// panel. Si agregás campos, revisá que no lo arrastres.
+export function aProductoPublico(f) {
+  const fotos = Array.isArray(f.fotos) ? f.fotos.filter(Boolean) : []
+  const precio = Number(f.precio)
+  const promo = f.precio_promo != null ? Number(f.precio_promo) : null
+  return {
+    id: f.id,
+    name: f.nombre,
+    category: f.categoria,
+    subcategory: f.subcategoria || '',
+    material: f.material,
+    price: precio,
+    pricePromo: promo && promo < precio ? promo : null,
+    priceCombo: f.precio_conjunto != null ? Number(f.precio_conjunto) : null,
+    imageCombo: f.foto_conjunto || '',
+    priceNote: esDeAPares(f.categoria) ? 'par' : 'und',
+    stock: Number(f.stock),
+    image: fotos[0] || '',
+    images: fotos,
+    featured: Boolean(f.destacado),
+    description: f.descripcion || '',
+    emoji: CATEGORY_EMOJI[f.categoria] || '✦',
+    slug: f.slug,
+  }
+}
+
 let cache = null
 const TTL = 60_000
 
-// Cachea en memoria mientras la función serverless sigue tibia, para no
-// pegarle a Google Sheets una vez por request.
+// El catálogo vive en Supabase y lo maneja la dueña desde el panel.
+//
+// Se cachea en memoria mientras la función sigue tibia, para no pegarle
+// a la base una vez por request: un cambio en el panel tarda hasta un
+// minuto en verse (más lo que cachee Vercel, ver products.js).
+//
+// Si la base no contesta y hay una copia anterior en memoria, se sirve
+// esa: mejor un catálogo de hace un rato que una tienda vacía.
 export async function getCatalog({ force = false } = {}) {
+  if (!force && cache && Date.now() - cache.at < TTL) return cache.products
+
+  // Sin Supabase configurado (una vista previa sin las variables, o
+  // `npm run dev` sin claves) la tienda sigue con la planilla: mejor eso
+  // que una tienda vacía.
+  if (!supabaseConfigurado()) {
+    if (!csvUrl()) throw new Error('Faltan las variables de Supabase y SHEET_CSV_URL')
+    console.warn('[catalogo] Supabase no está configurado: se lee la planilla')
+    const products = await catalogoDeLaPlanilla()
+    cache = { at: Date.now(), products }
+    return products
+  }
+
+  let r
+  try {
+    r = await rpc('catalogo_publico', {})
+  } catch (err) {
+    if (cache) {
+      console.error('[catalogo] la base no respondió; se sirve la copia anterior', err)
+      return cache.products
+    }
+    throw err
+  }
+
+  // Red de seguridad para el pase: si la tabla está vacía es que todavía
+  // no se importó la planilla, y la tienda sigue leyendo de ella. Una vez
+  // que hay productos cargados, la planilla ya no se mira más.
+  if (Number(r?.total) === 0 && csvUrl()) {
+    console.warn('[catalogo] la tabla productos está vacía: se lee la planilla hasta que se importe')
+    const products = await catalogoDeLaPlanilla()
+    cache = { at: Date.now(), products }
+    return products
+  }
+
+  const products = (r?.productos || []).map(aProductoPublico)
+  cache = { at: Date.now(), products }
+  return products
+}
+
+// Después de guardar en el panel, para que esta misma función no siga
+// sirviendo la copia vieja.
+export const invalidarCatalogo = () => { cache = null }
+
+// ── La planilla ───────────────────────────────────────────────
+// Solo para la importación inicial y como red de seguridad mientras la
+// tabla esté vacía.
+export async function leerPlanilla() {
   const url = csvUrl()
   if (!url) throw new Error('Falta la variable de entorno SHEET_CSV_URL')
-  if (!force && cache && Date.now() - cache.at < TTL) return cache.products
 
   const res = await fetch(url, {
     headers: { 'User-Agent': 'lunare-catalog' },
     signal: AbortSignal.timeout(10000),
   })
   if (!res.ok) throw new Error(`Sheet respondió ${res.status}`)
+  return parseCSV(await res.text())
+}
 
-  const filas = parseCSV(await res.text())
+// Exactamente lo que publicaba la tienda antes del pase: las piezas con
+// stock, con los slugs desempatados en el mismo orden. La importación
+// parte de acá para que ningún link que ya esté dando vueltas cambie.
+export async function catalogoDeLaPlanilla(filas = null) {
+  filas = filas || await leerPlanilla()
   const products = ensureUniqueSlugs(filas.map(rowToProduct).filter(Boolean))
-
   avisarDeLoQueSeDescarto(filas, products)
-
-  cache = { at: Date.now(), products }
   return products
 }
 

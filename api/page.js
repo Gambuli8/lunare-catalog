@@ -24,7 +24,9 @@ function description(p) {
   // los aritos, y unirlas a mano dejaba dos espacios seguidos en el resto.
   return [
     `${p.name} — ${p.subcategory || p.category} de ${p.material.toLowerCase()}.`,
-    MATERIAL_COPY[p.material],
+    // La que cargó la dueña en el panel, si hay. Google corta cerca de los
+    // 160 caracteres, así que va recortada.
+    p.description ? p.description.replace(/\s+/g, ' ').trim().slice(0, 160) : MATERIAL_COPY[p.material],
     p.priceNote === 'par' ? 'Se vende por par.' : null,
     `${formatPrice(p.pricePromo || p.price)} en Lunare Accesorios.`,
   ].filter(Boolean).join(' ')

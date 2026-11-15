@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { formatPrice } from '../hooks/useProducts'
 import Icon from './Icon'
 import { linkSeguimiento } from '../lib/envios'
+import PanelProductos from './PanelProductos'
 
 // ── Panel de pedidos ──────────────────────────────────────────
 // Hasta acá los pedidos solo se veían consultando la base. Esto es la
@@ -10,7 +11,7 @@ import { linkSeguimiento } from '../lib/envios'
 // Pensado para el celular, que es desde donde se va a mirar: tarjetas y
 // no una tabla, y los botones de estado a lo ancho.
 //
-// La sesión es una cookie httpOnly que deja /api/panel-login; acá nunca
+// La sesión es una cookie httpOnly que deja /api/panel; acá nunca
 // se guarda la clave.
 
 const ESTADOS = {
@@ -27,6 +28,12 @@ const ESTADOS_ARR = {
   resuelto:  { etiqueta: 'Resuelto',  clase: 'bg-[#eaf5ee] text-[#1c6b3c] border-[#bfdfcb]' },
   rechazado: { etiqueta: 'Rechazado', clase: 'bg-[#fbeceb] text-[#9d3227] border-[#eccbc7]' },
 }
+
+const VISTAS = [
+  ['productos', 'Productos'],
+  ['pedidos', 'Pedidos'],
+  ['arrepentimientos', 'Arrepentimientos'],
+]
 
 const ENTREGAS = {
   retiro_santa_rosa: 'Retira en Santa Rosa',
@@ -87,16 +94,23 @@ function Entrar({ onEntro }) {
     setYendo(true)
     setError('')
     try {
-      const res = await fetch('/api/panel-login', {
+      const res = await fetch('/api/panel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ accion: 'entrar', password }),
       })
       const data = await res.json().catch(() => null)
       if (res.ok && data?.ok) { setPassword(''); onEntro(); return }
-      setError(data?.error === 'PANEL_NO_CONFIGURADO'
-        ? 'El panel no está configurado todavía.'
-        : 'Esa clave no es.')
+      if (data?.error === 'DEMASIADOS_INTENTOS') {
+        const min = Math.max(1, Math.ceil((data.espera_seg || 900) / 60))
+        setError(`Hubo demasiados intentos con la clave equivocada. Probá de nuevo en ${min} ${min === 1 ? 'minuto' : 'minutos'}.`)
+      } else if (data?.error === 'PANEL_NO_CONFIGURADO' || data?.error === 'NO_CONFIGURADO') {
+        setError('El panel no está configurado todavía.')
+      } else if (data?.error === 'NO_SE_PUDO_VERIFICAR') {
+        setError('No pudimos conectarnos con la base. Probá de nuevo en un rato.')
+      } else {
+        setError('Esa clave no es.')
+      }
     } catch {
       setError('No pudimos conectarnos. Probá de nuevo.')
     } finally {
@@ -355,7 +369,9 @@ function Arrepentido({ dato: a, onEstado, moviendo }) {
 
 export default function Panel() {
   const [sesion, setSesion] = useState(null) // null = todavía no sabemos
-  const [vista, setVista] = useState('pedidos')
+  // Arranca en productos: mientras la tienda venda por WhatsApp, el
+  // catálogo es lo que más se toca.
+  const [vista, setVista] = useState('productos')
   const [filtro, setFiltro] = useState('')
   const [pedidos, setPedidos] = useState([])
   const [arrepentimientos, setArrepentimientos] = useState([])
@@ -375,7 +391,7 @@ export default function Panel() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/panel-login', {
+    fetch('/api/panel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accion: 'estado' }),
@@ -385,7 +401,11 @@ export default function Panel() {
       .catch(() => setSesion(false))
   }, [])
 
+  // La pestaña de productos trae lo suyo sola.
+  const sinSesion = useCallback(() => setSesion(false), [])
+
   const cargar = useCallback(async () => {
+    if (vista === 'productos') return
     setCargando(true)
     setError('')
     try {
@@ -457,7 +477,7 @@ export default function Panel() {
   }
 
   const salir = async () => {
-    await fetch('/api/panel-login', {
+    await fetch('/api/panel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accion: 'salir' }),
@@ -473,27 +493,75 @@ export default function Panel() {
   const porEstado = resumen?.por_estado || {}
   const lista = vista === 'pedidos' ? pedidos : arrepentimientos
 
-  return (
-    <section className='px-4 pt-6 pb-24 md:px-8'>
-      <div className='max-w-3xl mx-auto'>
-        <header className='flex flex-wrap items-center gap-3 mb-5'>
-          <h1 className='font-serif text-[26px] font-light text-dark'>Pedidos</h1>
-          <button
-            onClick={cargar}
-            disabled={cargando}
-            className='px-3 py-1.5 text-[12px] tracking-wide uppercase border border-border text-muted hover:border-gold hover:text-gold transition-colors disabled:opacity-40'
-          >
-            {cargando ? 'Actualizando…' : 'Actualizar'}
-          </button>
-          <button
-            onClick={salir}
-            className='ml-auto text-[12px] tracking-wide uppercase text-soft hover:text-gold transition-colors'
-          >
-            Salir
-          </button>
-        </header>
+  const marca = (
+    <span className='flex flex-col leading-none'>
+      <span className='font-serif text-[22px] tracking-[0.22em] text-dark'>LUNARE</span>
+      <span className='text-[10px] tracking-[0.28em] uppercase text-gold mt-1'>Panel</span>
+    </span>
+  )
 
-        {resumen && (
+  return (
+    <div className='lg:flex lg:min-h-screen'>
+      {/* En la compu: barra lateral fija, como una aplicación. */}
+      <aside className='sticky top-0 flex-col hidden h-screen gap-7 px-5 border-r lg:flex w-[220px] shrink-0 py-7 border-border'>
+        {marca}
+        <nav className='flex flex-col gap-1'>
+          {VISTAS.map(([k, l]) => (
+            <button
+              key={k}
+              onClick={() => setVista(k)}
+              className={`flex items-center h-11 px-3 text-[14px] text-left transition-colors ${
+                vista === k ? 'bg-dark text-cream' : 'text-dark hover:bg-line'
+              }`}
+            >
+              {l}
+            </button>
+          ))}
+        </nav>
+        <button onClick={salir} className='mt-auto self-start h-11 text-[12px] tracking-[0.12em] uppercase text-muted hover:text-gold'>
+          Salir
+        </button>
+      </aside>
+
+      {/* En el celular: la marca arriba y las pestañas abajo de ella. */}
+      <header className='flex items-center justify-between px-5 pt-4 pb-2 lg:hidden'>
+        {marca}
+        <button onClick={salir} className='h-11 text-[12px] tracking-[0.12em] uppercase text-muted hover:text-gold'>
+          Salir
+        </button>
+      </header>
+      <nav className='flex gap-5 px-5 border-b lg:hidden border-border'>
+        {VISTAS.map(([k, l]) => (
+          <button
+            key={k}
+            onClick={() => setVista(k)}
+            className={`py-3 text-[14px] transition-colors border-b-2 -mb-px ${
+              vista === k ? 'border-gold text-dark' : 'border-transparent text-muted'
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </nav>
+
+    <main className='flex-1 min-w-0 px-5 pt-4 pb-28 lg:px-8 lg:pt-7'>
+      <div className={vista === 'productos' ? 'max-w-6xl' : 'max-w-3xl'}>
+        {vista !== 'productos' && (
+          <header className='flex flex-wrap items-center gap-3 mb-5'>
+            <h1 className='font-serif text-[30px] font-normal text-dark'>
+              {vista === 'pedidos' ? 'Pedidos' : 'Arrepentimientos'}
+            </h1>
+            <button
+              onClick={cargar}
+              disabled={cargando}
+              className='ml-auto px-3 py-1.5 text-[12px] tracking-wide uppercase border border-border text-muted hover:border-gold hover:text-gold transition-colors disabled:opacity-40'
+            >
+              {cargando ? 'Actualizando…' : 'Actualizar'}
+            </button>
+          </header>
+        )}
+
+        {resumen && vista !== 'productos' && (
           <div className='flex flex-wrap gap-x-5 gap-y-2 px-4 py-3 mb-5 text-[13px] border border-border bg-paper'>
             <span className='text-muted'>
               Pendientes <b className='text-dark'>{porEstado.pendiente || 0}</b>
@@ -512,20 +580,6 @@ export default function Panel() {
           </div>
         )}
 
-        <div className='flex gap-4 mb-4 border-b border-border'>
-          {[['pedidos', 'Pedidos'], ['arrepentimientos', 'Arrepentimientos']].map(([k, l]) => (
-            <button
-              key={k}
-              onClick={() => setVista(k)}
-              className={`pb-2.5 text-[13px] tracking-wide transition-colors border-b-2 -mb-px ${
-                vista === k ? 'border-gold text-dark' : 'border-transparent text-soft hover:text-muted'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-
         {vista === 'pedidos' && (
           <div className='flex flex-wrap gap-2 mb-5'>
             {[['', 'Todos'], ...Object.entries(ESTADOS).map(([k, v]) => [k, v.etiqueta])].map(([k, l]) => (
@@ -542,9 +596,11 @@ export default function Panel() {
           </div>
         )}
 
-        {error && <p className='mb-4 text-[13px] text-sale'>{error}</p>}
+        {vista === 'productos' && <PanelProductos onSinSesion={sinSesion} />}
 
-        {lista.length === 0 && !cargando ? (
+        {vista !== 'productos' && error && <p className='mb-4 text-[13px] text-sale'>{error}</p>}
+
+        {vista === 'productos' ? null : lista.length === 0 && !cargando ? (
           <p className='py-16 text-center text-[14px] text-soft'>
             {vista === 'pedidos'
               ? (filtro ? 'No hay pedidos en ese estado.' : 'Todavía no entró ningún pedido.')
@@ -567,6 +623,7 @@ export default function Panel() {
           </div>
         )}
       </div>
-    </section>
+    </main>
+    </div>
   )
 }
