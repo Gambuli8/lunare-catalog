@@ -445,8 +445,27 @@ se revela la clave secreta que va en `MP_WEBHOOK_SECRET`.
 - **Salir a producción**: hoy con `TEST-` se cobra plata ficticia. El token
   productivo tiene que salir de la cuenta de Mercado Pago que va a recibir el
   dinero, y hay que rehacer el webhook con el secreto de esa aplicación.
-- **La preferencia vence a las 24 h.** Si no paga, el pedido queda en
-  `pendiente` reteniendo stock hasta que alguien lo cancele desde el panel.
+
+### Pedidos que nadie pagó
+
+La preferencia vence a las 24 h. Una vez por día (`crons` en `vercel.json`,
+9:00 UTC = 6:00 en Argentina) `api/cron-vencidos.js` cancela los pedidos de
+Mercado Pago que siguen en `pendiente` después de 25 h, y así las piezas vuelven
+a estar a la venta.
+
+Antes de cancelar le pregunta a Mercado Pago por los pagos de ese pedido. **No
+cancela** si hay uno aprobado (el webhook no llegó: queda en los logs como
+error para revisarlo a mano), uno en curso (por ejemplo, un pago en efectivo
+en Rapipago) o si Mercado Pago no contesta. Los pedidos por transferencia o en
+efectivo no los toca.
+
+```
+CRON_SECRET=una-cadena-larga-y-aleatoria
+```
+
+Sin `CRON_SECRET` el endpoint devuelve 503 y no hace nada. En el plan Hobby de
+Vercel los crons corren una vez por día como máximo; en Pro se puede pasar a
+`0 * * * *` (cada hora).
 
 ## Panel de pedidos
 

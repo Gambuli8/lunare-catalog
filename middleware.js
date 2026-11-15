@@ -118,7 +118,10 @@ function paginaMantenimiento() {
 //
 // El endpoint no es una puerta abierta: verifica la firma HMAC de cada
 // notificación y sin ella no toca nada.
-const SIEMPRE_ABIERTAS = ['/api/mp-webhook']
+//
+// El cron de pedidos vencidos tampoco tiene cómo mandar la clave. Pide
+// CRON_SECRET en el header y sin él contesta 401.
+const SIEMPRE_ABIERTAS = ['/api/mp-webhook', '/api/cron-vencidos']
 
 export default async function middleware(request) {
   if (!activo()) return next()

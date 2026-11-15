@@ -123,6 +123,12 @@ export async function crearPreferencia({ pedido, datos, items }) {
 
 export const consultarPago = id => mp(`/v1/payments/${encodeURIComponent(id)}`)
 
+// Todos los intentos de pago de un pedido, sin depender del webhook. Lo
+// usa el cron de pedidos vencidos para no cancelar uno que sí se pagó.
+export const pagosDelPedido = pedidoId =>
+  mp(`/v1/payments/search?external_reference=${encodeURIComponent(pedidoId)}`)
+    .then(r => r?.results || [])
+
 // ── Firma del webhook ─────────────────────────────────────────
 // Sin esto, cualquiera que sepa la URL puede mandar un POST diciendo que
 // un pedido está pago. Es la parte que no se puede saltear.
@@ -170,7 +176,14 @@ export function firmaValida({ xSignature, xRequestId, dataId }) {
 
   // Una notificación vieja reenviada es sospechosa. La ventana es amplia
   // porque Mercado Pago reintenta durante un rato.
-  const edadMin = (Date.now() - Number(ts)) / 60000
+  //
+  // El ts llega en milisegundos, pero el ejemplo de la doc de Mercado
+  // Pago lo muestra en segundos. Se aceptan las dos unidades: si se
+  // leyera mal, todas las notificaciones parecerían vencidas y ningún
+  // pedido pasaría a pagado. La firma usa el ts tal como vino.
+  const tsNum = Number(ts)
+  const tsMs = tsNum < 1e12 ? tsNum * 1000 : tsNum
+  const edadMin = (Date.now() - tsMs) / 60000
   if (Number.isFinite(edadMin) && Math.abs(edadMin) > 30) {
     return { ok: false, motivo: 'FIRMA_VENCIDA' }
   }
