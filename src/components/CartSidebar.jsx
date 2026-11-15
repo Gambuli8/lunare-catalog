@@ -1,9 +1,20 @@
+import { useLayoutEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../hooks/useProducts'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import CloudinaryImage from './CloudinaryImage'
 
 export default function CartSidebar() {
   const { items, removeItem, changeQty, total, isOpen, setIsOpen } = useCart()
+
+  const close = () => setIsOpen(false)
+  const asideRef = useFocusTrap(isOpen, close)
+
+  // El panel queda montado fuera de pantalla cuando está cerrado; `inert`
+  // lo saca del orden de tabulación y lo oculta a lectores de pantalla.
+  useLayoutEffect(() => {
+    if (asideRef.current) asideRef.current.inert = !isOpen
+  }, [isOpen, asideRef])
 
   const checkout = () => {
     if (!items.length) return
@@ -24,12 +35,19 @@ export default function CartSidebar() {
       />
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-cream z-[60] flex flex-col shadow-2xl transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <aside
+        ref={asideRef}
+        role='dialog'
+        aria-modal='true'
+        aria-label='Tu carrito'
+        className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-cream z-[60] flex flex-col shadow-2xl transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
         {/* Header */}
         <div className='flex items-center justify-between px-6 py-5 border-b border-border'>
           <h3 className='font-serif text-2xl font-light'>Tu Carrito</h3>
           <button
             onClick={() => setIsOpen(false)}
+            aria-label='Cerrar carrito'
             className='text-lg transition-colors text-muted hover:text-dark'
           >
             ✕
@@ -79,6 +97,7 @@ export default function CartSidebar() {
                         {/* Botón − */}
                         <button
                           onClick={() => changeQty(item.id, -1)}
+                          aria-label={`Quitar una unidad de ${item.name}`}
                           className='flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full border-border hover:bg-dark hover:text-white hover:border-dark'
                         >
                           −
@@ -90,6 +109,7 @@ export default function CartSidebar() {
                         <button
                           onClick={() => changeQty(item.id, 1)}
                           disabled={atMax}
+                          aria-label={`Agregar una unidad de ${item.name}`}
                           title={atMax ? 'Stock máximo alcanzado' : undefined}
                           className={`flex items-center justify-center w-6 h-6 text-sm transition-all duration-200 border rounded-full
                             ${atMax ? 'border-border text-[#c8c0b8] cursor-not-allowed' : 'border-border hover:bg-dark hover:text-white hover:border-dark'}`}
@@ -99,6 +119,7 @@ export default function CartSidebar() {
 
                         <button
                           onClick={() => removeItem(item.id)}
+                          aria-label={`Eliminar ${item.name} del carrito`}
                           className='ml-1 text-xs transition-colors duration-200 text-muted hover:text-red-500'
                         >
                           ✕

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useModal } from '../context/ModalContext'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../hooks/useProducts'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import CloudinaryImage from './CloudinaryImage'
 
 function getMaterialBadgeStyle(material = '') {
@@ -34,12 +35,13 @@ export default function ProductModal() {
     setTimeout(() => { setClosing(false); closeModal() }, 280)
   }
 
+  // Focus-trap + cierre con Escape + restauración de foco
+  const dialogRef = useFocusTrap(!!p, handleClose)
+
   useEffect(() => {
     if (!p) return
-    const onKey = (e) => { if (e.key === 'Escape') handleClose() }
-    window.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+    return () => { document.body.style.overflow = '' }
   }, [p])
 
   useEffect(() => { setAdded(false); setClosing(false) }, [p])
@@ -72,11 +74,17 @@ export default function ProductModal() {
 
       <div className='fixed inset-0 z-[80] flex items-end md:items-center justify-center md:p-4 pointer-events-none'>
         <div
-          className='relative w-full md:max-w-2xl bg-[#F9F5F2] shadow-2xl pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[92vh] md:max-h-[90vh] rounded-t-2xl md:rounded-none'
+          ref={dialogRef}
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='product-modal-title'
+          tabIndex={-1}
+          className='relative w-full md:max-w-2xl bg-[#F9F5F2] shadow-2xl pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[92vh] md:max-h-[90vh] rounded-t-2xl md:rounded-none outline-none'
           style={{ animation: closing ? 'panelOut 0.28s cubic-bezier(0.4,0,1,1) both' : 'panelIn 0.5s cubic-bezier(0.16,1,0.3,1) both' }}
         >
           <button
             onClick={handleClose}
+            aria-label='Cerrar'
             className='absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center text-[#2b2928] hover:text-[#0e0d0c] hover:bg-[#e8e2da] rounded-full transition-all duration-200 text-sm'
           >
             ✕
@@ -109,7 +117,7 @@ export default function ProductModal() {
 
             <div>
               <p className='text-[10px] tracking-[0.25em] uppercase text-[#b89a6a] font-sans mb-1'>{p.category}</p>
-              <h2 className='font-serif text-3xl font-light text-[#0e0d0c] leading-tight'>{p.name}</h2>
+              <h2 id='product-modal-title' className='font-serif text-3xl font-light text-[#0e0d0c] leading-tight'>{p.name}</h2>
               <p className='text-[12px] text-[#7a7269] mt-1 tracking-wide'>{p.subcategory}</p>
             </div>
 
