@@ -219,6 +219,15 @@ function normalizeCategory(raw = '') {
 // tarjeta y el texto de la ficha salen de esta lista.
 export const MATERIALES = ['Plata', 'Plata Dorada', 'Acero Blanco', 'Bijou']
 
+// Cómo se describe cada material. Lo usan la meta de la ficha
+// (api/page.js) y el feed de Meta y Google (api/_feed.js).
+export const MATERIAL_COPY = {
+  'Plata': 'Plata de ley 925, con 92,5 % de plata pura.',
+  'Plata Dorada': 'Plata de ley 925 con baño de oro.',
+  'Acero Blanco': 'Acero quirúrgico 316L con baño plateado, hipoalergénico y resistente al uso diario.',
+  'Bijou': 'Accesorio de bijouterie de alta calidad.',
+}
+
 function normalizeMaterial(raw = '') {
   const s = raw.trim().toLowerCase()
   if (s === 'plata') return 'Plata'

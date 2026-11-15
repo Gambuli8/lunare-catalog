@@ -825,11 +825,79 @@ Es preferible a dejar la tienda abierta por un descuido de configuración.
 
 ## Analítica
 
-Además de las visitas que ya medía Vercel, `src/lib/track.js` manda cuatro
-eventos de negocio: `producto_visto`, `agregar_al_carrito`, `busqueda` y
-`checkout_whatsapp`. Sin ellos no había forma de saber cuál de las 103 piezas
-vende ni en qué paso se cae la compra. No se manda ningún dato personal: solo
+Además de las visitas que ya medía Vercel, `src/lib/track.js` manda eventos de
+negocio: `producto_visto`, `agregar_al_carrito`, `busqueda`, `inicio_compra`,
+`checkout_whatsapp` y `compra`. Sin ellos no había forma de saber qué piezas
+venden ni en qué paso se cae la compra. No se manda ningún dato personal: solo
 código de pieza, nombre, categoría y monto.
+
+## Meta y Google
+
+Todo está conectado y **apagado** hasta que se carguen las variables: sin ellas
+no se carga nada de Meta.
+
+### El feed: `/feed.xml`
+
+El catálogo en el formato de Google, que también lee Meta. Salen solo las piezas
+en venta, con foto cuadrada de 1080, precio y promo, categoría de Google, link a
+la ficha y hasta 10 fotos. Mientras una pieza no tenga descripción cargada en el
+panel, se arma con nombre, medida y material. Lo sirve `api/products.js`
+(`?feed=xml`), así que no gasta una función de Vercel. Cacheado una hora.
+
+### Píxel de Meta
+
+```
+VITE_META_PIXEL_ID=...   # Administrador de eventos → el píxel
+```
+
+| Momento | Evento |
+|---|---|
+| Cada pantalla | `PageView` |
+| Ficha de una pieza | `ViewContent` |
+| Agregar al carrito | `AddToCart` |
+| Del carrito a los datos de entrega | `InitiateCheckout` |
+| Pedido sin pago online (WhatsApp, transferencia, efectivo) | `Lead` |
+| Vuelve de Mercado Pago con el pago aprobado | `Purchase` |
+| Búsqueda | `Search` |
+
+El pedido sin pago online va como `Lead` y no como compra: todavía no se cobró.
+Con el píxel prendido, la política de privacidad suma solo el párrafo de Meta y
+sus cookies. El panel no se mide.
+
+### API de conversiones
+
+```
+META_CAPI_TOKEN=...          # Administrador de eventos → el píxel → Configuración
+META_TEST_EVENT_CODE=...     # opcional, mientras se prueba
+```
+
+Cuando el webhook de Mercado Pago confirma un pago, `api/_meta.js` le avisa la
+compra a Meta desde el servidor, con correo, teléfono, nombre y código postal
+cifrados con SHA-256. Llega aunque el navegador bloquee el píxel. Usa el id del
+pedido como `event_id`, el mismo que el píxel, así Meta cuenta una sola compra.
+
+### Lo que se hace con la cuenta de la dueña
+
+1. **Meta Business Suite** → Configuración del negocio → **Orígenes de datos →
+   Píxeles** → Agregar. El id va en `VITE_META_PIXEL_ID` (Production) y deploy.
+2. **Verificar el dominio**: Configuración del negocio → Seguridad de la marca →
+   **Dominios** → Agregar `lunareacc.com` → método **registro TXT de DNS**. El
+   registro se carga en Hostinger, en la zona DNS del dominio.
+3. **API de conversiones**: Administrador de eventos → el píxel → Configuración →
+   **Generar token de acceso**. Va en `META_CAPI_TOKEN`.
+4. **Probar**: Administrador de eventos → **Probar eventos** → copiar el código a
+   `META_TEST_EVENT_CODE`, recorrer la tienda y ver llegar los eventos. Después
+   sacar esa variable.
+5. **Catálogo**: Commerce Manager → Agregar catálogo → Comercio electrónico →
+   **Fuente de datos → Feed programado** → URL `https://www.lunareacc.com/feed.xml`,
+   todos los días. Conectar el catálogo al píxel y a la cuenta de Instagram para
+   etiquetar productos.
+6. **Google Search Console**: agregar `lunareacc.com` como dominio (registro TXT
+   en Hostinger) y enviar `https://www.lunareacc.com/sitemap.xml`.
+7. **Google Merchant Center**: Productos → Fuentes de datos → **Fuente de datos
+   programada** con `https://www.lunareacc.com/feed.xml`. Con la verificación de
+   Search Console, el sitio queda reclamado. Las fichas gratuitas de Shopping se
+   activan en Crecimiento → Programas.
 
 ## Checkout por WhatsApp
 

@@ -16,6 +16,7 @@ function apiDevServer() {
         { test: /^\/tienda\/?$/, file: 'shop' },
         { test: /^\/(cuidados|cambios|contacto|arrepentimiento|privacidad)\/?$/, file: 'pagina', param: 'pagina' },
         { test: /^\/sitemap\.xml$/, file: 'sitemap' },
+        { test: /^\/feed\.xml$/, file: 'products', fijos: { feed: 'xml' } },
       ]
 
       server.middlewares.use(async (req, res, next) => {
@@ -32,6 +33,7 @@ function apiDevServer() {
             if (m) {
               file = r.file
               if (r.param) query[r.param] = decodeURIComponent(m[1])
+              if (r.fijos) Object.assign(query, r.fijos)
               break
             }
           }
@@ -89,6 +91,7 @@ export default defineConfig(({ mode }) => {
     'MICORREO_CP_ORIGEN', 'MICORREO_AMBIENTE',
     'MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET', 'CRON_SECRET',
     'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET',
+    'VITE_META_PIXEL_ID', 'META_CAPI_TOKEN', 'META_TEST_EVENT_CODE', 'META_GRAPH_VERSION',
   ]) {
     if (env[key]) process.env[key] = env[key]
   }

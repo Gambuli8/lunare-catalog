@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useCart } from '../context/CartContext'
 import { useProducts, formatPrice } from '../hooks/useProducts'
-import { trackCheckout } from '../lib/track'
+import { trackCheckout, trackInicioCompra } from '../lib/track'
 import { guardarPagoPendiente, leerPagoPendiente } from '../lib/pagoPendiente'
 import { opcionesDeEnvio, cpValido, MODOS } from '../lib/envios'
 import CloudinaryImage from './CloudinaryImage'
@@ -322,6 +322,8 @@ export default function CartSidebar() {
       }
     }
     setErrores([])
+    // Del carrito a los datos de entrega: empezó a comprar.
+    if (paso === 1) trackInicioCompra(items, totalFinal)
     setPaso(p => p + 1)
     document.querySelector('#drawer-body')?.scrollTo(0, 0)
   }
