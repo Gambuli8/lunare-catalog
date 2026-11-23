@@ -99,9 +99,15 @@ export function validarProducto(p = {}) {
 // ── Acciones ──────────────────────────────────────────────────
 
 export async function listarProductosPanel() {
-  const productos = await rpc('productos_panel', {})
+  const [productos, ultima] = await Promise.all([
+    rpc('productos_panel', {}),
+    // Si la migración de la sincronización todavía no se corrió, el panel
+    // anda igual: solo no muestra cuándo fue la última.
+    rpc('ultima_sincronizacion', {}).catch(() => null),
+  ])
   return {
     productos: productos || [],
+    ultima_sincronizacion: ultima || null,
     categorias: CATEGORIAS,
     materiales: MATERIALES,
     fotos_configuradas: fotosConfiguradas(),
@@ -140,21 +146,31 @@ async function borrar(body) {
   return { ok: Boolean(r?.ok), status: r?.ok ? 200 : 409, cuerpo: r }
 }
 
-// Trae la planilla y agrega a la base las piezas que todavía no están.
-// Nunca pisa una que ya exista: si la dueña ya la editó en el panel, lo
-// del panel manda. Así se puede correr más de una vez sin miedo.
-async function importarPlanilla() {
-  if (!process.env.SHEET_CSV_URL) {
-    return { ok: false, status: 503, cuerpo: { ok: false, error: 'PLANILLA_NO_CONFIGURADA' } }
-  }
+// ── Actualizar desde la planilla ──────────────────────────────
+// La dueña puede traer la planilla al panel cuando quiera. Se hace en dos
+// pasos para que nunca pise algo sin avisar:
+//
+//   revisar_planilla   lee la planilla y dice qué cambiaría: piezas
+//                      nuevas, cuáles cambian y en qué, cuáles quedan igual.
+//                      No guarda nada.
+//   aplicar_planilla   lo guarda (sincronizar_productos en la base).
+//
+// La planilla manda en nombre, categoría, medida, material, precios,
+// fotos, destacada y stock. Lo que es solo del panel —la descripción, si
+// está visible, su dirección— no se toca, y tampoco las piezas que están
+// en el panel y no en la planilla.
 
-  let filas
-  try {
-    filas = await leerPlanilla()
-  } catch (err) {
-    console.error('[productos] no se pudo leer la planilla', err)
-    return { ok: false, status: 502, cuerpo: { ok: false, error: 'PLANILLA_NO_DISPONIBLE' } }
-  }
+const sinPlanilla = () => ({ ok: false, status: 503, cuerpo: { ok: false, error: 'PLANILLA_NO_CONFIGURADA' } })
+const planillaCaida = () => ({ ok: false, status: 502, cuerpo: { ok: false, error: 'PLANILLA_NO_DISPONIBLE' } })
+
+// Lee la planilla y la deja con la forma de la tabla "productos".
+async function productosDeLaPlanilla() {
+  const filas = await leerPlanilla()
+
+  // La planilla publicada ya no trae el costo (se sacó para que no se
+  // filtre). Si no está la columna, no se manda: así no se borra el que
+  // se cargó en el panel.
+  const tieneCosto = filas.length > 0 && Object.keys(filas[0]).some(k => /^precio\s*costo$/i.test(k.trim()))
 
   // Las piezas que hoy están publicadas se quedan con su dirección de
   // siempre. Las demás (sin stock) reciben una que no choque con nadie.
@@ -198,43 +214,132 @@ async function importarPlanilla() {
   }
   elegidas.sort((a, b) => a.orden - b.orden)
 
-  const productos = []
-
-  for (const { p, fila, orden } of elegidas) {
-
+  const productos = elegidas.map(({ p, fila, orden }) => {
     let slug = slugPorId.get(p.id)
     if (!slug) {
       const base = p.slug || slugify(p.id)
       slug = usados.has(base) ? `${base}-${slugify(p.id)}` : base
       usados.add(slug)
     }
-
-    const costo = entero(fila['Precio costo'] || fila['Precio Costo'] || fila['precio costo'])
-
-    productos.push({
+    const fila_ = {
       id: p.id,
       nombre: p.name,
       categoria: p.category,
-      subcategoria: p.subcategory,
+      subcategoria: p.subcategory || '',
       material: p.material,
       precio: p.price,
       precio_promo: p.pricePromo,
       precio_conjunto: p.priceCombo,
-      precio_costo: Number.isInteger(costo) && costo >= 0 ? costo : null,
       stock: p.stock,
       fotos: p.images,
       foto_conjunto: p.imageCombo || '',
       destacado: p.featured,
-      publicado: true,
-      descripcion: '',
       slug,
       orden,
-    })
+    }
+    if (tieneCosto) {
+      const costo = entero(fila['Precio costo'] ?? fila['Precio Costo'] ?? fila['precio costo'])
+      fila_.precio_costo = Number.isInteger(costo) && costo >= 0 ? costo : null
+    }
+    return fila_
+  })
+
+  return { productos, repetidos, tieneCosto }
+}
+
+const plata = n => (n == null ? 'sin' : '$' + Number(n).toLocaleString('es-AR'))
+const siNo = v => (v ? 'sí' : 'no')
+
+// Qué cambia en una pieza, en palabras: "Precio: $4.700 → $5.200".
+function diferencias(actual, nueva, stockNuevo, tieneCosto) {
+  const campos = []
+  const cmp = (etiqueta, a, b, fmt = x => (x == null || x === '' ? '—' : String(x))) => {
+    const va = a ?? null
+    const vb = b ?? null
+    if ((va === '' ? null : va) !== (vb === '' ? null : vb)) campos.push({ campo: etiqueta, antes: fmt(va), despues: fmt(vb) })
+  }
+  cmp('Nombre', actual.nombre, nueva.nombre)
+  cmp('Precio', actual.precio, nueva.precio, plata)
+  cmp('Promo', actual.precio_promo, nueva.precio_promo, plata)
+  cmp('Stock', actual.stock, stockNuevo)
+  cmp('Categoría', actual.categoria, nueva.categoria)
+  cmp('Medida', actual.subcategoria, nueva.subcategoria)
+  cmp('Material', actual.material, nueva.material)
+  cmp('Precio en conjunto', actual.precio_conjunto, nueva.precio_conjunto, plata)
+  cmp('Destacada', Boolean(actual.destacado), Boolean(nueva.destacado), siNo)
+  if (JSON.stringify(actual.fotos || []) !== JSON.stringify(nueva.fotos || [])) {
+    const a = (actual.fotos || []).length
+    const b = (nueva.fotos || []).length
+    campos.push({ campo: 'Fotos', antes: `${a}`, despues: a === b ? `${b} (otras)` : `${b}` })
+  }
+  cmp('Foto del conjunto', actual.foto_conjunto || '', nueva.foto_conjunto || '', v => (v ? 'cargada' : '—'))
+  if (tieneCosto) cmp('Costo', actual.precio_costo, nueva.precio_costo, plata)
+  return campos
+}
+
+async function revisarPlanilla() {
+  if (!process.env.SHEET_CSV_URL) return sinPlanilla()
+
+  let planilla
+  try {
+    planilla = await productosDeLaPlanilla()
+  } catch (err) {
+    console.error('[productos] no se pudo leer la planilla', err)
+    return planillaCaida()
   }
 
-  const r = await rpc('importar_productos', { p_productos: productos })
+  const [enBase, reservado] = await Promise.all([
+    rpc('productos_panel', {}),
+    rpc('stock_reservado', {}),
+  ])
+  const actuales = new Map((enBase || []).map(p => [p.id, p]))
+
+  const nuevas = []
+  const cambios = []
+  let iguales = 0
+  for (const p of planilla.productos) {
+    const stockNuevo = Math.max(0, p.stock - Number(reservado?.[p.id] || 0))
+    const actual = actuales.get(p.id)
+    if (!actual) {
+      nuevas.push({ id: p.id, nombre: p.nombre, precio: p.precio, stock: stockNuevo, foto: p.fotos?.[0] || '' })
+      continue
+    }
+    const campos = diferencias(actual, p, stockNuevo, planilla.tieneCosto)
+    if (campos.length) cambios.push({ id: p.id, nombre: actual.nombre, foto: actual.fotos?.[0] || '', campos })
+    else iguales += 1
+  }
+
+  const enPlanilla = new Set(planilla.productos.map(p => p.id))
+  const soloEnPanel = (enBase || []).filter(p => !enPlanilla.has(p.id)).map(p => ({ id: p.id, nombre: p.nombre }))
+
+  return {
+    ok: true,
+    cuerpo: {
+      ok: true,
+      nuevas,
+      cambios,
+      iguales,
+      solo_en_panel: soloEnPanel,
+      repetidos: planilla.repetidos,
+      hay_reservas: Object.keys(reservado || {}).length > 0,
+    },
+  }
+}
+
+async function aplicarPlanilla() {
+  if (!process.env.SHEET_CSV_URL) return sinPlanilla()
+
+  let planilla
+  try {
+    planilla = await productosDeLaPlanilla()
+  } catch (err) {
+    console.error('[productos] no se pudo leer la planilla', err)
+    return planillaCaida()
+  }
+
+  const r = await rpc('sincronizar_productos', { p_productos: planilla.productos })
   invalidarCatalogo()
-  return { ok: true, cuerpo: { ok: true, leidas: productos.length, repetidos, ...r } }
+  return { ok: true, cuerpo: { ...r, ok: true, repetidos: planilla.repetidos } }
 }
 
 // ── Fotos ─────────────────────────────────────────────────────
@@ -283,6 +388,7 @@ async function firmaFoto() {
 export const ACCIONES_PRODUCTOS = {
   producto: guardar,
   borrar_producto: borrar,
-  importar_planilla: importarPlanilla,
+  revisar_planilla: revisarPlanilla,
+  aplicar_planilla: aplicarPlanilla,
   firma_foto: firmaFoto,
 }

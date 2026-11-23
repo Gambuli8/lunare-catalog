@@ -554,6 +554,208 @@ function FilaPlanilla({ p, onAbrir, onCambios, ocupado }) {
   )
 }
 
+// ── Actualizar desde la planilla ──────────────────────────────
+// Dos pasos: primero se ve qué va a cambiar, después se aplica. Así
+// nunca se pisa nada sin que la dueña lo haya visto.
+
+const hora = d => new Date(d).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+
+function cuando(iso) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const hoy = new Date()
+  const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1)
+  const mismoDia = (a, b) => a.toDateString() === b.toDateString()
+  if (mismoDia(d, hoy)) return `hoy a las ${hora(d)}`
+  if (mismoDia(d, ayer)) return `ayer a las ${hora(d)}`
+  return `el ${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} a las ${hora(d)}`
+}
+
+function RevisarPlanilla({ esCompu, onCerrar, onAplicado, onSesion }) {
+  const [estado, setEstado] = useState('leyendo') // leyendo | listo | aplicando | error
+  const [r, setR] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let vivo = true
+    llamar({ tipo: 'revisar_planilla' })
+      .then(({ status, data }) => {
+        if (!vivo) return
+        if (status === 401) { onSesion(); return }
+        if (!data?.ok) {
+          setError(data?.error === 'PLANILLA_NO_CONFIGURADA'
+            ? 'La planilla no está configurada en el servidor.'
+            : 'No pudimos leer la planilla. Revisá que siga publicada y probá de nuevo.')
+          setEstado('error')
+          return
+        }
+        setR(data)
+        setEstado('listo')
+      })
+      .catch(() => { if (vivo) { setError('No pudimos conectarnos.'); setEstado('error') } })
+    return () => { vivo = false }
+  }, [onSesion])
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  const aplicar = async () => {
+    setEstado('aplicando')
+    setError('')
+    try {
+      const { status, data } = await llamar({ tipo: 'aplicar_planilla' })
+      if (status === 401) { onSesion(); return }
+      if (!data?.ok) { setError('No pudimos aplicar los cambios. Probá de nuevo.'); setEstado('listo'); return }
+      onAplicado(data)
+    } catch {
+      setError('No pudimos conectarnos.')
+      setEstado('listo')
+    }
+  }
+
+  const total = r ? r.nuevas.length + r.cambios.length : 0
+  const afuera = (r?.repetidos || []).filter(x => x.quedaron_afuera?.length)
+  const caja = esCompu
+    ? 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[640px] max-h-[86vh]'
+    : 'inset-x-0 bottom-0 max-h-[92vh] rounded-t-[14px]'
+
+  return (
+    <div className='fixed inset-0 z-50'>
+      <button aria-label='Cerrar' onClick={onCerrar} className='absolute inset-0 w-full h-full cursor-default bg-dark/45' />
+      <div role='dialog' aria-modal='true' aria-label='Actualizar desde la planilla'
+        className={`absolute flex flex-col bg-cream shadow-2xl ${caja}`}>
+        <header className='flex items-center justify-between gap-3 px-5 py-4 border-b border-line'>
+          <h2 className='font-serif text-[24px] font-normal text-dark'>Actualizar desde la planilla</h2>
+          <button onClick={onCerrar} aria-label='Cerrar' className='flex items-center justify-center w-11 h-11 text-muted'>
+            <Icon name='cerrar' size={18} />
+          </button>
+        </header>
+
+        <div className='flex flex-col flex-1 gap-5 px-5 py-5 overflow-y-auto'>
+          {estado === 'leyendo' && <p className='py-10 text-center text-[14px] text-muted'>Leyendo la planilla…</p>}
+          {error && <p className='px-3 py-2 text-[13px] text-sale bg-[#fbeceb] border border-[#eccbc7]'>{error}</p>}
+
+          {r && (
+            <>
+              <div className='flex flex-wrap gap-2'>
+                <span className='px-3 py-1.5 text-[13px] bg-[#eaf5ee] text-[#1c6b3c]'><b className='font-medium'>{r.nuevas.length}</b> nuevas</span>
+                <span className='px-3 py-1.5 text-[13px] bg-[#fdf4e3] text-[#8a6d1f]'><b className='font-medium'>{r.cambios.length}</b> con cambios</span>
+                <span className='px-3 py-1.5 text-[13px] bg-line text-muted'><b className='font-medium'>{r.iguales}</b> iguales</span>
+              </div>
+
+              {total === 0 && (
+                <p className='text-[15px] text-dark'>El panel ya está igual que la planilla. No hay nada para actualizar.</p>
+              )}
+
+              {r.nuevas.length > 0 && (
+                <section className='flex flex-col gap-2'>
+                  <h3 className='text-[12px] tracking-[0.12em] uppercase text-muted'>Piezas nuevas</h3>
+                  <ul className='flex flex-col border divide-y bg-paper border-border divide-line'>
+                    {r.nuevas.map(p => (
+                      <li key={p.id} className='flex items-center gap-3 px-3 py-2'>
+                        {p.foto ? <img src={foto(p.foto, 80)} alt='' className='object-cover w-10 h-10' /> : <span className='w-10 h-10 bg-line' />}
+                        <span className='flex-1 min-w-0 text-[14px] truncate text-dark'>{p.nombre}</span>
+                        <span className='text-[13px] text-muted whitespace-nowrap'>{formatPrice(p.precio)} · stock {p.stock}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {r.cambios.length > 0 && (
+                <section className='flex flex-col gap-2'>
+                  <h3 className='text-[12px] tracking-[0.12em] uppercase text-muted'>Lo que cambia</h3>
+                  <ul className='flex flex-col border divide-y bg-paper border-border divide-line'>
+                    {r.cambios.map(c => (
+                      <li key={c.id} className='flex items-start gap-3 px-3 py-2.5'>
+                        {c.foto ? <img src={foto(c.foto, 80)} alt='' className='object-cover w-10 h-10 shrink-0' /> : <span className='w-10 h-10 bg-line shrink-0' />}
+                        <span className='flex flex-col min-w-0 gap-0.5'>
+                          <span className='text-[14px] text-dark'>{c.nombre}</span>
+                          {c.campos.map(f => (
+                            <span key={f.campo} className='text-[13px] text-muted'>
+                              {f.campo}: <s className='text-soft'>{f.antes}</s> → <b className='font-medium text-dark'>{f.despues}</b>
+                            </span>
+                          ))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {r.hay_reservas && (
+                <p className='text-[12px] text-muted'>El stock que ves ya tiene descontadas las piezas reservadas en pedidos sin despachar.</p>
+              )}
+              {r.solo_en_panel.length > 0 && (
+                <p className='text-[12px] text-muted'>
+                  {r.solo_en_panel.length} {r.solo_en_panel.length === 1 ? 'pieza está' : 'piezas están'} en el panel y no en la planilla: no se tocan.
+                </p>
+              )}
+              {afuera.length > 0 && (
+                <p className='px-3 py-2 text-[12px] leading-relaxed text-[#8a6d1f] bg-[#fdf4e3] border border-[#e8d9b0]'>
+                  En la planilla hay códigos repetidos con piezas distintas. Entra una sola por código; las otras cargalas con "Nueva pieza" y un código nuevo:{' '}
+                  {afuera.map(x => `${x.id} (queda afuera "${x.quedaron_afuera.join('", "')}")`).join('; ')}.
+                </p>
+              )}
+              <p className='text-[12px] text-muted'>La descripción y si la pieza está visible no se tocan: eso se maneja solo desde el panel.</p>
+            </>
+          )}
+        </div>
+
+        <footer className='flex gap-2 px-5 py-3 border-t border-line'>
+          <button onClick={onCerrar} className='h-12 px-5 text-[12px] tracking-[0.12em] uppercase border border-border text-muted hover:text-dark'>
+            {total === 0 && r ? 'Cerrar' : 'Cancelar'}
+          </button>
+          {r && total > 0 && (
+            <button onClick={aplicar} disabled={estado === 'aplicando'}
+              className='flex-1 h-12 text-[12px] tracking-[0.14em] uppercase bg-dark text-cream hover:bg-[#2e2a26] disabled:opacity-50'>
+              {estado === 'aplicando' ? 'Aplicando…' : `Aplicar ${total} ${total === 1 ? 'cambio' : 'cambios'}`}
+            </button>
+          )}
+        </footer>
+      </div>
+    </div>
+  )
+}
+
+// La barra de arriba: cuándo se cargó la lista, cuándo se trajo la
+// planilla por última vez, y el botón para traerla. Arriba de todo para
+// que se vea y dé tranquilidad de que lo que se ve está al día.
+function BarraPlanilla({ cargadaEn, ultima, planilla, cargando, onRecargar, onPlanilla }) {
+  return (
+    <div className='flex flex-col gap-3 p-3.5 border lg:flex-row lg:items-center bg-paper border-border'>
+      <div className='flex flex-col flex-1 gap-1 text-[13px] text-muted'>
+        <span className='flex flex-wrap items-center gap-x-2'>
+          <span className='inline-block w-2 h-2 rounded-full bg-wa' aria-hidden='true' />
+          Lista al día: cargada a las <b className='font-medium text-dark'>{cargadaEn ? hora(cargadaEn) : '—'}</b>
+          <button onClick={onRecargar} disabled={cargando}
+            className='underline hover:text-gold disabled:opacity-40'>{cargando ? 'cargando…' : 'volver a cargar'}</button>
+        </span>
+        {planilla && (
+          <span>
+            {ultima
+              ? <>Última vez desde la planilla: <b className='font-medium text-dark'>{cuando(ultima.creado_en)}</b>{' '}
+                  ({ultima.nuevas} nuevas, {ultima.actualizadas} actualizadas)</>
+              : 'Todavía no se trajo la planilla.'}
+          </span>
+        )}
+      </div>
+      {planilla && (
+        <button onClick={onPlanilla}
+          className='flex items-center justify-center gap-2 h-12 px-5 text-[12px] tracking-[0.14em] uppercase border border-dark text-dark hover:bg-dark hover:text-cream transition-colors'>
+          <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.8' aria-hidden='true'>
+            <path d='M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4' />
+          </svg>
+          Actualizar desde la planilla
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ── La pestaña ────────────────────────────────────────────────
 
 export default function PanelProductos({ onSinSesion }) {
@@ -568,6 +770,8 @@ export default function PanelProductos({ onSinSesion }) {
   const [estado, setEstado] = useState('en_venta')
   const [abierta, setAbierta] = useState(null) // { producto, nuevo }
   const [ocupado, setOcupado] = useState(false)
+  const [revisando, setRevisando] = useState(false)
+  const [cargadaEn, setCargadaEn] = useState(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -578,6 +782,7 @@ export default function PanelProductos({ onSinSesion }) {
       const d = await res.json().catch(() => null)
       if (!d?.ok) { setError('No pudimos traer los productos.'); return }
       setDatos(d)
+      setCargadaEn(Date.now())
       // Sin piezas en venta (recién importado o todo agotado) no tiene
       // sentido arrancar mostrando una lista vacía.
       if (d.productos?.length && !d.productos.some(enVenta)) setEstado('todas')
@@ -636,35 +841,16 @@ export default function PanelProductos({ onSinSesion }) {
     }
   }
 
-  const importar = async () => {
-    setOcupado(true)
+  // Después de aplicar la planilla: qué pasó, y la lista de nuevo.
+  const alAplicarPlanilla = data => {
+    setRevisando(false)
     setError('')
-    setAviso('')
-    try {
-      const { status, data } = await llamar({ tipo: 'importar_planilla' })
-      if (status === 401) { onSinSesion(); return }
-      if (!data?.ok) { setError('No pudimos leer la planilla.'); return }
-      const partes = [data.insertados
-        ? `Listo: se cargaron ${data.insertados} piezas de la planilla${data.existentes ? ` (${data.existentes} ya estaban y no se tocaron)` : ''}.`
-        : 'No había piezas nuevas en la planilla: todas ya estaban cargadas.']
-
-      // Dos piezas distintas con el mismo código: entra una sola, y la
-      // otra hay que cargarla a mano con un código nuevo.
-      const afuera = (data.repetidos || []).filter(r => r.quedaron_afuera?.length)
-      if (afuera.length) {
-        partes.push('Ojo, en la planilla había códigos repetidos con piezas distintas. Entró una sola por código; cargá las otras con "Nueva pieza" y un código nuevo: ' +
-          afuera.map(r => `${r.id} (entró "${r.entro}", quedó afuera "${r.quedaron_afuera.join('", "')}")`).join('; ') + '.')
-      }
-      if (data.errores?.length) {
-        partes.push(`No entraron ${data.errores.length} filas por datos inválidos: ${data.errores.map(e => e.id).join(', ')}.`)
-      }
-      setAviso(partes.join(' '))
-      await cargar()
-    } catch {
-      setError('No pudimos conectarnos.')
-    } finally {
-      setOcupado(false)
+    const partes = [`Listo: ${data.nuevas} ${data.nuevas === 1 ? 'pieza nueva' : 'piezas nuevas'} y ${data.actualizadas} ${data.actualizadas === 1 ? 'actualizada' : 'actualizadas'} desde la planilla.`]
+    if (data.errores?.length) {
+      partes.push(`No entraron ${data.errores.length} filas por datos inválidos: ${data.errores.map(e => e.id).join(', ')}.`)
     }
+    setAviso(partes.join(' '))
+    cargar()
   }
 
   const cerrarFicha = useCallback(() => setAbierta(null), [])
@@ -716,17 +902,20 @@ export default function PanelProductos({ onSinSesion }) {
         )}
       </div>
 
+      <BarraPlanilla
+        cargadaEn={cargadaEn}
+        ultima={datos.ultima_sincronizacion}
+        planilla={datos.planilla_configurada}
+        cargando={cargando}
+        onRecargar={cargar}
+        onPlanilla={() => setRevisando(true)}
+      />
+
       {productos.length === 0 && datos.planilla_configurada && (
-        <div className='flex flex-col gap-3 p-4 border border-gold/50 bg-paper'>
-          <p className='text-[15px] text-dark'>Todavía no hay piezas cargadas en el panel.</p>
-          <p className='text-[13px] text-muted'>
-            Traé todo lo que está en la planilla de una vez: nombres, precios, stock y fotos. Después de eso, el catálogo se maneja solo desde acá.
-          </p>
-          <button onClick={importar} disabled={ocupado}
-            className='self-start h-11 px-5 text-[12px] tracking-[0.12em] uppercase border border-dark text-dark hover:bg-dark hover:text-cream disabled:opacity-40'>
-            {ocupado ? 'Importando…' : 'Importar desde la planilla'}
-          </button>
-        </div>
+        <p className='px-4 py-3 text-[14px] border border-gold/50 bg-paper text-dark'>
+          Todavía no hay piezas en el panel. Tocá <b className='font-medium'>Actualizar desde la planilla</b> para
+          traer todo de una vez: nombres, precios, stock y fotos.
+        </p>
       )}
 
       {esCompu ? (
@@ -789,18 +978,14 @@ export default function PanelProductos({ onSinSesion }) {
         </div>
       )}
 
-      <div className='flex flex-wrap items-center justify-between gap-3 mt-2'>
-        <button onClick={cargar} disabled={cargando}
-          className='h-11 text-[12px] tracking-wide uppercase text-muted hover:text-gold disabled:opacity-40'>
-          {cargando ? 'Actualizando…' : 'Actualizar la lista'}
-        </button>
-        {productos.length > 0 && datos.planilla_configurada && (
-          <button onClick={importar} disabled={ocupado}
-            className='h-11 text-[12px] underline text-muted hover:text-gold disabled:opacity-40'>
-            Traer de la planilla las piezas que falten
-          </button>
-        )}
-      </div>
+      {revisando && (
+        <RevisarPlanilla
+          esCompu={esCompu}
+          onCerrar={() => setRevisando(false)}
+          onAplicado={alAplicarPlanilla}
+          onSesion={onSinSesion}
+        />
+      )}
 
       {!esCompu && (
         <button onClick={nueva}
