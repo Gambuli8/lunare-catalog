@@ -565,7 +565,7 @@ export default function ProductPage({ slug }) {
                 {formatPrice(effective)}
               </span>
               {product.pricePromo && (
-                <span className='font-serif text-[22px] text-[#7a7269] line-through leading-none'>
+                <span className='font-serif text-[22px] text-muted line-through leading-none'>
                   {formatPrice(product.price)}
                 </span>
               )}

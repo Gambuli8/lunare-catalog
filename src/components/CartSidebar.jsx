@@ -7,6 +7,7 @@ import { opcionesDeEnvio, cpValido, MODOS } from '../lib/envios'
 import CloudinaryImage from './CloudinaryImage'
 import Icon, { WhatsAppIcon } from './Icon'
 import Copiable from './Copiable'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { WHATSAPP } from '../lib/contacto'
 
 
@@ -182,6 +183,9 @@ export default function CartSidebar() {
     if (confirmado) { setConfirmado(null); setPaso(1) }
   }
 
+  // Esc lo cierra, Tab no se escapa a la página y, cerrado, no se alcanza.
+  const panelRef = useFocusTrap(isOpen, cerrar)
+
   // De la pieza del carrito a su ficha. La navegación la resuelve el router
   // —son <a href> de verdad, así que también se abren en otra pestaña—; acá
   // solo cerramos el panel, que si no queda tapando la ficha.
@@ -334,8 +338,12 @@ export default function CartSidebar() {
       />
 
       <aside
+        ref={panelRef}
+        role='dialog'
+        aria-modal='true'
         aria-label='Tu pedido'
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-cream z-[60] flex flex-col shadow-2xl transition-transform duration-[450ms] ease-[cubic-bezier(.16,1,.3,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        tabIndex={-1}
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-cream z-[60] flex flex-col shadow-2xl outline-none transition-transform duration-[450ms] ease-[cubic-bezier(.16,1,.3,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className='flex items-center justify-between px-6 py-5 border-b border-border'>
           <div className='flex items-baseline gap-2.5'>
