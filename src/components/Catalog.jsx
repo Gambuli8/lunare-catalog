@@ -51,7 +51,7 @@ function ErrorState({ message, onRetry }) {
     <div className='flex flex-col items-center gap-4 py-20 text-center col-span-full'>
       <span className='text-4xl'>⚠️</span>
       <p className='font-serif text-2xl text-[#0e0d0c]'>No pudimos cargar el catálogo</p>
-      <p className='text-sm text-[#7a7269] max-w-xs font-sans'>{message || 'Verificá tu conexión o la URL del CSV de Google Sheets.'}</p>
+      <p className='text-sm text-muted max-w-xs font-sans'>{message || 'Verificá tu conexión o la URL del CSV de Google Sheets.'}</p>
       <button
         onClick={onRetry}
         className='mt-2 bg-[#0e0d0c] text-white text-xs tracking-[0.15em] uppercase font-sans px-6 py-3 hover:bg-[#7d6b5e] transition-colors duration-300'
@@ -67,7 +67,7 @@ function EmptyState({ onReset, hasSearch }) {
     <div className='flex flex-col items-center gap-3 py-20 text-center col-span-full'>
       <span className='text-4xl'>{hasSearch ? '🔍' : '🛍️'}</span>
       <p className='font-serif text-2xl text-[#0e0d0c]'>Sin resultados</p>
-      <p className='text-sm text-[#7a7269] font-sans'>{hasSearch ? 'No encontramos productos con esa búsqueda.' : 'No hay productos con esos filtros.'}</p>
+      <p className='text-sm text-muted font-sans'>{hasSearch ? 'No encontramos productos con esa búsqueda.' : 'No hay productos con esos filtros.'}</p>
       <button
         onClick={onReset}
         className='mt-2 border border-[#0e0d0c] text-[#0e0d0c] text-xs tracking-[0.15em] uppercase font-sans px-6 py-3 hover:bg-[#0e0d0c] hover:text-white transition-colors duration-300'
@@ -85,7 +85,7 @@ function SearchBar({ value, onChange }) {
   return (
     <div className='relative flex-1 min-w-0 sm:flex-none sm:w-72'>
       <svg
-        className='absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7a7269] pointer-events-none'
+        className='absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none'
         width='15'
         height='15'
         fill='none'
@@ -110,7 +110,7 @@ function SearchBar({ value, onChange }) {
       {value && (
         <button
           onClick={() => onChange('')}
-          className='absolute right-3 top-1/2 -translate-y-1/2 text-[#7a7269] hover:text-[#0e0d0c] transition-colors'
+          className='absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-[#0e0d0c] transition-colors'
         >
           <svg
             width='13'
@@ -133,7 +133,7 @@ function LoadMoreButton({ shown, total, onLoadMore }) {
   const remaining = total - shown
   return (
     <div className='flex flex-col items-center gap-3 pt-8 col-span-full'>
-      <p className='text-xs text-[#7a7269] font-sans tracking-wide'>
+      <p className='text-xs text-muted font-sans tracking-wide'>
         Mostrando <span className='font-medium text-[#0e0d0c]'>{shown}</span> de <span className='font-medium text-[#0e0d0c]'>{total}</span> productos
       </p>
       <button
@@ -185,7 +185,7 @@ function FilterSheet({ open, onClose, categories, activeCategory, activeMaterial
             <h3 className='font-serif text-xl font-light text-[#0e0d0c]'>Filtros</h3>
             <button
               onClick={onClose}
-              className='text-[#7a7269] hover:text-[#0e0d0c] transition-colors'
+              className='text-muted hover:text-[#0e0d0c] transition-colors'
             >
               <svg
                 width='18'
@@ -200,14 +200,14 @@ function FilterSheet({ open, onClose, categories, activeCategory, activeMaterial
             </button>
           </div>
           <div>
-            <p className='text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-3'>Categoría</p>
+            <p className='text-[10px] tracking-[0.2em] uppercase text-muted font-sans mb-3'>Categoría</p>
             <div className='flex flex-wrap gap-2'>
               {categories.map(c => (
                 <button
                   key={c.key}
                   onClick={() => onCategory(c.key)}
                   className={`text-[11px] tracking-[0.1em] uppercase px-4 py-2 rounded-full border font-sans transition-all duration-200
-                    ${activeCategory === c.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-white text-[#7a7269] border-[#e8e2da] hover:border-[#0e0d0c]'}`}
+                    ${activeCategory === c.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-white text-muted border-[#e8e2da] hover:border-[#0e0d0c]'}`}
                 >
                   {c.label}
                 </button>
@@ -215,14 +215,14 @@ function FilterSheet({ open, onClose, categories, activeCategory, activeMaterial
             </div>
           </div>
           <div>
-            <p className='text-[10px] tracking-[0.2em] uppercase text-[#7a7269] font-sans mb-3'>Material</p>
+            <p className='text-[10px] tracking-[0.2em] uppercase text-muted font-sans mb-3'>Material</p>
             <div className='flex flex-wrap gap-2'>
               {MATERIALS.map(m => (
                 <button
                   key={m.key}
                   onClick={() => onMaterial(m.key)}
                   className={`text-[11px] tracking-[0.1em] uppercase px-4 py-2 rounded-full border font-sans transition-all duration-200
-                    ${activeMaterial === m.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-white text-[#7a7269] border-[#e8e2da] hover:border-[#0e0d0c]'}`}
+                    ${activeMaterial === m.key ? 'bg-[#0e0d0c] text-white border-[#0e0d0c]' : 'bg-white text-muted border-[#e8e2da] hover:border-[#0e0d0c]'}`}
                 >
                   {m.label}
                 </button>
@@ -236,7 +236,7 @@ function FilterSheet({ open, onClose, categories, activeCategory, activeMaterial
                   onReset()
                   onClose()
                 }}
-                className='flex-1 border border-[#e8e2da] text-[#7a7269] text-xs tracking-[0.1em] uppercase font-sans py-3 rounded-sm hover:border-[#0e0d0c] hover:text-[#0e0d0c] transition-colors'
+                className='flex-1 border border-[#e8e2da] text-muted text-xs tracking-[0.1em] uppercase font-sans py-3 rounded-sm hover:border-[#0e0d0c] hover:text-[#0e0d0c] transition-colors'
               >
                 Limpiar
               </button>

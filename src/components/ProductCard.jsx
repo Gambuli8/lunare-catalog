@@ -29,7 +29,7 @@ export function PriceDisplay({ price, pricePromo, priceNote, size = 'md' }) {
             <span className={`font-serif ${mainSize} font-medium text-[#a8322a] leading-none`}>
               {formatPrice(pricePromo)}
             </span>
-            <span className='font-serif text-[14px] text-[#7a7269] line-through leading-none'>
+            <span className='font-serif text-[14px] text-muted line-through leading-none'>
               {formatPrice(price)}
             </span>
           </div>
