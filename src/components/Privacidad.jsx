@@ -1,5 +1,6 @@
 import { WHATSAPP_URL, INSTAGRAM_URL, INSTAGRAM_USUARIO } from '../lib/contacto'
 import { RAZON_SOCIAL, CUIT, DOMICILIO } from '../lib/fiscal'
+import { metaActivo } from '../lib/track'
 
 // ── Política de privacidad ────────────────────────────────────
 // La pide la Ley 25.326 de Protección de Datos Personales: la tienda
@@ -58,6 +59,13 @@ export default function Privacidad() {
             <p><b className='font-medium text-dark'>Cuando hacés un pedido:</b> tu nombre, tu teléfono, tu correo (es opcional), y si elegís envío, tu código postal y tu dirección. También las notas que quieras dejarnos.</p>
             <p><b className='font-medium text-dark'>Cuando usás el Botón de arrepentimiento:</b> tu nombre, tu correo, tu teléfono si lo dejás, y el número de pedido si lo tenés.</p>
             <p><b className='font-medium text-dark'>Cuando navegás:</b> medimos visitas y qué productos se miran, de forma anónima y sin cookies, para saber qué funciona en la tienda. No sabemos quién sos por eso.</p>
+            {metaActivo && (
+              <p>
+                Además usamos el píxel de Meta (Facebook e Instagram), que sí usa cookies: le cuenta a Meta qué páginas visitaste
+                y si compraste, para medir nuestros anuncios y mostrarte publicidad de Lunare en esas redes. Podés limitarlo desde
+                la configuración de anuncios de tu cuenta de Meta o bloqueando las cookies de terceros en tu navegador.
+              </p>
+            )}
             <p>El carrito se guarda solo en tu navegador, para que no se pierda si cerrás la página. No nos llega hasta que confirmás el pedido.</p>
           </Bloque>
 
@@ -72,6 +80,9 @@ export default function Privacidad() {
               <li><b className='font-medium text-dark'>Mercado Pago</b>, si pagás por ahí: procesa el pago. Los datos de tu tarjeta los carga directamente Mercado Pago; nunca pasan por nosotros.</li>
               <li><b className='font-medium text-dark'>El correo o transporte</b> que elegiste, si es envío: tu nombre, dirección y teléfono, para que te llegue.</li>
               <li><b className='font-medium text-dark'>Los servicios donde funciona la tienda</b>: Vercel (el sitio), Supabase (donde se guardan los pedidos) y Resend (los mails que te mandamos). Guardan los datos por nosotros y no los usan para nada más.</li>
+              {metaActivo && (
+                <li><b className='font-medium text-dark'>Meta</b>, cuando comprás: le avisamos la compra para medir los anuncios. Tu correo, teléfono, nombre y código postal van cifrados, de forma que no se pueden leer; solo le sirven para reconocer si viste un anuncio nuestro.</li>
+              )}
             </ul>
             <p>Algunos de estos servicios guardan la información en servidores fuera de la Argentina.</p>
           </Bloque>

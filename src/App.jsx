@@ -21,6 +21,7 @@ import Footer            from './components/Footer'
 import Toast             from './components/Toast'
 import Icon              from './components/Icon'
 import { Analytics } from '@vercel/analytics/react'
+import { trackPagina } from './lib/track'
 
 // El <title> de cada ruta. El servidor ya manda el suyo en el HTML
 // (api/page.js y api/shop.js); esto es para cuando se navega dentro de la
@@ -134,6 +135,9 @@ export default function App() {
       raiz.style.scrollBehavior = 'auto'
       window.scrollTo(0, 0)
       raiz.style.scrollBehavior = suave
+      // Una visita por pantalla para el píxel de Meta. El panel no se
+      // mide: es una herramienta interna.
+      if (route.name !== 'panel') trackPagina()
     }
     pantallaAnterior.current = pantalla
   }, [pantalla, route.name])
